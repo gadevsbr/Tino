@@ -1,0 +1,25 @@
+# Runtime data and credentials
+data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# User input and audit exports may contain personal data
+imports/
+exports/
+
+# Build output
+dist/
+*.exe
+coverage.out
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

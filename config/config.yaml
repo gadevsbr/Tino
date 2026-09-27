@@ -1,0 +1,8 @@
+data_dir: data
+profile: default
+batch:
+  min_interval: 30s
+  max_interval: 60s
+  max_per_run: 100
+flow:
+  rules_file: config/flows.yaml
