@@ -48,8 +48,9 @@
 
 ## Etapa 7 — CSV telefônico simples v0.5.0
 
-- Status: concluído localmente; publicação em andamento.
+- Status: concluído e publicado.
 - Arquivo de referência: `telefones-whatsapp.csv`, 101 registros, UTF-8 BOM, coluna única `telefone`, valores com `+55` e aspas.
 - Implementação: parser flexível com aliases, BOM e delimitadores comuns; mensagem global e confirmação de consentimento na interface.
 - Evidência: testes específicos do layout de uma coluna e de aliases com ponto e vírgula passaram; suíte completa e `go vet` passaram; UI `0.5.0` abriu responsiva sem erro de inicialização.
 - SHA-256 local: `38ABE265FE5039804A12E9D01CE30738E2AA75A4EF65395F966F1813F7A133FD`.
+- Evidência de release: commit `1654331` enviado à `main`; release `v0.5.0` publicada com UI e CLI auxiliar.
