@@ -27,3 +27,11 @@
 - Artefato principal: `dist/Tino.exe`.
 - SHA-256 local: `D540943ED44A841B184107DA529E73381108362BDC2D5139E86ABB0F7E1163B4`.
 - Evidência: commit `036c6c6` enviado à branch `main`; release `v0.2.0` publicada com `Tino.exe` e CLI auxiliar.
+
+## Etapa 5 — Redesign profissional v0.3.0
+
+- Status: concluído localmente; publicação em andamento.
+- Escopo: identidade visual própria, ícone incorporado, cabeçalho de produto, navegação em quatro áreas, onboarding de QR, cards de operação, indicador de atividade e hierarquia visual consistente.
+- Evidência: `go test -count=1 ./...` e `go vet ./...` passaram; `Tino.exe` abriu responsivo com título `Tino • Central de Comunicação 0.3.0`; nenhuma falha foi gravada no diagnóstico de inicialização.
+- SHA-256 local do `Tino.exe`: `DB215D0807A1DFFA16FAF23C90D51D9F1159D1536B732438CF5677F049B3BB0C`.
+- Limite: a ferramenta de inspeção visual nativa não estava disponível nesta sessão; runtime e estrutura foram validados, mas a inspeção pixel a pixel deve ser confirmada no monitor do usuário.

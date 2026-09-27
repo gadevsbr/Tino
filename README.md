@@ -2,6 +2,8 @@
 
 Aplicação desktop Windows com interface gráfica nativa que mantém uma sessão WhatsApp Multi-Device com `whatsmeow`, audita contatos/grupos, processa notificações consentidas e responde mensagens por regras declarativas. Uma CLI auxiliar também acompanha o projeto.
 
+A interface utiliza identidade visual própria, navegação por áreas, hierarquia tipográfica Segoe UI, estados operacionais visíveis e ícone incorporado ao executável.
+
 > `whatsmeow` não usa MTProto. MTProto é do Telegram; o WhatsApp Multi-Device usa Noise e protocolos próprios. O projeto também não implementa aquecimento artificial de conta nem atrasos para imitar pessoas ou contornar controles. Os intervalos existem como limitação operacional explícita e não garantem aceitação pela plataforma.
 
 ## Requisitos e limites
@@ -30,7 +32,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.2.0
+.\scripts\build.ps1 -Version 0.3.0
 .\dist\Tino.exe
 
 # CLI auxiliar
