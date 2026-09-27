@@ -31,25 +31,31 @@ var defaultFlow []byte
 var brandPNG []byte
 
 type application struct {
-	mw          *walk.MainWindow
-	status      *walk.Label
-	log         *walk.TextEdit
-	qr          *walk.ImageView
-	csvPath     *walk.LineEdit
-	flowPath    *walk.LineEdit
-	connectBtn  *walk.PushButton
-	sendBtn     *walk.PushButton
-	exportBtn   *walk.PushButton
-	flowBtn     *walk.PushButton
-	progress    *walk.ProgressBar
-	brand       *walk.Bitmap
-	icon        *walk.Icon
-	mgr         *session.Manager
-	cfg         config.Config
-	ctx         context.Context
-	cancel      context.CancelFunc
-	flowStarted bool
-	mu          sync.Mutex
+	mw           *walk.MainWindow
+	status       *walk.Label
+	log          *walk.TextEdit
+	qr           *walk.ImageView
+	csvPath      *walk.LineEdit
+	csvSummary   *walk.Label
+	connectBtn   *walk.PushButton
+	sendBtn      *walk.PushButton
+	exportBtn    *walk.PushButton
+	flowBtn      *walk.PushButton
+	flowList     *walk.ListBox
+	defaultReply *walk.TextEdit
+	testMessage  *walk.LineEdit
+	testResult   *walk.TextEdit
+	flowDef      flow.Definition
+	flowModel    *ruleListModel
+	progress     *walk.ProgressBar
+	brand        *walk.Bitmap
+	icon         *walk.Icon
+	mgr          *session.Manager
+	cfg          config.Config
+	ctx          context.Context
+	cancel       context.CancelFunc
+	flowStarted  bool
+	mu           sync.Mutex
 }
 
 func main() {
@@ -80,6 +86,12 @@ func main() {
 		return
 	}
 	defer app.mgr.Close()
+	app.flowDef, err = flow.LoadDefinition(app.cfg.Flow.RulesFile)
+	if err != nil {
+		writeStartupError(err)
+		app.flowDef = flow.Definition{DefaultReply: "Obrigado pela mensagem. Em breve continuaremos o atendimento."}
+	}
+	app.flowModel = &ruleListModel{rules: app.flowDef.Rules}
 
 	if err := app.createWindow(); err != nil {
 		writeStartupError(err)
@@ -176,21 +188,41 @@ func (a *application) createWindow() error {
 							Composite{Layout: HBox{MarginsZero: true, Spacing: 8}, Children: []Widget{
 								LineEdit{AssignTo: &a.csvPath, ReadOnly: true}, PushButton{Text: "Selecionar CSV...", MinSize: Size{Width: 130}, OnClicked: a.chooseCSV},
 							}},
+							Label{AssignTo: &a.csvSummary, Text: "Nenhuma lista selecionada.", TextColor: muted, Font: Font{PointSize: 8}},
 							PushButton{AssignTo: &a.sendBtn, Text: "Revisar e iniciar notificações", MinSize: Size{Height: 42}, Font: Font{Bold: true}, Background: accentBrush, OnClicked: a.send},
 						}},
 						VSpacer{},
 					}},
-					{Title: "  Atendimento  ", Background: cardBrush, Layout: VBox{Spacing: 14}, Children: []Widget{
-						Label{Text: "Automação de atendimento", TextColor: ink, Font: Font{PointSize: 16, Bold: true}},
-						Label{Text: "Carregue regras YAML para responder conversas individuais com caminhos previsíveis.", TextColor: muted},
-						GroupBox{Title: "Arquivo de fluxo", Layout: VBox{Margins: Margins{Left: 14, Top: 14, Right: 14, Bottom: 14}, Spacing: 10}, Children: []Widget{
-							LineEdit{AssignTo: &a.flowPath, Text: cfgOr(a.cfg.Flow.RulesFile, filepath.Join("config", "flows.yaml"))},
-							Composite{Layout: HBox{MarginsZero: true}, Children: []Widget{PushButton{Text: "Selecionar YAML...", OnClicked: a.chooseFlow}, HSpacer{}, PushButton{AssignTo: &a.flowBtn, Text: "Ativar atendimento", MinSize: Size{Width: 180, Height: 40}, Font: Font{Bold: true}, Background: accentBrush, OnClicked: a.startFlow}}},
+					{Title: "  Flow Builder  ", Background: cardBrush, Layout: VBox{Spacing: 10}, Children: []Widget{
+						Composite{Layout: HBox{MarginsZero: true}, Children: []Widget{
+							Composite{Layout: VBox{MarginsZero: true, Spacing: 2}, Children: []Widget{
+								Label{Text: "Construtor visual de atendimento", TextColor: ink, Font: Font{PointSize: 16, Bold: true}},
+								Label{Text: "As regras são avaliadas de cima para baixo. A primeira condição encontrada responde ao cliente.", TextColor: muted},
+							}},
+							HSpacer{}, PushButton{AssignTo: &a.flowBtn, Text: "Ativar atendimento", MinSize: Size{Width: 170, Height: 40}, Font: Font{Bold: true}, Background: accentBrush, OnClicked: a.startFlow},
 						}},
-						GroupBox{Title: "Proteções ativas", Layout: VBox{Margins: Margins{Left: 14, Top: 12, Right: 14, Bottom: 12}}, Children: []Widget{
-							Label{Text: "✓ Ignora mensagens enviadas pela própria conta\r\n✓ Não responde em grupos\r\n✓ Evita respostas duplicadas durante a execução", TextColor: muted},
+						HSplitter{Children: []Widget{
+							Composite{Layout: VBox{MarginsZero: true, Spacing: 8}, Children: []Widget{
+								Label{Text: "CAMINHOS DE RESPOSTA", TextColor: muted, Font: Font{PointSize: 8, Bold: true}},
+								ListBox{AssignTo: &a.flowList, Model: a.flowModel, MinSize: Size{Width: 430, Height: 260}, OnItemActivated: a.editRule},
+								Composite{Layout: HBox{MarginsZero: true, Spacing: 6}, Children: []Widget{
+									PushButton{Text: "+ Nova regra", OnClicked: a.addRule}, PushButton{Text: "Editar", OnClicked: a.editRule}, PushButton{Text: "Excluir", OnClicked: a.removeRule},
+									HSpacer{}, PushButton{Text: "↑", ToolTipText: "Aumentar prioridade", MinSize: Size{Width: 38}, OnClicked: func() { a.moveRule(-1) }}, PushButton{Text: "↓", ToolTipText: "Diminuir prioridade", MinSize: Size{Width: 38}, OnClicked: func() { a.moveRule(1) }},
+								}},
+							}},
+							Composite{Layout: VBox{MarginsZero: true, Spacing: 8}, Children: []Widget{
+								Label{Text: "RESPOSTA QUANDO NENHUMA REGRA COMBINA", TextColor: muted, Font: Font{PointSize: 8, Bold: true}},
+								TextEdit{AssignTo: &a.defaultReply, Text: a.flowDef.DefaultReply, MinSize: Size{Height: 82}},
+								Label{Text: "TESTAR ANTES DE ATIVAR", TextColor: muted, Font: Font{PointSize: 8, Bold: true}},
+								LineEdit{AssignTo: &a.testMessage, CueBanner: "Digite uma mensagem como se fosse o cliente..."},
+								PushButton{Text: "Simular resposta", OnClicked: a.testFlow},
+								TextEdit{AssignTo: &a.testResult, ReadOnly: true, MinSize: Size{Height: 80}},
+							}},
 						}},
-						VSpacer{},
+						Composite{Layout: HBox{MarginsZero: true}, Children: []Widget{
+							Label{Text: "Crie e teste à vontade. Clique em Salvar alterações quando terminar.", TextColor: muted, Font: Font{PointSize: 8}},
+							HSpacer{}, PushButton{Text: "Importar fluxo...", OnClicked: a.chooseFlow}, PushButton{Text: "Salvar alterações", MinSize: Size{Width: 150}, Font: Font{Bold: true}, OnClicked: a.saveFlow},
+						}},
 					}},
 					{Title: "  Atividade  ", Background: cardBrush, Layout: VBox{Spacing: 10}, Children: []Widget{
 						Label{Text: "Central de atividade", TextColor: ink, Font: Font{PointSize: 16, Bold: true}},
@@ -281,6 +313,7 @@ func (a *application) connect() {
 		})
 		if err != nil {
 			a.appendLog("Falha na conexão: " + err.Error())
+			a.ui(func() { walk.MsgBox(a.mw, "Não foi possível conectar", err.Error(), walk.MsgBoxIconError) })
 		} else {
 			a.appendLog("Conta conectada com sucesso.")
 		}
@@ -293,15 +326,37 @@ func (a *application) chooseCSV() {
 	dlg.Title = "Selecionar lista CSV"
 	dlg.Filter = "Arquivos CSV (*.csv)|*.csv|Todos os arquivos (*.*)|*.*"
 	if ok, _ := dlg.ShowOpen(a.mw); ok {
+		items, err := batch.LoadCSV(dlg.FilePath)
+		if err != nil {
+			walk.MsgBox(a.mw, "Lista inválida", "Não foi possível usar este arquivo:\r\n\r\n"+err.Error(), walk.MsgBoxIconError)
+			return
+		}
+		approved := 0
+		for _, item := range items {
+			if item.Consented {
+				approved++
+			}
+		}
 		a.csvPath.SetText(dlg.FilePath)
+		a.csvSummary.SetText(fmt.Sprintf("%d contato(s) encontrado(s) • %d com consentimento • %d serão ignorados", len(items), approved, len(items)-approved))
+		a.appendLog(fmt.Sprintf("Lista validada: %d contatos, %d consentidos.", len(items), approved))
 	}
 }
 func (a *application) chooseFlow() {
 	dlg := new(walk.FileDialog)
-	dlg.Title = "Selecionar fluxo YAML"
+	dlg.Title = "Importar fluxo de atendimento"
 	dlg.Filter = "Fluxos YAML (*.yaml;*.yml)|*.yaml;*.yml|Todos os arquivos (*.*)|*.*"
 	if ok, _ := dlg.ShowOpen(a.mw); ok {
-		a.flowPath.SetText(dlg.FilePath)
+		def, err := flow.LoadDefinition(dlg.FilePath)
+		if err != nil {
+			walk.MsgBox(a.mw, "Fluxo inválido", err.Error(), walk.MsgBoxIconError)
+			return
+		}
+		a.cfg.Flow.RulesFile = dlg.FilePath
+		a.flowDef = def
+		a.defaultReply.SetText(def.DefaultReply)
+		a.syncFlowModel(0)
+		a.appendLog(fmt.Sprintf("Fluxo importado com %d regra(s).", len(def.Rules)))
 	}
 }
 
@@ -324,6 +379,9 @@ func (a *application) export() {
 			return
 		}
 		a.appendLog(fmt.Sprintf("Exportados %d contatos e %d grupos em %s.", len(snap.Contacts), len(snap.Groups), dir))
+		a.ui(func() {
+			walk.MsgBox(a.mw, "Exportação concluída", fmt.Sprintf("%d contatos e %d grupos foram exportados para:\r\n%s", len(snap.Contacts), len(snap.Groups), dir), walk.MsgBoxIconInformation)
+		})
 	}()
 }
 
@@ -333,7 +391,19 @@ func (a *application) send() {
 		walk.MsgBox(a.mw, "Tino", "Selecione um arquivo CSV.", walk.MsgBoxIconWarning)
 		return
 	}
-	if walk.MsgBox(a.mw, "Confirmar envio", "Enviar somente para os contatos com consent=true?", walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
+	items, err := batch.LoadCSV(path)
+	if err != nil {
+		walk.MsgBox(a.mw, "Lista inválida", err.Error(), walk.MsgBoxIconError)
+		return
+	}
+	approved := 0
+	for _, item := range items {
+		if item.Consented {
+			approved++
+		}
+	}
+	confirmation := fmt.Sprintf("A lista possui %d contato(s) com consentimento.\r\n\r\nO Tino enviará uma mensagem por vez, respeitando intervalos de %s a %s. Deseja continuar?", approved, a.cfg.Batch.MinInterval, a.cfg.Batch.MaxInterval)
+	if walk.MsgBox(a.mw, "Revisar envio", confirmation, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
 		return
 	}
 	a.setBusy(true)
@@ -343,15 +413,10 @@ func (a *application) send() {
 			a.appendLog("Envio cancelado: " + err.Error())
 			return
 		}
-		items, err := batch.LoadCSV(path)
-		if err != nil {
-			a.appendLog("CSV inválido: " + err.Error())
-			return
-		}
 		p := batch.Processor{Client: a.mgr.Client, MinInterval: a.cfg.Batch.MinInterval, MaxInterval: a.cfg.Batch.MaxInterval, MaxPerRun: a.cfg.Batch.MaxPerRun}
-		err = p.Run(a.ctx, items, func(r batch.Result) { b, _ := json.Marshal(r); a.appendLog(string(b)) })
-		if err != nil {
-			a.appendLog("Processamento encerrado: " + err.Error())
+		runErr := p.Run(a.ctx, items, func(r batch.Result) { b, _ := json.Marshal(r); a.appendLog(string(b)) })
+		if runErr != nil {
+			a.appendLog("Processamento encerrado: " + runErr.Error())
 		} else {
 			a.appendLog("Processamento concluído.")
 		}
@@ -366,7 +431,7 @@ func (a *application) startFlow() {
 	}
 	a.flowStarted = true
 	a.mu.Unlock()
-	path := a.flowPath.Text()
+	def := a.currentFlowDefinition()
 	a.flowBtn.SetEnabled(false)
 	go func() {
 		if err := a.ensureConnected(); err != nil {
@@ -377,7 +442,15 @@ func (a *application) startFlow() {
 			a.ui(func() { a.flowBtn.SetEnabled(true) })
 			return
 		}
-		engine, err := flow.Load(path, a.mgr.Client)
+		if err := flow.SaveDefinition(a.cfg.Flow.RulesFile, def); err != nil {
+			a.appendLog("Não foi possível salvar o fluxo: " + err.Error())
+			a.mu.Lock()
+			a.flowStarted = false
+			a.mu.Unlock()
+			a.ui(func() { a.flowBtn.SetEnabled(true) })
+			return
+		}
+		engine, err := flow.New(a.mgr.Client, def)
 		if err != nil {
 			a.appendLog("Fluxo inválido: " + err.Error())
 			a.mu.Lock()
@@ -387,6 +460,7 @@ func (a *application) startFlow() {
 			return
 		}
 		a.mgr.Client.AddEventHandler(engine.Handle)
-		a.appendLog("Fluxo de atendimento ativo: " + path)
+		a.flowDef = def
+		a.appendLog(fmt.Sprintf("Atendimento ativo com %d regra(s).", len(def.Rules)))
 	}()
 }

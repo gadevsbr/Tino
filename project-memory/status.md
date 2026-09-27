@@ -36,3 +36,11 @@
 - SHA-256 local do `Tino.exe`: `DB215D0807A1DFFA16FAF23C90D51D9F1159D1536B732438CF5677F049B3BB0C`.
 - Limite: a ferramenta de inspeção visual nativa não estava disponível nesta sessão; runtime e estrutura foram validados, mas a inspeção pixel a pixel deve ser confirmada no monitor do usuário.
 - Evidência de release: commit `a946e38` na branch `main`; release `v0.3.0` publicada com `Tino.exe` e CLI auxiliar.
+
+## Etapa 6 — Flow Builder visual v0.4.0
+
+- Status: concluído localmente; publicação em andamento.
+- Escopo: criar, editar, excluir e reordenar regras; resposta padrão; simulador de mensagem; importação; persistência e ativação pela UI.
+- Usabilidade adicional: validação do CSV na seleção, resumo de contatos consentidos, confirmação contextual antes do envio e diálogo de conclusão da exportação.
+- Evidência: testes do motor incluem salvar/carregar, matching e validação; `go test -count=1 ./...` e `go vet ./...` passaram; `Tino.exe` abriu responsivo como versão `0.4.0` sem erro de inicialização.
+- SHA-256 local: `DB71D3CC87F7EC0219EBCEC8A3D0522C6B47AF4176BCE99E62B8B92DAA574EE2`.

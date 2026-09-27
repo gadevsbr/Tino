@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -32,20 +33,75 @@ type Engine struct {
 }
 
 func Load(path string, client *whatsmeow.Client) (*Engine, error) {
+	def, err := LoadDefinition(path)
+	if err != nil {
+		return nil, err
+	}
+	return New(client, def)
+}
+
+func New(client *whatsmeow.Client, def Definition) (*Engine, error) {
+	if client == nil {
+		return nil, fmt.Errorf("cliente WhatsApp é obrigatório")
+	}
+	if err := Validate(def); err != nil {
+		return nil, err
+	}
+	return &Engine{client: client, def: def, seen: make(map[string]struct{})}, nil
+}
+
+func LoadDefinition(path string) (Definition, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("ler fluxo: %w", err)
+		return Definition{}, fmt.Errorf("ler fluxo: %w", err)
 	}
 	var def Definition
 	if err := yaml.Unmarshal(b, &def); err != nil {
-		return nil, fmt.Errorf("decodificar fluxo: %w", err)
+		return Definition{}, fmt.Errorf("decodificar fluxo: %w", err)
 	}
+	if err := Validate(def); err != nil {
+		return Definition{}, err
+	}
+	return def, nil
+}
+
+func Validate(def Definition) error {
 	for i, r := range def.Rules {
-		if r.Contains == "" || r.Reply == "" {
-			return nil, fmt.Errorf("regra %d requer contains e reply", i+1)
+		if strings.TrimSpace(r.Name) == "" || strings.TrimSpace(r.Contains) == "" || strings.TrimSpace(r.Reply) == "" {
+			return fmt.Errorf("regra %d requer nome, condição e resposta", i+1)
 		}
 	}
-	return &Engine{client: client, def: def, seen: make(map[string]struct{})}, nil
+	return nil
+}
+
+func SaveDefinition(path string, def Definition) error {
+	if err := Validate(def); err != nil {
+		return err
+	}
+	b, err := yaml.Marshal(def)
+	if err != nil {
+		return fmt.Errorf("codificar fluxo: %w", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return fmt.Errorf("criar diretório do fluxo: %w", err)
+	}
+	if err := os.WriteFile(path, b, 0o600); err != nil {
+		return fmt.Errorf("salvar fluxo: %w", err)
+	}
+	return nil
+}
+
+func Match(def Definition, text string) string {
+	for _, r := range def.Rules {
+		hay, needle := text, r.Contains
+		if !r.CaseSensitive {
+			hay, needle = strings.ToLower(hay), strings.ToLower(needle)
+		}
+		if strings.Contains(hay, needle) {
+			return r.Reply
+		}
+	}
+	return def.DefaultReply
 }
 
 func (e *Engine) Handle(evt any) {
@@ -88,14 +144,5 @@ func extractText(m *events.Message) string {
 }
 
 func (e *Engine) match(text string) string {
-	for _, r := range e.def.Rules {
-		hay, needle := text, r.Contains
-		if !r.CaseSensitive {
-			hay, needle = strings.ToLower(hay), strings.ToLower(needle)
-		}
-		if strings.Contains(hay, needle) {
-			return r.Reply
-		}
-	}
-	return e.def.DefaultReply
+	return Match(e.def, text)
 }

@@ -7,3 +7,5 @@
 - 2026-09-27 — A interface principal passa a ser uma janela Windows nativa (`Tino.exe`) com QR visual, estado da sessão, exportação, seleção de CSV, atividade e controle do fluxo. A CLI permanece apenas como ferramenta auxiliar.
 - 2026-09-27 — A UI profissional usa navegação por áreas, Segoe UI, paleta navy/teal, cards claros, estados de sessão e atividade visíveis. A identidade visual é própria e não imita marcas do WhatsApp.
 - 2026-09-27 — A skill `imagegen` disponível foi usada somente para criar o símbolo visual bitmap; não havia skill agency-agents de UI instalada. O layout, acessibilidade e comportamento permanecem implementados deterministicamente em Go/Walk.
+- 2026-09-27 — Superseded: selecionar um YAML não constitui um flow builder visual.
+- 2026-09-27 — O Flow Builder passa a ser operado inteiramente pela UI: regras ordenadas, formulário de condição/resposta, prioridade, resposta padrão, simulação, importação e salvamento. YAML permanece apenas como formato interno portátil.

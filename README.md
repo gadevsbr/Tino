@@ -32,7 +32,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.3.0
+.\scripts\build.ps1 -Version 0.4.0
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -46,9 +46,11 @@ No aplicativo desktop, o QR aparece dentro da janela. A sessão fica em `data/se
 
 Cabeçalho obrigatório: `phone,message,consent`; `name` é opcional. O telefone deve incluir DDI. Linhas sem consentimento são registradas como `skipped_no_consent`. A saída JSON por linha contém o status e, quando enviado, o ID da mensagem.
 
-## Fluxos
+## Flow Builder visual
 
-Edite `config/flows.yaml`. As regras são avaliadas em ordem e a primeira correspondência vence. Apenas conversas individuais recebidas são respondidas; grupos e mensagens do próprio usuário são ignorados. O cache em memória evita resposta duplicada durante o processo atual.
+Na aba **Flow Builder**, use **Nova regra** para definir a condição e a resposta sem editar arquivos. As regras podem ser editadas, excluídas e movidas para cima ou para baixo; a primeira correspondência vence. O simulador mostra a resposta antes da ativação. A resposta padrão é usada quando nenhuma regra combina.
+
+O fluxo continua persistido em YAML para portabilidade e backup, mas o arquivo não precisa ser manipulado manualmente. Apenas conversas individuais recebidas são respondidas; grupos e mensagens do próprio usuário são ignorados.
 
 ## Evidência de entrega
 
