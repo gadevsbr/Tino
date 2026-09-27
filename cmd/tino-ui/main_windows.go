@@ -9,6 +9,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,31 +32,34 @@ var defaultFlow []byte
 var brandPNG []byte
 
 type application struct {
-	mw           *walk.MainWindow
-	status       *walk.Label
-	log          *walk.TextEdit
-	qr           *walk.ImageView
-	csvPath      *walk.LineEdit
-	csvSummary   *walk.Label
-	connectBtn   *walk.PushButton
-	sendBtn      *walk.PushButton
-	exportBtn    *walk.PushButton
-	flowBtn      *walk.PushButton
-	flowList     *walk.ListBox
-	defaultReply *walk.TextEdit
-	testMessage  *walk.LineEdit
-	testResult   *walk.TextEdit
-	flowDef      flow.Definition
-	flowModel    *ruleListModel
-	progress     *walk.ProgressBar
-	brand        *walk.Bitmap
-	icon         *walk.Icon
-	mgr          *session.Manager
-	cfg          config.Config
-	ctx          context.Context
-	cancel       context.CancelFunc
-	flowStarted  bool
-	mu           sync.Mutex
+	mw              *walk.MainWindow
+	status          *walk.Label
+	log             *walk.TextEdit
+	qr              *walk.ImageView
+	csvPath         *walk.LineEdit
+	csvSummary      *walk.Label
+	campaignMessage *walk.TextEdit
+	consentCheck    *walk.CheckBox
+	csvImport       batch.CSVImport
+	connectBtn      *walk.PushButton
+	sendBtn         *walk.PushButton
+	exportBtn       *walk.PushButton
+	flowBtn         *walk.PushButton
+	flowList        *walk.ListBox
+	defaultReply    *walk.TextEdit
+	testMessage     *walk.LineEdit
+	testResult      *walk.TextEdit
+	flowDef         flow.Definition
+	flowModel       *ruleListModel
+	progress        *walk.ProgressBar
+	brand           *walk.Bitmap
+	icon            *walk.Icon
+	mgr             *session.Manager
+	cfg             config.Config
+	ctx             context.Context
+	cancel          context.CancelFunc
+	flowStarted     bool
+	mu              sync.Mutex
 }
 
 func main() {
@@ -189,6 +193,9 @@ func (a *application) createWindow() error {
 								LineEdit{AssignTo: &a.csvPath, ReadOnly: true}, PushButton{Text: "Selecionar CSV...", MinSize: Size{Width: 130}, OnClicked: a.chooseCSV},
 							}},
 							Label{AssignTo: &a.csvSummary, Text: "Nenhuma lista selecionada.", TextColor: muted, Font: Font{PointSize: 8}},
+							Label{Text: "Mensagem da notificação", TextColor: ink, Font: Font{Bold: true}},
+							TextEdit{AssignTo: &a.campaignMessage, MinSize: Size{Height: 78}, ToolTipText: "Usada para listas que possuem apenas a coluna de telefone."},
+							CheckBox{AssignTo: &a.consentCheck, Text: "Confirmo que estes contatos autorizaram o recebimento desta comunicação."},
 							PushButton{AssignTo: &a.sendBtn, Text: "Revisar e iniciar notificações", MinSize: Size{Height: 42}, Font: Font{Bold: true}, Background: accentBrush, OnClicked: a.send},
 						}},
 						VSpacer{},
@@ -326,20 +333,28 @@ func (a *application) chooseCSV() {
 	dlg.Title = "Selecionar lista CSV"
 	dlg.Filter = "Arquivos CSV (*.csv)|*.csv|Todos os arquivos (*.*)|*.*"
 	if ok, _ := dlg.ShowOpen(a.mw); ok {
-		items, err := batch.LoadCSV(dlg.FilePath)
+		result, err := batch.LoadCSVFlexible(dlg.FilePath)
 		if err != nil {
 			walk.MsgBox(a.mw, "Lista inválida", "Não foi possível usar este arquivo:\r\n\r\n"+err.Error(), walk.MsgBoxIconError)
 			return
 		}
 		approved := 0
-		for _, item := range items {
+		for _, item := range result.Items {
 			if item.Consented {
 				approved++
 			}
 		}
+		a.csvImport = result
 		a.csvPath.SetText(dlg.FilePath)
-		a.csvSummary.SetText(fmt.Sprintf("%d contato(s) encontrado(s) • %d com consentimento • %d serão ignorados", len(items), approved, len(items)-approved))
-		a.appendLog(fmt.Sprintf("Lista validada: %d contatos, %d consentidos.", len(items), approved))
+		if result.HasConsent {
+			a.csvSummary.SetText(fmt.Sprintf("%d contato(s) • %d marcados com consentimento • %d serão ignorados", len(result.Items), approved, len(result.Items)-approved))
+		} else {
+			a.csvSummary.SetText(fmt.Sprintf("%d telefone(s) encontrados • confirme o consentimento abaixo", len(result.Items)))
+		}
+		if result.HasMessage && len(result.Items) > 0 {
+			a.campaignMessage.SetText(result.Items[0].Message)
+		}
+		a.appendLog(fmt.Sprintf("Lista validada: %d telefones na coluna %q.", len(result.Items), result.PhoneField))
 	}
 }
 func (a *application) chooseFlow() {
@@ -391,10 +406,32 @@ func (a *application) send() {
 		walk.MsgBox(a.mw, "Tino", "Selecione um arquivo CSV.", walk.MsgBoxIconWarning)
 		return
 	}
-	items, err := batch.LoadCSV(path)
-	if err != nil {
-		walk.MsgBox(a.mw, "Lista inválida", err.Error(), walk.MsgBoxIconError)
+	result := a.csvImport
+	if len(result.Items) == 0 {
+		var err error
+		result, err = batch.LoadCSVFlexible(path)
+		if err != nil {
+			walk.MsgBox(a.mw, "Lista inválida", err.Error(), walk.MsgBoxIconError)
+			return
+		}
+	}
+	items := append([]batch.Item(nil), result.Items...)
+	message := strings.TrimSpace(a.campaignMessage.Text())
+	if !result.HasMessage && message == "" {
+		walk.MsgBox(a.mw, "Mensagem obrigatória", "Escreva a mensagem que será enviada para esta lista.", walk.MsgBoxIconWarning)
 		return
+	}
+	if !result.HasConsent && !a.consentCheck.Checked() {
+		walk.MsgBox(a.mw, "Confirmação necessária", "Confirme que os contatos autorizaram esta comunicação.", walk.MsgBoxIconWarning)
+		return
+	}
+	for i := range items {
+		if strings.TrimSpace(items[i].Message) == "" {
+			items[i].Message = message
+		}
+		if !result.HasConsent {
+			items[i].Consented = true
+		}
 	}
 	approved := 0
 	for _, item := range items {

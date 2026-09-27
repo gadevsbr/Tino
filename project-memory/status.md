@@ -45,3 +45,11 @@
 - Evidência: testes do motor incluem salvar/carregar, matching e validação; `go test -count=1 ./...` e `go vet ./...` passaram; `Tino.exe` abriu responsivo como versão `0.4.0` sem erro de inicialização.
 - SHA-256 local: `DB71D3CC87F7EC0219EBCEC8A3D0522C6B47AF4176BCE99E62B8B92DAA574EE2`.
 - Evidência de release: commit `ff072a6` enviado à `main`; release `v0.4.0` publicada com UI e CLI auxiliar.
+
+## Etapa 7 — CSV telefônico simples v0.5.0
+
+- Status: concluído localmente; publicação em andamento.
+- Arquivo de referência: `telefones-whatsapp.csv`, 101 registros, UTF-8 BOM, coluna única `telefone`, valores com `+55` e aspas.
+- Implementação: parser flexível com aliases, BOM e delimitadores comuns; mensagem global e confirmação de consentimento na interface.
+- Evidência: testes específicos do layout de uma coluna e de aliases com ponto e vírgula passaram; suíte completa e `go vet` passaram; UI `0.5.0` abriu responsiva sem erro de inicialização.
+- SHA-256 local: `38ABE265FE5039804A12E9D01CE30738E2AA75A4EF65395F966F1813F7A133FD`.

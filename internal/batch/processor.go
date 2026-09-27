@@ -26,6 +26,12 @@ type Item struct {
 	Phone, Name, Message string
 	Consented            bool
 }
+type CSVImport struct {
+	Items      []Item
+	HasMessage bool
+	HasConsent bool
+	PhoneField string
+}
 type Result struct {
 	Phone                    string
 	SentAt                   time.Time
@@ -39,26 +45,67 @@ type Processor struct {
 }
 
 func LoadCSV(path string) ([]Item, error) {
+	result, err := LoadCSVFlexible(path)
+	if err != nil {
+		return nil, err
+	}
+	if !result.HasMessage {
+		return nil, errors.New("coluna obrigatória ausente: message")
+	}
+	if !result.HasConsent {
+		return nil, errors.New("coluna obrigatória ausente: consent")
+	}
+	return result.Items, nil
+}
+
+func LoadCSVFlexible(path string) (CSVImport, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("abrir CSV: %w", err)
+		return CSVImport{}, fmt.Errorf("abrir CSV: %w", err)
 	}
 	defer f.Close()
 	r := csv.NewReader(f)
 	r.TrimLeadingSpace = true
+	r.ReuseRecord = false
 	head, err := r.Read()
 	if err != nil {
-		return nil, fmt.Errorf("cabeçalho CSV: %w", err)
+		return CSVImport{}, fmt.Errorf("cabeçalho CSV: %w", err)
+	}
+	if len(head) == 1 {
+		line := strings.TrimPrefix(head[0], "\ufeff")
+		for _, delimiter := range []rune{';', '\t'} {
+			if strings.ContainsRune(line, delimiter) {
+				if _, err := f.Seek(0, io.SeekStart); err != nil {
+					return CSVImport{}, err
+				}
+				r = csv.NewReader(f)
+				r.TrimLeadingSpace = true
+				r.Comma = delimiter
+				head, err = r.Read()
+				if err != nil {
+					return CSVImport{}, fmt.Errorf("cabeçalho CSV: %w", err)
+				}
+				break
+			}
+		}
 	}
 	idx := map[string]int{}
 	for i, h := range head {
-		idx[strings.ToLower(strings.TrimSpace(h))] = i
+		idx[normalizeHeader(h)] = i
 	}
-	for _, required := range []string{"phone", "message", "consent"} {
-		if _, ok := idx[required]; !ok {
-			return nil, fmt.Errorf("coluna obrigatória ausente: %s", required)
+	phoneField, phoneIndex := "", -1
+	for _, alias := range []string{"phone", "telefone", "celular", "whatsapp", "numero", "numero_telefone"} {
+		if i, ok := idx[alias]; ok {
+			phoneField, phoneIndex = alias, i
+			break
 		}
 	}
+	if phoneIndex < 0 {
+		return CSVImport{}, errors.New("coluna de telefone não encontrada; use telefone, celular, whatsapp ou phone")
+	}
+	messageIndex, hasMessage := firstIndex(idx, "message", "mensagem", "texto")
+	consentIndex, hasConsent := firstIndex(idx, "consent", "consentimento", "autorizado", "opt_in")
+	nameIndex, _ := firstIndex(idx, "name", "nome", "cliente")
 	var items []Item
 	for line := 2; ; line++ {
 		row, err := r.Read()
@@ -66,19 +113,41 @@ func LoadCSV(path string) ([]Item, error) {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("linha %d: %w", line, err)
+			return CSVImport{}, fmt.Errorf("linha %d: %w", line, err)
 		}
-		get := func(k string) string {
-			if i, ok := idx[k]; ok && i < len(row) {
+		get := func(i int) string {
+			if i >= 0 && i < len(row) {
 				return strings.TrimSpace(row[i])
 			}
 			return ""
 		}
-		consent := strings.ToLower(get("consent"))
+		consent := strings.ToLower(get(consentIndex))
 		approved := consent == "true" || consent == "yes" || consent == "sim" || consent == "1"
-		items = append(items, Item{Phone: digits.ReplaceAllString(get("phone"), ""), Name: get("name"), Message: get("message"), Consented: approved})
+		phone := digits.ReplaceAllString(get(phoneIndex), "")
+		if phone == "" {
+			continue
+		}
+		items = append(items, Item{Phone: phone, Name: get(nameIndex), Message: get(messageIndex), Consented: approved})
 	}
-	return items, nil
+	if len(items) == 0 {
+		return CSVImport{}, errors.New("nenhum telefone válido encontrado")
+	}
+	return CSVImport{Items: items, HasMessage: hasMessage, HasConsent: hasConsent, PhoneField: phoneField}, nil
+}
+
+func firstIndex(indexes map[string]int, aliases ...string) (int, bool) {
+	for _, alias := range aliases {
+		if i, ok := indexes[alias]; ok {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+func normalizeHeader(value string) string {
+	value = strings.ToLower(strings.TrimSpace(strings.TrimPrefix(value, "\ufeff")))
+	replacer := strings.NewReplacer("á", "a", "à", "a", "ã", "a", "â", "a", "é", "e", "ê", "e", "í", "i", "ó", "o", "ô", "o", "õ", "o", "ú", "u", "ç", "c", " ", "_")
+	return replacer.Replace(value)
 }
 
 func (p *Processor) Run(ctx context.Context, items []Item, onResult func(Result)) error {

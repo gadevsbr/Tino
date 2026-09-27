@@ -32,7 +32,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.4.0
+.\scripts\build.ps1 -Version 0.5.0
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -44,7 +44,9 @@ No aplicativo desktop, o QR aparece dentro da janela. A sessão fica em `data/se
 
 ## CSV de notificações
 
-Cabeçalho obrigatório: `phone,message,consent`; `name` é opcional. O telefone deve incluir DDI. Linhas sem consentimento são registradas como `skipped_no_consent`. A saída JSON por linha contém o status e, quando enviado, o ID da mensagem.
+O importador aceita listas simples contendo somente `telefone`, inclusive arquivos UTF-8 com BOM e valores como `"+5511999999999"`. Também reconhece os cabeçalhos `phone`, `celular`, `whatsapp`, `numero` e `numero_telefone`, com separador vírgula, ponto e vírgula ou tabulação.
+
+Quando o CSV não contém `message`/`mensagem`, a mensagem é preenchida na própria interface. Quando não contém `consent`/`consentimento`, o envio exige uma confirmação explícita de que os contatos autorizaram a comunicação. O telefone deve incluir DDI.
 
 ## Flow Builder visual
 
