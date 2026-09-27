@@ -23,6 +23,7 @@
 
 ## Etapa 4 — Release v0.2.0
 
-- Status: em andamento.
+- Status: concluída.
 - Artefato principal: `dist/Tino.exe`.
 - SHA-256 local: `D540943ED44A841B184107DA529E73381108362BDC2D5139E86ABB0F7E1163B4`.
+- Evidência: commit `036c6c6` enviado à branch `main`; release `v0.2.0` publicada com `Tino.exe` e CLI auxiliar.
