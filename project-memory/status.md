@@ -8,5 +8,6 @@
 
 ## Etapa 2 — Release v0.1.0
 
-- Status: em andamento.
-- Evidência: GitHub CLI autenticada como `gadevsbr`; nome `gadevsbr/Tino` disponível.
+- Status: concluída.
+- Evidência: commit inicial `68990c4` enviado à branch `main`; repositório público `https://github.com/gadevsbr/Tino`; release `v0.1.0` publicada com `tino-windows-amd64.exe`.
+- SHA-256 do artefato: `D633F82FB74C95E2B111A7D9C0ACA032ABA122458CA59286429C8C54FAA33BC0`.
