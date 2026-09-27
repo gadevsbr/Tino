@@ -58,6 +58,16 @@ func Open(ctx context.Context, dataDir, profile string, debug bool) (*Manager, e
 }
 
 func (m *Manager) Connect(ctx context.Context, showQR bool) error {
+	return m.ConnectWithQR(ctx, showQR, func(content string) error {
+		printQR(content)
+		return nil
+	})
+}
+
+// ConnectWithQR connects a persisted session or pairs a new one. onQR is called
+// whenever WhatsApp rotates the pairing code, allowing CLI and GUI frontends to
+// render it without duplicating session logic.
+func (m *Manager) ConnectWithQR(ctx context.Context, showQR bool, onQR func(string) error) error {
 	if m.Client.Store.ID != nil {
 		if err := m.Client.Connect(); err != nil {
 			return fmt.Errorf("conectar sessão persistida: %w", err)
@@ -84,7 +94,11 @@ func (m *Manager) Connect(ctx context.Context, showQR bool) error {
 			}
 			switch item.Event {
 			case "code":
-				printQR(item.Code)
+				if onQR != nil {
+					if err := onQR(item.Code); err != nil {
+						return fmt.Errorf("renderizar QR: %w", err)
+					}
+				}
 			case "success":
 				return nil
 			case "timeout":

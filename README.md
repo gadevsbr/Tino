@@ -1,6 +1,6 @@
 # Tino
 
-Cliente CLI compilável para Windows que mantém uma sessão WhatsApp Multi-Device com `whatsmeow`, audita contatos/grupos, processa notificações consentidas e responde mensagens por regras declarativas.
+Aplicação desktop Windows com interface gráfica nativa que mantém uma sessão WhatsApp Multi-Device com `whatsmeow`, audita contatos/grupos, processa notificações consentidas e responde mensagens por regras declarativas. Uma CLI auxiliar também acompanha o projeto.
 
 > `whatsmeow` não usa MTProto. MTProto é do Telegram; o WhatsApp Multi-Device usa Noise e protocolos próprios. O projeto também não implementa aquecimento artificial de conta nem atrasos para imitar pessoas ou contornar controles. Os intervalos existem como limitação operacional explícita e não garantem aceitação pela plataforma.
 
@@ -15,7 +15,8 @@ Cliente CLI compilável para Windows que mantém uma sessão WhatsApp Multi-Devi
 ## Estrutura
 
 ```text
-cmd/tino/           CLI e composição
+cmd/tino-ui/        aplicação desktop e recursos incorporados
+cmd/tino/           CLI auxiliar
 internal/session/   sessão SQLite, reconexão e QR
 internal/audit/     coleta e exportação JSON/CSV
 internal/batch/     leitura CSV, limites e envio sequencial
@@ -29,15 +30,15 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.1.0
-.\dist\tino-windows-amd64.exe login
-.\dist\tino-windows-amd64.exe status
-.\dist\tino-windows-amd64.exe export
-.\dist\tino-windows-amd64.exe send -csv examples\contacts.csv
-.\dist\tino-windows-amd64.exe serve
+.\scripts\build.ps1 -Version 0.2.0
+.\dist\Tino.exe
+
+# CLI auxiliar
+.\dist\tino-cli-windows-amd64.exe login
+.\dist\tino-cli-windows-amd64.exe status
 ```
 
-O QR aparece no terminal. A sessão fica em `data/sessions/<profile>.db`, excluída do Git. Exportações com dados pessoais ficam em `exports/`, também excluídas. Interrompa `send` ou `serve` com Ctrl+C.
+No aplicativo desktop, o QR aparece dentro da janela. A sessão fica em `data/sessions/<profile>.db`, excluída do Git. Exportações com dados pessoais ficam em `exports/`, também excluídas.
 
 ## CSV de notificações
 

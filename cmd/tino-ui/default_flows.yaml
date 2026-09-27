@@ -1,0 +1,8 @@
+rules:
+  - name: horario
+    contains: horario
+    reply: "Nosso horário de atendimento é de segunda a sexta, das 9h às 18h."
+  - name: atendente
+    contains: atendente
+    reply: "Recebemos sua solicitação. Uma pessoa da equipe continuará o atendimento."
+default_reply: "Obrigado pela mensagem. Digite 'horario' ou 'atendente'."
