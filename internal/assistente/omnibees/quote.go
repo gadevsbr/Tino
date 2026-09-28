@@ -327,21 +327,31 @@ type Result struct {
 	Categories []Category
 }
 
-// Categories trusts the availability returned by OmniBees. A room with more
-// beds can legitimately be sold to fewer guests, so local occupancy heuristics
-// must not hide a category that the booking engine offered for this search.
+// Categories intersects OmniBees availability with the exact physical capacity
+// requested by the guest. Larger rooms are not offered as unnecessary upgrades.
 func Categories(s Search, prices map[string]int64) []Category {
 	type option struct{ name, sourceKey, catalogKey string }
-	options := []option{
-		{"Suíte Superluxo com varanda e vista mar", "superluxo", "superluxo"},
-		{"Suíte Família Deluxe com vista mar", "familia", "familia"},
-		{"Suíte Triplo Deluxe com varanda", "triploDeluxe", "deluxe_varanda"},
-		{"Suíte Quádruplo Deluxe com varanda", "quadruploDeluxe", "deluxe_varanda"},
-		{"Suíte Quádruplo Deluxe com varanda e vista mar", "quadruploVista", "deluxe_vista_mar"},
-		{"Suíte Triplo com varanda", "triploVaranda", "varanda"},
-		{"Suíte Quádruplo com varanda", "quadruploVaranda", "varanda"},
-		{"Suíte Duplo interna", "duplo", "interna"},
-		{"Suíte Triplo interna", "triplo", "interna"},
+	var options []option
+	switch occupants := s.Adults + s.Children; occupants {
+	case 1, 2:
+		options = []option{
+			{"Suíte Superluxo com varanda e vista mar", "superluxo", "superluxo"},
+			{"Suíte Duplo interna", "duplo", "interna"},
+		}
+	case 3:
+		options = []option{
+			{"Suíte Triplo Deluxe com varanda", "triploDeluxe", "deluxe_varanda"},
+			{"Suíte Triplo com varanda", "triploVaranda", "varanda"},
+			{"Suíte Triplo interna", "triplo", "interna"},
+		}
+	case 4:
+		options = []option{
+			{"Suíte Quádruplo Deluxe com varanda e vista mar", "quadruploVista", "deluxe_vista_mar"},
+			{"Suíte Quádruplo Deluxe com varanda", "quadruploDeluxe", "deluxe_varanda"},
+			{"Suíte Quádruplo com varanda", "quadruploVaranda", "varanda"},
+		}
+	case 5:
+		options = []option{{"Suíte Família Deluxe com vista mar", "familia", "familia"}}
 	}
 	result := []Category{}
 	for _, o := range options {

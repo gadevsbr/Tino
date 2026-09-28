@@ -169,3 +169,11 @@
 - Evidência: teste ao vivo retornou Superluxo, Triplo Deluxe, Quádruplo Deluxe, Quádruplo Deluxe com vista mar, Triplo com varanda e Quádruplo com varanda; testes determinísticos cobrem a retenção das seis categorias.
 - Evidência de build: `go test -count=1 ./...`, `go vet ./...` e Wails 0.11.3 passaram; SHA-256 do `Tino.exe`: `0F08F931647B4692C88B86737A0FEC73159446B8698E4D2A4CBF7331DC2E83E2`.
 - Evidência de release: commit funcional `f8bed17` enviado à `main`; release `v0.11.3` publicada com a interface e a CLI auxiliar.
+
+## Etapa 19 — Capacidade exata nos orçamentos v0.11.4
+
+- Status: corrigida após esclarecimento da regra comercial.
+- Regra: 1–2 hóspedes veem somente duplos, 3 somente triplos, 4 somente quádruplos e 5 somente família; todas as opções ainda precisam ter preço confirmado na OmniBees.
+- Consulta real de 15/10/2026 a 18/10/2026: 2 pessoas retornaram apenas Superluxo dupla; 3 retornaram dois triplos; 4 retornaram três quádruplos; 5 não tinham preço disponível.
+- Evidência: testes determinísticos cobrem cada capacidade e impedem regressão para quartos maiores.
+- Evidência de build: `go test -count=1 ./...`, `go vet ./...` e Wails 0.11.4 passaram; SHA-256 do `Tino.exe`: `CB8B9407CE06F91293ABD159ED532D4468BA13B550AF6C20B4C6E79CEE65090B`.

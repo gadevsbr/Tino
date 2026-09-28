@@ -92,23 +92,20 @@ func TestExtractAndFormatAllAvailableCategoryNameVariants(t *testing.T) {
 	}
 	s, _ := ParseLink(sampleURL, 0)
 	categories := Categories(s, prices)
-	if len(categories) != 3 {
-		t.Fatalf("esperava 3 categorias, recebeu %d: %#v", len(categories), categories)
+	if len(categories) != 1 || categories[0].Key != "superluxo" || categories[0].TotalCents != 150000 {
+		t.Fatalf("duplo incorreto: %#v", categories)
 	}
-	want := []struct {
-		key   string
-		cents int64
-	}{{"superluxo", 150000}, {"familia", 130000}, {"deluxe_varanda", 105000}}
-	for i, item := range want {
-		if categories[i].Key != item.key || categories[i].TotalCents != item.cents {
-			t.Fatalf("categoria %d = %#v", i, categories[i])
-		}
+	triplo := Categories(Search{Adults: 3}, prices)
+	if len(triplo) != 1 || triplo[0].SourceKey != "triploDeluxe" || triplo[0].TotalCents != 105000 {
+		t.Fatalf("triplo incorreto: %#v", triplo)
+	}
+	familia := Categories(Search{Adults: 5}, prices)
+	if len(familia) != 1 || familia[0].SourceKey != "familia" || familia[0].TotalCents != 130000 {
+		t.Fatalf("família incorreta: %#v", familia)
 	}
 	text := Format(s, prices)
-	for _, name := range []string{"Suíte Superluxo", "Suíte Família Deluxe com vista", "Suíte Triplo Deluxe com varanda"} {
-		if !strings.Contains(text, name) {
-			t.Fatalf("orçamento não contém %q: %s", name, text)
-		}
+	if !strings.Contains(text, "Suíte Superluxo") || strings.Contains(text, "Triplo") || strings.Contains(text, "Família") {
+		t.Fatalf("orçamento duplo misturou capacidades: %s", text)
 	}
 }
 
@@ -123,7 +120,7 @@ func TestCourtesyUsesPhysicalOccupancy(t *testing.T) {
 	}
 }
 
-func TestCategoriesKeepsEveryRoomOfferedByOmniBees(t *testing.T) {
+func TestCategoriesKeepsOnlyExactCapacityOfferedByOmniBees(t *testing.T) {
 	s, err := ParseLink(sampleURL, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -137,19 +134,7 @@ func TestCategoriesKeepsEveryRoomOfferedByOmniBees(t *testing.T) {
 		normalize(roomNames["triploDeluxe"]):     152762,
 	}
 	categories := Categories(s, prices)
-	if len(categories) != 6 {
-		t.Fatalf("esperava todas as 6 categorias oferecidas, recebeu %d: %#v", len(categories), categories)
-	}
-	for _, sourceKey := range []string{"superluxo", "quadruploVaranda", "quadruploDeluxe", "quadruploVista", "triploVaranda", "triploDeluxe"} {
-		found := false
-		for _, category := range categories {
-			if category.SourceKey == sourceKey {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Fatalf("categoria %s foi descartada: %#v", sourceKey, categories)
-		}
+	if len(categories) != 1 || categories[0].SourceKey != "superluxo" {
+		t.Fatalf("orçamento para duas pessoas deve conter somente opções duplas: %#v", categories)
 	}
 }

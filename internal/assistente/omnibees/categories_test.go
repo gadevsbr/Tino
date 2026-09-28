@@ -8,17 +8,21 @@ func TestSemanticCategoriesPreservePhysicalSources(t *testing.T) {
 		prices[normalize(name)] = 10000
 	}
 	for _, tc := range []struct {
-		adults int
-		ages   []int
+		adults      int
+		ages        []int
+		wantSources []string
 	}{
-		{2, nil}, {2, []int{5}}, {2, []int{5, 6}}, {3, []int{5, 6}},
+		{2, nil, []string{"superluxo", "duplo"}},
+		{2, []int{5}, []string{"triploDeluxe", "triploVaranda", "triplo"}},
+		{2, []int{5, 6}, []string{"quadruploVista", "quadruploDeluxe", "quadruploVaranda"}},
+		{3, []int{5, 6}, []string{"familia"}},
 	} {
 		got := Categories(Search{Adults: tc.adults, Children: len(tc.ages), Ages: tc.ages, Discount: 5}, prices)
-		if len(got) != len(roomNames) {
+		if len(got) != len(tc.wantSources) {
 			t.Fatal(got)
 		}
 		for i, c := range got {
-			if c.SourceKey == "" || c.Key == "" || c.TotalCents != 9500 {
+			if c.SourceKey != tc.wantSources[i] || c.Key == "" || c.TotalCents != 9500 {
 				t.Fatalf("category %d: %+v", i, c)
 			}
 		}
@@ -34,7 +38,7 @@ func TestUnavailableCategoryNeverOffered(t *testing.T) {
 	if len(got) != 1 || got[0].Key != "interna" || got[0].TotalCents != 12550 {
 		t.Fatal(got)
 	}
-	if got := Categories(Search{Adults: 4}, prices); len(got) != 1 || got[0].SourceKey != "duplo" {
-		t.Fatal("OmniBees availability was incorrectly filtered")
+	if got := Categories(Search{Adults: 4}, prices); len(got) != 0 {
+		t.Fatal("wrong-capacity room was offered")
 	}
 }
