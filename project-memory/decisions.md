@@ -17,3 +17,4 @@
 - 2026-09-28 — A interface principal passa a usar Wails v2.15 com React, Vite e Lucide, embarcada no executável Windows via WebView2. O motor Go, Whatsmeow e os bancos SQLite permanecem locais.
 - 2026-09-28 — A Central de Recursos persiste feature flags, perfis e uma raiz de arquivos autorizada em `data/capabilities.json`. Módulos desativados são validados no backend; perfis só serão barreira de segurança após autenticação local.
 - 2026-09-28 — As funções do Assistente Paraíso serão migradas como plugins de domínio. Bancos, sessões, `.env`, comprovantes e dados reais não serão copiados; recursos ainda não integrados aparecem como planejados e não podem ser ativados.
+- 2026-09-28 — O contrato React da Central de Recursos usa os nomes JSON `modules`, `roles` e `workspaceRoot`. A normalização fica isolada e testada; falhas de carregamento devem mostrar recuperação visível, nunca uma página branca.

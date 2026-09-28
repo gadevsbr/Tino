@@ -85,3 +85,12 @@
 - Limite: a ferramenta de inspeção visual não expôs a janela nativa nem navegador nesta sessão; falta inspeção automatizada pixel a pixel. Pareamento e operações WhatsApp reais continuam dependentes de conta/dispositivo autorizado.
 - SHA-256 local do `Tino.exe`: `20B1368A1B73EC131EDAC2F4AA5C1B3E4959FFB80800F027B150AA03D968FCA2`.
 - Evidência de release: commit `3bdc89d` enviado à `main`; release `v0.7.0` publicada com a interface moderna e a CLI auxiliar.
+
+## Etapa 11 — Correção da Central de Recursos v0.7.1
+
+- Status: correção e validação local concluídas; publicação pendente.
+- Causa: o React tentou acessar `Modules`, `Roles` e `WorkspaceRoot`, enquanto o binding Wails serializa os campos como `modules`, `roles` e `workspaceRoot`.
+- Correção: contrato normalizado, uso consistente de camelCase e estado de erro recuperável com botão **Tentar novamente**.
+- Inventário: funções do Assistente Paraíso catalogadas em `docs/ASSISTENTE_PARAISO_FUNCTIONS.md` para definição funcional com o usuário.
+- Evidência: dois testes Node do contrato passaram; build Vite passou; o binding Wails confirmou os nomes camelCase; `go test -count=1 ./...` e `go vet ./...` passaram; `Tino.exe` 0.7.1 abriu responsivo com WebView2 ativo.
+- SHA-256 local do `Tino.exe`: `6D8CC2EDD2E477D840809CA6617D1689D8C5E555D836007F0E4E697F14D0810C`.
