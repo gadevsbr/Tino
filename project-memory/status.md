@@ -113,4 +113,5 @@
 - Segurança: preview valida que o arquivo permanece dentro de `data/operations`; intervalo máximo de consulta é 366 dias.
 - Evidência: teste de integração criou caixa, movimentos, comprovante e vale em banco temporário e validou totais, listagem e preview; `go test -count=1 ./...`, `go vet ./...`, testes Node e build Vite passaram; build Wails 0.9.0 passou.
 - SHA-256 local do `Tino.exe`: `B2C1354B55007E7D512EA88761A6909E3C9C13B30380B98E1C3B1BB776A58D3E`.
+- Evidência de release: commit funcional `df6f90d` enviado à `main`; release `v0.9.0` publicada com UI e CLI auxiliar.
 - Limite: a skill de controle do Windows não encontrou superfícies de aplicativos expostas nesta sessão. O processo abriu responsivo com WebView2, mas a inspeção visual automatizada não foi possível.

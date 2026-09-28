@@ -73,7 +73,7 @@ export default function App() {
       <div className="content">
         {page === 'conversations' && <Conversations status={status} qr={qr} busy={busy} connect={connect} reset={reset} refreshStatus={refreshStatus} notify={notify}/>} 
         {page === 'contacts' && <Contacts busy={busy} run={run} notify={notify}/>} 
-        {page === 'operations' && <OperationsPage notify={notify}/>} 
+        {page === 'operations' && <OperationsPage notify={notify}/>}
         {page === 'flow' && <FlowPage busy={busy} run={run} notify={notify}/>} 
         {page === 'capabilities' && <Capabilities notify={notify}/>} 
         {page === 'activity' && <ActivityPage items={activities}/>} 
