@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.7.0
+.\scripts\build.ps1 -Version 0.11.0
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -73,6 +73,10 @@ O núcleo operacional do Assistente já está anexado à mesma sessão WhatsApp 
 Em **Operação financeira**, o dashboard consulta dia, sete dias, mês ou intervalo personalizado. A mesma área salva e compartilha PDFs de quartos, caixa e vales, apresenta os comprovantes originais e lista semanas de extratos e vales por funcionário.
 
 Em **Gestão Assistente**, o operador administra os 42 quartos, histórico e ocupação; liga o atendimento comercial nos modos desativado, teste ou público; consulta e remove vínculos do catálogo; e executa backups verificados com diagnóstico do banco e WhatsApp.
+
+## Importação de caixa por PDF
+
+Na aba **Importar caixa**, vários relatórios diários podem ser selecionados de uma vez. Antes da gravação, o Tino extrai saldo inicial, entradas, saídas e saldo final, confere a equação contábil, bloqueia datas duplicadas e mantém divergências separadas para revisão. Os originais aceitos ficam preservados em `data/operations/caixa-importados/` e são identificados por SHA-256.
 
 ## Evidência de entrega
 

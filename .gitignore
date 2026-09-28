@@ -12,6 +12,7 @@ data/
 # User input and audit exports may contain personal data
 imports/
 exports/
+tmp/
 
 # Build output
 dist/

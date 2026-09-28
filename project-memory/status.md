@@ -129,3 +129,11 @@
 - SHA-256 local do `Tino.exe`: `B5EDDE0E7C1A50A2CCEC4C474F13D4E4F3CD4E60F811EE3F4A2A2CC265F46D9E`.
 - Limite: a configuração comercial, o catálogo e os comandos foram validados em testes locais; mensagens reais, captura de produto e OmniBees exigem conta e provedor externos.
 - Evidência de release: commit funcional `ca783ca` enviado à `main`; release `v0.10.0` publicada com UI e CLI auxiliar.
+
+## Etapa 15 — Importação de caixa por PDF v0.11.0
+
+- Status: implementada, validada e com os dados conciliados de setembro importados localmente; release pendente nesta etapa.
+- Escopo: seleção múltipla, leitura dos dois layouts recebidos, preview de saldo inicial/entradas/saídas/final, validação contábil, deduplicação por SHA-256 e data, armazenamento do original e confirmação pela UI.
+- Importação real: 18 dos 24 relatórios foram gravados em `data/operations/hotel.db`; 6 permaneceram fora do caixa por divergência documental (04, 09, 10, 11, 12 e 13/09/2026).
+- Evidência: a segunda leitura classificou os 18 como `IMPORTED` e manteve os 6 como `REVIEW`; `go test -count=1 ./...`, `go vet ./...`, testes Node e build Vite passaram; o build Wails 0.11.0 gerou `Tino.exe`, que iniciou com processo responsivo.
+- SHA-256 local do `Tino.exe`: `A04C65673751D622FDB9704F3D47699AA1AEB765B15446E45C6D59DA6E60EF4F`.
