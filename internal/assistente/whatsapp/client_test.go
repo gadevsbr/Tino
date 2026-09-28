@@ -6,9 +6,11 @@ import (
 	"github.com/gadevsbr/tino/internal/assistente/config"
 	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
+	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/proto"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCashReceiptImageRequiresCaptionKeyword(t *testing.T) {
@@ -83,5 +85,31 @@ func TestDiagnosticCommandPreview(t *testing.T) {
 func TestCashReportFilenameDate(t *testing.T) {
 	if got := cashReportFilenameDate("2026-09-18"); got != "18-09-2026" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestProcessableMessageAcceptsOperatorCommandInGroup(t *testing.T) {
+	evt := &events.Message{Info: types.MessageInfo{
+		MessageSource: types.MessageSource{
+			Chat:    types.NewJID("120363000000000000", types.GroupServer),
+			Sender:  types.NewJID("5573988333657", types.DefaultUserServer),
+			IsGroup: true,
+		},
+		ID: "group-command-1",
+	}, Message: &waE2E.Message{Conversation: proto.String("menu")}}
+	if !processableMessage(evt) {
+		t.Fatal("group operator command was rejected before authorization")
+	}
+}
+
+func TestCashReportRangeDefaultsToCurrentMonth(t *testing.T) {
+	now := time.Date(2026, 9, 28, 14, 0, 0, 0, time.FixedZone("BRT", -3*60*60))
+	from, until := cashReportRange("", "", now)
+	if from != "2026-09-01" || until != "2026-09-28" {
+		t.Fatalf("range=%s..%s", from, until)
+	}
+	from, until = cashReportRange("2026-09-18", "", now)
+	if from != "2026-09-18" || until != "2026-09-18" {
+		t.Fatalf("explicit range=%s..%s", from, until)
 	}
 }

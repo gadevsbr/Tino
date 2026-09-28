@@ -89,11 +89,12 @@ func (s *Service) wasSent(ctx context.Context, id string) bool {
 	return err != nil || n > 0
 }
 
-func privateMessage(evt *events.Message) bool {
-	if evt == nil || evt.Message == nil || evt.Info.ID == "" || evt.Info.IsGroup {
+func processableMessage(evt *events.Message) bool {
+	if evt == nil || evt.Message == nil || evt.Info.ID == "" {
 		return false
 	}
-	if !individualJID(evt.Info.Chat) || !individualJID(evt.Info.Sender) {
+	validChat := individualJID(evt.Info.Chat) || (evt.Info.IsGroup && evt.Info.Chat.User != "" && evt.Info.Chat.Server == types.GroupServer)
+	if !validChat || !individualJID(evt.Info.Sender) {
 		return false
 	}
 	m := evt.Message

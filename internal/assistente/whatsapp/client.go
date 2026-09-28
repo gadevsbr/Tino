@@ -309,7 +309,7 @@ func (s *Service) onEvent(raw any) {
 		slog.Warn("whatsapp disconnected")
 	}
 	evt, ok := raw.(*events.Message)
-	if !ok || !privateMessage(evt) {
+	if !ok || !processableMessage(evt) {
 		return
 	}
 	selfChat := isSelfChat(s.client.Store.ID, s.client.Store.LID, evt.Info.Chat, evt.Info.IsFromMe)
@@ -317,7 +317,9 @@ func (s *Service) onEvent(raw any) {
 		if s.wasSent(context.Background(), string(evt.Info.ID)) {
 			return
 		}
-		if !selfChat {
+		// Commands typed by the account owner in a group are valid operator
+		// commands. Outbound messages to another private chat remain ignored.
+		if !selfChat && !evt.Info.IsGroup {
 			return
 		}
 	}
@@ -330,7 +332,12 @@ func (s *Service) onEvent(raw any) {
 	if text == "" && evt.Message.GetExtendedTextMessage() != nil {
 		text = evt.Message.GetExtendedTextMessage().GetText()
 	}
-	operator := selfChat || (sender != "" && s.auth.Allowed(sender))
+	operator := evt.Info.IsFromMe || selfChat || (sender != "" && s.auth.Allowed(sender))
+	// Group conversations never enter the public guest flow. Only the account
+	// owner or an explicitly authorized operator can trigger commands there.
+	if evt.Info.IsGroup && !operator {
+		return
+	}
 	document := evt.Message.GetDocumentMessage()
 	imageMessage := evt.Message.GetImageMessage()
 	product := evt.Message.GetProductMessage()
@@ -444,6 +451,13 @@ func (s *Service) onEvent(raw any) {
 			if err := s.sendReport(ctx, evt.Info.Chat); err != nil {
 				slog.Error("send report", "error", err)
 				_, _ = s.sendMessage(ctx, evt.Info.Chat, &waE2E.Message{Conversation: proto.String("❌ Não foi possível gerar o relatório.")})
+				return
+			}
+			// The generic request is intentionally complete: send the room report
+			// and the current month's imported cash report when it exists.
+			if err := s.sendCashReport(ctx, evt.Info.Chat); err != nil {
+				slog.Error("send cash report", "error", err)
+				_, _ = s.sendMessage(ctx, evt.Info.Chat, &waE2E.Message{Conversation: proto.String("❌ O relatório de quartos foi enviado, mas não consegui gerar o relatório de caixa.")})
 			}
 			return
 		}
@@ -648,12 +662,7 @@ func (s *Service) sendCashReport(ctx context.Context, to types.JID) error {
 }
 
 func (s *Service) sendCashReportFor(ctx context.Context, to types.JID, from, until string) error {
-	if from == "" {
-		from = time.Now().In(s.cfg.Timezone).Format("2006-01-02")
-	}
-	if until == "" {
-		until = from
-	}
+	from, until = cashReportRange(from, until, time.Now().In(s.cfg.Timezone))
 	days, err := s.cash.Range(ctx, from, until)
 	if err != nil {
 		return err
@@ -678,9 +687,27 @@ func (s *Service) sendCashReportFor(ctx context.Context, to types.JID, from, unt
 	if len(days) > 1 {
 		pages++
 	}
-	doc := &waE2E.DocumentMessage{URL: &up.URL, DirectPath: &up.DirectPath, MediaKey: up.MediaKey, FileEncSHA256: up.FileEncSHA256, FileSHA256: up.FileSHA256, FileLength: &up.FileLength, Mimetype: proto.String("application/pdf"), FileName: &name, Title: &name, PageCount: &pages, Caption: proto.String("💰 Relatório diário do caixa.")}
+	caption := "💰 Relatório diário do caixa."
+	if until != from {
+		caption = "💰 Relatório de caixa do período."
+	}
+	doc := &waE2E.DocumentMessage{URL: &up.URL, DirectPath: &up.DirectPath, MediaKey: up.MediaKey, FileEncSHA256: up.FileEncSHA256, FileSHA256: up.FileSHA256, FileLength: &up.FileLength, Mimetype: proto.String("application/pdf"), FileName: &name, Title: &name, PageCount: &pages, Caption: proto.String(caption)}
 	_, err = s.sendMessage(ctx, to, &waE2E.Message{DocumentMessage: doc})
 	return err
+}
+
+func cashReportRange(from, until string, now time.Time) (string, string) {
+	if from == "" {
+		// A request without dates means the current month, matching the financial
+		// dashboard and including PDFs imported earlier in the month.
+		from = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
+		until = now.Format("2006-01-02")
+		return from, until
+	}
+	if until == "" {
+		until = from
+	}
+	return from, until
 }
 
 func cashReportFilenameDate(value string) string {

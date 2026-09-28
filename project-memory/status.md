@@ -148,3 +148,13 @@
 - Evidência: testes direcionados, `go test -count=1 ./...`, `go vet ./...`, testes Node e build Vite passaram; uma consulta real da OmniBees retornou cinco categorias para ocupação dupla e três para ocupação quádrupla; o build Wails 0.11.1 gerou `Tino.exe`, que iniciou responsivo.
 - SHA-256 local do `Tino.exe`: `88CE704875611EA10B0EB6662477C5F54AEF93A2415E11D5BE669207779A3130`.
 - Evidência de release: commit funcional `482b844` enviado à `main`; release `v0.11.1` publicada com a interface e a CLI auxiliar.
+
+## Etapa 17 — Comandos em grupos e relatório mensal de caixa v0.11.2
+
+- Status: implementada e validada localmente; entrega real das mensagens ainda depende do WhatsApp conectado.
+- Bot: comandos enviados pelo titular da conta em grupos deixam de ser descartados; em grupos, terceiros continuam bloqueados salvo operadores explicitamente autorizados.
+- Caixa: `relatorio caixa em pdf` sem data agora abrange o mês corrente até hoje, incluindo os caixas importados. Datas explícitas continuam gerando um dia ou intervalo específico.
+- Relatório genérico: `relatorio em pdf` envia quartos e, em seguida, o caixa do mês corrente.
+- Evidência: testes direcionados de filtro de grupo e intervalo mensal passaram; `go test -count=1 ./...`, `go vet ./...` e build Wails 0.11.2 passaram.
+- SHA-256 local do `Tino.exe`: `14C0DD540C5CB462A894ED38D277A1933DA56D0C199581EBF2E316D98B44FA97`.
+- Limite: falta confirmar recebimento em conversa/grupo reais após a reabertura do executável.

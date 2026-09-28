@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.11.1
+.\scripts\build.ps1 -Version 0.11.2
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -60,7 +60,7 @@ Quando o CSV não contém `message`/`mensagem`, a mensagem é preenchida na pró
 
 Na aba **Flow Builder**, use **Nova regra** para definir a condição e a resposta sem editar arquivos. As regras podem ser editadas, excluídas e movidas para cima ou para baixo; a primeira correspondência vence. O simulador mostra a resposta antes da ativação. A resposta padrão é usada quando nenhuma regra combina.
 
-O fluxo continua persistido em YAML para portabilidade e backup, mas o arquivo não precisa ser manipulado manualmente. Apenas conversas individuais recebidas são respondidas; grupos e mensagens do próprio usuário são ignorados.
+O fluxo continua persistido em YAML para portabilidade e backup, mas o arquivo não precisa ser manipulado manualmente. O atendimento automático de hóspedes permanece restrito a conversas individuais. Em grupos, somente comandos enviados pelo titular da conta ou por operadores autorizados são processados.
 
 ## Central de recursos
 
