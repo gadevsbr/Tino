@@ -69,7 +69,7 @@ func TestExtractAndFormat(t *testing.T) {
 	}
 	s, _ := ParseLink(sampleURL, 5)
 	text := Format(s, prices)
-	for _, want := range []string{"19/09/2026 a 20/09/2026", "Duplo", "Suíte interna", "R$ 1172,83"} {
+	for _, want := range []string{"19/09/2026 a 20/09/2026", "Duplo", "Suíte Duplo interna", "R$ 1172,83"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in %s", want, text)
 		}
@@ -98,14 +98,14 @@ func TestExtractAndFormatAllAvailableCategoryNameVariants(t *testing.T) {
 	want := []struct {
 		key   string
 		cents int64
-	}{{"superluxo", 150000}, {"deluxe_vista_mar", 130000}, {"deluxe_varanda", 105000}}
+	}{{"superluxo", 150000}, {"familia", 130000}, {"deluxe_varanda", 105000}}
 	for i, item := range want {
 		if categories[i].Key != item.key || categories[i].TotalCents != item.cents {
 			t.Fatalf("categoria %d = %#v", i, categories[i])
 		}
 	}
 	text := Format(s, prices)
-	for _, name := range []string{"Suíte Superluxo", "Suíte Deluxe com vista", "Suíte Deluxe com varanda"} {
+	for _, name := range []string{"Suíte Superluxo", "Suíte Família Deluxe com vista", "Suíte Triplo Deluxe com varanda"} {
 		if !strings.Contains(text, name) {
 			t.Fatalf("orçamento não contém %q: %s", name, text)
 		}
@@ -118,7 +118,38 @@ func TestCourtesyUsesPhysicalOccupancy(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := Format(s, map[string]int64{normalize(roomNames["quadruploVista"]): 90000})
-	if !strings.Contains(text, "Triplo + 01 cortesia infantil") || !strings.Contains(text, "Suíte Deluxe com vista para o mar") {
+	if !strings.Contains(text, "Triplo + 01 cortesia infantil") || !strings.Contains(text, "Suíte Quádruplo Deluxe com varanda e vista mar") {
 		t.Fatal(text)
+	}
+}
+
+func TestCategoriesKeepsEveryRoomOfferedByOmniBees(t *testing.T) {
+	s, err := ParseLink(sampleURL, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prices := map[string]int64{
+		normalize(roomNames["superluxo"]):        223554,
+		normalize(roomNames["quadruploVaranda"]): 130406,
+		normalize(roomNames["quadruploDeluxe"]):  158351,
+		normalize(roomNames["quadruploVista"]):   180708,
+		normalize(roomNames["triploVaranda"]):    124818,
+		normalize(roomNames["triploDeluxe"]):     152762,
+	}
+	categories := Categories(s, prices)
+	if len(categories) != 6 {
+		t.Fatalf("esperava todas as 6 categorias oferecidas, recebeu %d: %#v", len(categories), categories)
+	}
+	for _, sourceKey := range []string{"superluxo", "quadruploVaranda", "quadruploDeluxe", "quadruploVista", "triploVaranda", "triploDeluxe"} {
+		found := false
+		for _, category := range categories {
+			if category.SourceKey == sourceKey {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("categoria %s foi descartada: %#v", sourceKey, categories)
+		}
 	}
 }

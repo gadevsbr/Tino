@@ -159,3 +159,12 @@
 - SHA-256 local do `Tino.exe`: `14C0DD540C5CB462A894ED38D277A1933DA56D0C199581EBF2E316D98B44FA97`.
 - Evidência de release: commit funcional `75202b3` enviado à `main`; release `v0.11.2` publicada com a interface e a CLI auxiliar.
 - Limite: falta confirmar recebimento em conversa/grupo reais após a reabertura do executável.
+
+## Etapa 18 — Paridade de categorias OmniBees v0.11.3
+
+- Status: corrigida e validada contra consulta real da OmniBees.
+- Consulta: 15/10/2026 a 18/10/2026, um quarto, dois adultos e nenhuma criança.
+- Causa: o Tino aplicava um filtro local por capacidade e escondia quartos maiores que a OmniBees oferecia para a mesma ocupação.
+- Resultado: as seis acomodações confirmadas na resposta real agora aparecem no orçamento, com identidade física e preço preservados.
+- Evidência: teste ao vivo retornou Superluxo, Triplo Deluxe, Quádruplo Deluxe, Quádruplo Deluxe com vista mar, Triplo com varanda e Quádruplo com varanda; testes determinísticos cobrem a retenção das seis categorias.
+- Evidência de build: `go test -count=1 ./...`, `go vet ./...` e Wails 0.11.3 passaram; SHA-256 do `Tino.exe`: `0F08F931647B4692C88B86737A0FEC73159446B8698E4D2A4CBF7331DC2E83E2`.

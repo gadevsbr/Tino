@@ -30,3 +30,5 @@
 - 2026-09-28 — A identificação de categorias OmniBees tolera variações semânticas de nomes (`Quarto`/`Suíte`, `Super Luxo`/`Superluxo`, conectores e vista para o mar), mantendo preços e categorias estruturados e sem inferência a partir do texto final.
 - 2026-09-28 — Superseded: ignorar toda mensagem de grupo impedia o titular e operadores autorizados de administrar o bot no destino em que os relatórios são usados.
 - 2026-09-28 — Grupos aceitam somente comandos do titular da conta ou de operadores autorizados; o atendimento automático de hóspedes não roda em grupos. `relatorio caixa em pdf` sem data representa o mês corrente até hoje, alinhado ao dashboard financeiro.
+- 2026-09-28 — Superseded: filtrar categorias OmniBees por uma capacidade presumida localmente descartava acomodações maiores que o motor de reservas oferecia legitimamente para menos hóspedes.
+- 2026-09-28 — A resposta real da OmniBees é a fonte de disponibilidade: toda categoria visível com total confirmado entra no orçamento, preservando a acomodação física e o menor total quando houver tarifas repetidas.

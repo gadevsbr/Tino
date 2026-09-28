@@ -327,35 +327,30 @@ type Result struct {
 	Categories []Category
 }
 
-// Categories uses physical occupancy even when a child receives a courtesy.
+// Categories trusts the availability returned by OmniBees. A room with more
+// beds can legitimately be sold to fewer guests, so local occupancy heuristics
+// must not hide a category that the booking engine offered for this search.
 func Categories(s Search, prices map[string]int64) []Category {
-	occupants := s.Adults + s.Children
-	type option struct{ name, key string }
-	options := []option{}
-	switch {
-	case occupants >= 5:
-		options = []option{{roomNames["familia"], "familia"}}
-	case occupants == 4:
-		options = []option{{"Suíte Deluxe com vista para o mar", "quadruploVista"}, {"Suíte Deluxe com varanda", "quadruploDeluxe"}, {"Suíte com varanda", "quadruploVaranda"}}
-	default:
-		internal := "duplo"
-		if occupants >= 3 {
-			internal = "triplo"
-		}
-		options = []option{{"Suíte Superluxo com varanda e vista mar", "superluxo"}, {"Suíte Deluxe com vista para o mar", "familia"}, {"Suíte Deluxe com varanda", "triploDeluxe"}, {"Suíte com varanda", "triploVaranda"}, {"Suíte interna", internal}}
+	type option struct{ name, sourceKey, catalogKey string }
+	options := []option{
+		{"Suíte Superluxo com varanda e vista mar", "superluxo", "superluxo"},
+		{"Suíte Família Deluxe com vista mar", "familia", "familia"},
+		{"Suíte Triplo Deluxe com varanda", "triploDeluxe", "deluxe_varanda"},
+		{"Suíte Quádruplo Deluxe com varanda", "quadruploDeluxe", "deluxe_varanda"},
+		{"Suíte Quádruplo Deluxe com varanda e vista mar", "quadruploVista", "deluxe_vista_mar"},
+		{"Suíte Triplo com varanda", "triploVaranda", "varanda"},
+		{"Suíte Quádruplo com varanda", "quadruploVaranda", "varanda"},
+		{"Suíte Duplo interna", "duplo", "interna"},
+		{"Suíte Triplo interna", "triplo", "interna"},
 	}
 	result := []Category{}
 	for _, o := range options {
-		cents, ok := roomPrice(prices, o.key)
+		cents, ok := roomPrice(prices, o.sourceKey)
 		if !ok || cents <= 0 {
 			continue
 		}
 		cents = (cents*int64(100-s.Discount) + 50) / 100
-		key := map[string]string{"superluxo": "superluxo", "familia": "deluxe_vista_mar", "quadruploVista": "deluxe_vista_mar", "triploDeluxe": "deluxe_varanda", "quadruploDeluxe": "deluxe_varanda", "triploVaranda": "varanda", "quadruploVaranda": "varanda", "duplo": "interna", "triplo": "interna"}[o.key]
-		if occupants >= 5 {
-			key = "familia"
-		}
-		result = append(result, Category{Key: key, SourceKey: o.key, Name: o.name, TotalCents: cents})
+		result = append(result, Category{Key: o.catalogKey, SourceKey: o.sourceKey, Name: o.name, TotalCents: cents})
 	}
 	return result
 }
