@@ -10,3 +10,4 @@
 - 2026-09-27 — Superseded: selecionar um YAML não constitui um flow builder visual.
 - 2026-09-27 — O Flow Builder passa a ser operado inteiramente pela UI: regras ordenadas, formulário de condição/resposta, prioridade, resposta padrão, simulação, importação e salvamento. YAML permanece apenas como formato interno portátil.
 - 2026-09-27 — O importador aceita CSV telefônico simples (`telefone` e aliases), BOM UTF-8 e delimitadores comuns. A ausência de mensagem é resolvida por um campo na UI; a ausência de consentimento nunca é inferida e exige confirmação explícita antes do envio.
+- 2026-09-27 — A home usa o QR apenas durante o pareamento; depois da autenticação, o mesmo espaço mostra conversas e histórico. Mensagens novas e blocos de HistorySync são persistidos em SQLite local, sem prometer recuperação integral do histórico antigo controlado pelo WhatsApp.

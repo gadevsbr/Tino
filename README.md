@@ -1,6 +1,6 @@
 # Tino
 
-Aplicação desktop Windows com interface gráfica nativa que mantém uma sessão WhatsApp Multi-Device com `whatsmeow`, audita contatos/grupos, processa notificações consentidas e responde mensagens por regras declarativas. Uma CLI auxiliar também acompanha o projeto.
+Aplicação desktop Windows com interface gráfica nativa que mantém uma sessão WhatsApp Multi-Device com `whatsmeow`, apresenta conversas e histórico local, audita contatos/grupos, processa notificações consentidas e responde mensagens por regras declarativas. Uma CLI auxiliar também acompanha o projeto.
 
 A interface utiliza identidade visual própria, navegação por áreas, hierarquia tipográfica Segoe UI, estados operacionais visíveis e ícone incorporado ao executável.
 
@@ -22,6 +22,7 @@ cmd/tino/           CLI auxiliar
 internal/session/   sessão SQLite, reconexão e QR
 internal/audit/     coleta e exportação JSON/CSV
 internal/batch/     leitura CSV, limites e envio sequencial
+internal/chat/      histórico local e consultas de conversas
 internal/flow/      roteamento de mensagens por templates
 config/             configuração e regras de exemplo
 scripts/            build reproduzível do executável
@@ -32,7 +33,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.5.0
+.\scripts\build.ps1 -Version 0.6.0
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -40,7 +41,9 @@ go test ./...
 .\dist\tino-cli-windows-amd64.exe status
 ```
 
-No aplicativo desktop, o QR aparece dentro da janela. A sessão fica em `data/sessions/<profile>.db`, excluída do Git. Exportações com dados pessoais ficam em `exports/`, também excluídas.
+No aplicativo desktop, o QR aparece na home somente durante o pareamento. Após autenticar, a mesma área exibe a lista de chats, pesquisa, histórico e resposta manual. A sessão e o histórico ficam em `data/`, excluídos do Git. Exportações com dados pessoais ficam em `exports/`, também excluídas.
+
+O Tino armazena as novas mensagens localmente e importa os blocos de histórico recebidos durante a sincronização. A quantidade de mensagens antigas disponibilizada é controlada pelo WhatsApp; portanto, o aplicativo não garante recuperar todo o passado existente no celular.
 
 ## CSV de notificações
 

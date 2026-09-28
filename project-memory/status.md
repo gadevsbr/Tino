@@ -54,3 +54,12 @@
 - Evidência: testes específicos do layout de uma coluna e de aliases com ponto e vírgula passaram; suíte completa e `go vet` passaram; UI `0.5.0` abriu responsiva sem erro de inicialização.
 - SHA-256 local: `38ABE265FE5039804A12E9D01CE30738E2AA75A4EF65395F966F1813F7A133FD`.
 - Evidência de release: commit `1654331` enviado à `main`; release `v0.5.0` publicada com UI e CLI auxiliar.
+
+## Etapa 8 — Conversas na home v0.6.0
+
+- Status: concluído localmente; publicação em andamento.
+- Escopo: QR condicional, lista pesquisável de chats, histórico persistente, novas mensagens, não lidas, importação HistorySync e resposta manual.
+- Persistência: `data/chats-<profile>.db`, ignorado pelo Git.
+- Evidência: testes do armazenamento SQLite passaram; suíte completa e `go vet` passaram; UI `0.6.0` abriu responsiva sem erro de inicialização.
+- Limite: volume do histórico antigo depende dos blocos enviados pelo WhatsApp; pareamento e sincronização reais ainda exigem conta/dispositivo autorizado.
+- SHA-256 local: `0430742955D161C5D25E64733B164C0C8E7ABB7BC8C2EC5B8A7A9FE39A5F3F5D`.

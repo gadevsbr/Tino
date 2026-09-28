@@ -15,6 +15,7 @@ import (
 
 	"github.com/gadevsbr/tino/internal/audit"
 	"github.com/gadevsbr/tino/internal/batch"
+	"github.com/gadevsbr/tino/internal/chat"
 	"github.com/gadevsbr/tino/internal/config"
 	"github.com/gadevsbr/tino/internal/flow"
 	"github.com/gadevsbr/tino/internal/session"
@@ -36,6 +37,15 @@ type application struct {
 	status          *walk.Label
 	log             *walk.TextEdit
 	qr              *walk.ImageView
+	qrHome          *walk.Composite
+	chatHome        *walk.Composite
+	chatSearch      *walk.LineEdit
+	chatList        *walk.ListBox
+	chatHistory     *walk.TextEdit
+	chatCompose     *walk.TextEdit
+	chatTitle       *walk.Label
+	chatModel       *chatListModel
+	chatStore       *chat.Store
 	csvPath         *walk.LineEdit
 	csvSummary      *walk.Label
 	campaignMessage *walk.TextEdit
@@ -90,6 +100,14 @@ func main() {
 		return
 	}
 	defer app.mgr.Close()
+	app.chatStore, err = chat.Open(filepath.Join(cfg.DataDir, "chats-"+cfg.Profile+".db"))
+	if err != nil {
+		writeStartupError(err)
+		walk.MsgBox(nil, "Tino", "Não foi possível abrir o histórico local: "+err.Error(), walk.MsgBoxIconError)
+		return
+	}
+	defer app.chatStore.Close()
+	app.chatModel = &chatListModel{}
 	app.flowDef, err = flow.LoadDefinition(app.cfg.Flow.RulesFile)
 	if err != nil {
 		writeStartupError(err)
@@ -102,6 +120,7 @@ func main() {
 		walk.MsgBox(nil, "Tino", err.Error(), walk.MsgBoxIconError)
 		return
 	}
+	app.mgr.Client.AddEventHandler(app.handleChatEvent)
 	app.refreshStatus()
 	app.mw.Run()
 }
@@ -163,21 +182,37 @@ func (a *application) createWindow() error {
 			}},
 			Composite{Background: pageBrush, Layout: VBox{Margins: Margins{Left: 20, Top: 18, Right: 20, Bottom: 14}, Spacing: 10}, Children: []Widget{
 				TabWidget{ContentMargins: Margins{Left: 18, Top: 18, Right: 18, Bottom: 18}, Pages: []TabPage{
-					{Title: "  Conexão  ", Background: cardBrush, Layout: HBox{Spacing: 22}, Children: []Widget{
-						Composite{Background: cardBrush, MinSize: Size{Width: 390}, Layout: VBox{MarginsZero: true, Spacing: 12}, Children: []Widget{
-							Label{Text: "Conecte sua conta", TextColor: ink, Font: Font{PointSize: 16, Bold: true}},
-							Label{Text: "A sessão é criptografada e permanece salva neste computador.", TextColor: muted, Font: Font{PointSize: 9}},
-							VSpacer{},
-							PushButton{AssignTo: &a.connectBtn, Text: "  Conectar e exibir QR Code  ", MinSize: Size{Height: 42}, Font: Font{Bold: true}, Background: accentBrush, OnClicked: a.connect},
-							PushButton{Text: "Atualizar estado da sessão", MinSize: Size{Height: 34}, OnClicked: a.refreshStatus},
-							VSpacer{},
-							Label{Text: "Como conectar", TextColor: ink, Font: Font{Bold: true}},
-							Label{Text: "1. Clique em conectar\r\n2. Abra o WhatsApp no celular\r\n3. Vá em Dispositivos conectados\r\n4. Escaneie o QR Code ao lado", TextColor: muted},
+					{Title: "  Conversas  ", Background: cardBrush, Layout: VBox{MarginsZero: true}, Children: []Widget{
+						Composite{AssignTo: &a.qrHome, Background: cardBrush, Layout: HBox{Spacing: 22}, Children: []Widget{
+							Composite{Background: cardBrush, MinSize: Size{Width: 390}, Layout: VBox{MarginsZero: true, Spacing: 12}, Children: []Widget{
+								Label{Text: "Conecte sua conta", TextColor: ink, Font: Font{PointSize: 16, Bold: true}},
+								Label{Text: "Depois da conexão, seus chats aparecerão aqui automaticamente.", TextColor: muted, Font: Font{PointSize: 9}},
+								VSpacer{}, PushButton{AssignTo: &a.connectBtn, Text: "Conectar e exibir QR Code", MinSize: Size{Height: 42}, Font: Font{Bold: true}, Background: accentBrush, OnClicked: a.connect},
+								PushButton{Text: "Atualizar estado da sessão", MinSize: Size{Height: 34}, OnClicked: a.refreshStatus}, VSpacer{},
+								Label{Text: "Como conectar", TextColor: ink, Font: Font{Bold: true}},
+								Label{Text: "1. Clique em conectar\r\n2. Abra o WhatsApp no celular\r\n3. Vá em Dispositivos conectados\r\n4. Escaneie o QR Code ao lado", TextColor: muted},
+							}},
+							Composite{Background: SolidColorBrush{Color: walk.Color(0x00FCFBF9)}, Border: true, Layout: VBox{Margins: Margins{Left: 18, Top: 18, Right: 18, Bottom: 18}, Spacing: 8}, Children: []Widget{
+								Label{Text: "QR CODE DE PAREAMENTO", TextColor: muted, Font: Font{PointSize: 8, Bold: true}, TextAlignment: AlignCenter},
+								ImageView{AssignTo: &a.qr, MinSize: Size{Width: 360, Height: 360}, Mode: ImageViewModeShrink, Background: cardBrush},
+								Label{Text: "O código é renovado automaticamente quando expira.", TextColor: muted, Font: Font{PointSize: 8}, TextAlignment: AlignCenter},
+							}},
 						}},
-						Composite{Background: SolidColorBrush{Color: walk.Color(0x00FCFBF9)}, Border: true, Layout: VBox{Margins: Margins{Left: 18, Top: 18, Right: 18, Bottom: 18}, Spacing: 8}, Children: []Widget{
-							Label{Text: "QR CODE DE PAREAMENTO", TextColor: muted, Font: Font{PointSize: 8, Bold: true}, TextAlignment: AlignCenter},
-							ImageView{AssignTo: &a.qr, MinSize: Size{Width: 360, Height: 360}, Mode: ImageViewModeShrink, Background: cardBrush},
-							Label{Text: "O código é renovado automaticamente quando expira.", TextColor: muted, Font: Font{PointSize: 8}, TextAlignment: AlignCenter},
+						Composite{AssignTo: &a.chatHome, Visible: false, Background: cardBrush, Layout: VBox{MarginsZero: true, Spacing: 8}, Children: []Widget{
+							Composite{Layout: HBox{MarginsZero: true}, Children: []Widget{
+								Label{Text: "Conversas", TextColor: ink, Font: Font{PointSize: 16, Bold: true}}, PushButton{Text: "Conectar / atualizar", OnClicked: a.connect}, HSpacer{},
+								LineEdit{AssignTo: &a.chatSearch, CueBanner: "Buscar conversa...", MinSize: Size{Width: 260}, OnTextChanged: a.refreshChats},
+							}},
+							HSplitter{Children: []Widget{
+								ListBox{AssignTo: &a.chatList, Model: a.chatModel, MinSize: Size{Width: 300}, OnCurrentIndexChanged: a.openSelectedChat},
+								Composite{Layout: VBox{MarginsZero: true, Spacing: 8}, Children: []Widget{
+									Label{AssignTo: &a.chatTitle, Text: "Selecione uma conversa", TextColor: ink, Font: Font{PointSize: 13, Bold: true}},
+									TextEdit{AssignTo: &a.chatHistory, ReadOnly: true, VScroll: true, Font: Font{Family: "Segoe UI", PointSize: 10}},
+									Composite{Layout: HBox{MarginsZero: true, Spacing: 8}, Children: []Widget{
+										TextEdit{AssignTo: &a.chatCompose, MinSize: Size{Height: 55}}, PushButton{Text: "Enviar", MinSize: Size{Width: 110, Height: 44}, Font: Font{Bold: true}, Background: accentBrush, OnClicked: a.sendChatMessage},
+									}},
+								}},
+							}},
 						}},
 					}},
 					{Title: "  Base e notificações  ", Background: cardBrush, Layout: VBox{Spacing: 16}, Children: []Widget{
@@ -282,6 +317,14 @@ func (a *application) refreshStatus() {
 		a.status.SetTextColor(walk.RGB(255, 255, 255))
 	}
 	a.status.SetText(text + " • perfil " + a.cfg.Profile)
+	if a.qrHome != nil && a.chatHome != nil {
+		showChats := auth
+		a.qrHome.SetVisible(!showChats)
+		a.chatHome.SetVisible(showChats)
+		if showChats {
+			a.refreshChats()
+		}
+	}
 }
 
 func (a *application) ensureConnected() error {
