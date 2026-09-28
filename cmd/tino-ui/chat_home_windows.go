@@ -46,6 +46,18 @@ func (a *application) handleChatEvent(raw any) {
 		a.ui(func() { a.refreshChats(); a.refreshOpenChat(evt.Info.Chat.String()) })
 	case *events.HistorySync:
 		go a.importHistory(evt)
+	case *events.Connected:
+		a.appendLog("WhatsApp autenticado e conectado.")
+		a.ui(a.refreshStatus)
+	case *events.Disconnected:
+		a.appendLog("Conexão com o WhatsApp interrompida.")
+		a.ui(a.refreshStatus)
+	case *events.LoggedOut:
+		a.appendLog("Esta sessão foi desconectada do WhatsApp. Gere um novo QR Code.")
+		a.ui(a.refreshStatus)
+	case *events.ConnectFailure:
+		a.appendLog("O WhatsApp recusou a autenticação da sessão.")
+		a.ui(a.refreshStatus)
 	}
 }
 
@@ -162,6 +174,11 @@ func (a *application) sendChatMessage() {
 	}
 	a.chatCompose.SetEnabled(false)
 	go func() {
+		if err := a.ensureConnected(); err != nil {
+			a.appendLog("Falha ao enviar resposta: " + err.Error())
+			a.ui(func() { a.chatCompose.SetEnabled(true) })
+			return
+		}
 		resp, sendErr := a.mgr.Client.SendMessage(a.ctx, jid, &waE2E.Message{Conversation: proto.String(text)})
 		if sendErr != nil {
 			a.appendLog("Falha ao enviar resposta: " + sendErr.Error())

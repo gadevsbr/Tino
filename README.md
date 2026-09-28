@@ -33,7 +33,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.6.0
+.\scripts\build.ps1 -Version 0.6.1
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -42,6 +42,8 @@ go test ./...
 ```
 
 No aplicativo desktop, o QR aparece na home somente durante o pareamento. Após autenticar, a mesma área exibe a lista de chats, pesquisa, histórico e resposta manual. A sessão e o histórico ficam em `data/`, excluídos do Git. Exportações com dados pessoais ficam em `exports/`, também excluídas.
+
+O estado **conectada e autenticada** somente é exibido depois que o WhatsApp confirma a autenticação da sessão. Se o aparelho não listar o Tino em **Dispositivos conectados**, use **Gerar novo QR Code** (ou **Trocar conta**) para remover apenas as credenciais locais e fazer um novo pareamento; o histórico local é preservado.
 
 O Tino armazena as novas mensagens localmente e importa os blocos de histórico recebidos durante a sincronização. A quantidade de mensagens antigas disponibilizada é controlada pelo WhatsApp; portanto, o aplicativo não garante recuperar todo o passado existente no celular.
 

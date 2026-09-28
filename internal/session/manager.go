@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/skip2/go-qrcode"
 	"go.mau.fi/whatsmeow"
@@ -20,6 +21,7 @@ import (
 type Manager struct {
 	Client *whatsmeow.Client
 	store  *sqlstore.Container
+	logger waLog.Logger
 	once   sync.Once
 }
 
@@ -52,9 +54,10 @@ func Open(ctx context.Context, dataDir, profile string, debug bool) (*Manager, e
 	if debug {
 		level = "DEBUG"
 	}
-	client := whatsmeow.NewClient(device, waLog.Stdout("WhatsApp", level, true))
+	logger := waLog.Stdout("WhatsApp", level, true)
+	client := whatsmeow.NewClient(device, logger)
 	client.EnableAutoReconnect = true
-	return &Manager{Client: client, store: container}, nil
+	return &Manager{Client: client, store: container, logger: logger}, nil
 }
 
 func (m *Manager) Connect(ctx context.Context, showQR bool) error {
@@ -69,8 +72,17 @@ func (m *Manager) Connect(ctx context.Context, showQR bool) error {
 // render it without duplicating session logic.
 func (m *Manager) ConnectWithQR(ctx context.Context, showQR bool, onQR func(string) error) error {
 	if m.Client.Store.ID != nil {
-		if err := m.Client.Connect(); err != nil {
-			return fmt.Errorf("conectar sessão persistida: %w", err)
+		if m.Client.IsLoggedIn() {
+			return nil
+		}
+		if !m.Client.IsConnected() {
+			if err := m.Client.Connect(); err != nil {
+				return fmt.Errorf("conectar sessão persistida: %w", err)
+			}
+		}
+		if !m.Client.WaitForConnection(20 * time.Second) {
+			m.Client.Disconnect()
+			return errors.New("a sessão salva não foi autenticada; o vínculo pode ter sido removido no celular. Use 'Gerar novo QR Code' para conectar novamente")
 		}
 		return nil
 	}
@@ -100,6 +112,9 @@ func (m *Manager) ConnectWithQR(ctx context.Context, showQR bool, onQR func(stri
 					}
 				}
 			case "success":
+				if !m.Client.WaitForConnection(20 * time.Second) {
+					return errors.New("o QR foi aceito, mas a sessão não concluiu a autenticação")
+				}
 				return nil
 			case "timeout":
 				return errors.New("QR expirou; execute login novamente")
@@ -110,6 +125,22 @@ func (m *Manager) ConnectWithQR(ctx context.Context, showQR bool, onQR func(stri
 			}
 		}
 	}
+}
+
+// ResetLocalSession removes only the local WhatsApp credentials and prepares a
+// fresh client for a new QR pairing. Application data such as chat history is
+// intentionally preserved.
+func (m *Manager) ResetLocalSession(ctx context.Context) error {
+	m.Client.Disconnect()
+	if m.Client.Store.ID != nil {
+		if err := m.Client.Store.Delete(ctx); err != nil {
+			return fmt.Errorf("remover sessão local: %w", err)
+		}
+	}
+	client := whatsmeow.NewClient(m.store.NewDevice(), m.logger)
+	client.EnableAutoReconnect = true
+	m.Client = client
+	return nil
 }
 
 func printQR(content string) {

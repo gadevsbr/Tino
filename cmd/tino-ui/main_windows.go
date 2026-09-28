@@ -188,6 +188,7 @@ func (a *application) createWindow() error {
 								Label{Text: "Conecte sua conta", TextColor: ink, Font: Font{PointSize: 16, Bold: true}},
 								Label{Text: "Depois da conexão, seus chats aparecerão aqui automaticamente.", TextColor: muted, Font: Font{PointSize: 9}},
 								VSpacer{}, PushButton{AssignTo: &a.connectBtn, Text: "Conectar e exibir QR Code", MinSize: Size{Height: 42}, Font: Font{Bold: true}, Background: accentBrush, OnClicked: a.connect},
+								PushButton{Text: "Gerar novo QR Code", MinSize: Size{Height: 34}, OnClicked: a.resetSession},
 								PushButton{Text: "Atualizar estado da sessão", MinSize: Size{Height: 34}, OnClicked: a.refreshStatus}, VSpacer{},
 								Label{Text: "Como conectar", TextColor: ink, Font: Font{Bold: true}},
 								Label{Text: "1. Clique em conectar\r\n2. Abra o WhatsApp no celular\r\n3. Vá em Dispositivos conectados\r\n4. Escaneie o QR Code ao lado", TextColor: muted},
@@ -200,7 +201,7 @@ func (a *application) createWindow() error {
 						}},
 						Composite{AssignTo: &a.chatHome, Visible: false, Background: cardBrush, Layout: VBox{MarginsZero: true, Spacing: 8}, Children: []Widget{
 							Composite{Layout: HBox{MarginsZero: true}, Children: []Widget{
-								Label{Text: "Conversas", TextColor: ink, Font: Font{PointSize: 16, Bold: true}}, PushButton{Text: "Conectar / atualizar", OnClicked: a.connect}, HSpacer{},
+								Label{Text: "Conversas", TextColor: ink, Font: Font{PointSize: 16, Bold: true}}, PushButton{Text: "Conectar / atualizar", OnClicked: a.connect}, PushButton{Text: "Trocar conta", OnClicked: a.resetSession}, HSpacer{},
 								LineEdit{AssignTo: &a.chatSearch, CueBanner: "Buscar conversa...", MinSize: Size{Width: 260}, OnTextChanged: a.refreshChats},
 							}},
 							HSplitter{Children: []Widget{
@@ -303,13 +304,13 @@ func (a *application) setBusy(busy bool) {
 }
 func (a *application) refreshStatus() {
 	auth := a.mgr.Client.Store.ID != nil
-	connected := a.mgr.Client.IsConnected()
+	loggedIn := a.mgr.Client.IsLoggedIn()
 	text := "não autenticada"
 	if auth {
-		text = "autenticada, desconectada"
+		text = "sessão salva, desconectada"
 	}
-	if connected {
-		text = "conectada"
+	if loggedIn {
+		text = "conectada e autenticada"
 		a.status.SetTextColor(walk.RGB(72, 224, 181))
 	} else if auth {
 		a.status.SetTextColor(walk.RGB(255, 204, 102))
@@ -318,7 +319,7 @@ func (a *application) refreshStatus() {
 	}
 	a.status.SetText(text + " • perfil " + a.cfg.Profile)
 	if a.qrHome != nil && a.chatHome != nil {
-		showChats := auth
+		showChats := loggedIn
 		a.qrHome.SetVisible(!showChats)
 		a.chatHome.SetVisible(showChats)
 		if showChats {
@@ -328,10 +329,29 @@ func (a *application) refreshStatus() {
 }
 
 func (a *application) ensureConnected() error {
-	if a.mgr.Client.IsConnected() {
+	if a.mgr.Client.IsLoggedIn() {
 		return nil
 	}
 	return a.mgr.ConnectWithQR(a.ctx, false, nil)
+}
+
+func (a *application) resetSession() {
+	message := "Isso removerá apenas a sessão local do WhatsApp e gerará um novo QR Code. O histórico salvo no Tino será mantido. Deseja continuar?"
+	if walk.MsgBox(a.mw, "Gerar novo QR Code", message, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion) != walk.DlgCmdYes {
+		return
+	}
+	if err := a.mgr.ResetLocalSession(a.ctx); err != nil {
+		walk.MsgBox(a.mw, "Não foi possível limpar a sessão", err.Error(), walk.MsgBoxIconError)
+		return
+	}
+	a.mgr.Client.AddEventHandler(a.handleChatEvent)
+	a.mu.Lock()
+	a.flowStarted = false
+	a.mu.Unlock()
+	a.flowBtn.SetEnabled(true)
+	a.appendLog("Sessão local removida. Preparando um novo QR Code.")
+	a.refreshStatus()
+	a.connect()
 }
 
 func (a *application) connect() {
