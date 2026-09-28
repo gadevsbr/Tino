@@ -75,3 +75,25 @@ func (r *Repository) MarkGenerated(ctx context.Context, weekID string, now time.
 	_, err := r.db.ExecContext(ctx, `UPDATE extrato_weeks SET last_generated_at=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, now.UTC().Format(time.RFC3339), weekID)
 	return err
 }
+
+func (r *Repository) ListWeeks(ctx context.Context) ([]Week, error) {
+	rows, err := r.db.QueryContext(ctx, `SELECT id,week_number,month_number,year_number,start_date,end_date,status,created_by,last_generated_at FROM extrato_weeks ORDER BY year_number DESC,month_number DESC,week_number DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []Week
+	for rows.Next() {
+		var item Week
+		var start, end string
+		if err := rows.Scan(&item.ID, &item.Period.Week, &item.Period.Month, &item.Period.Year, &start, &end, &item.Status, &item.CreatedBy, &item.LastGeneratedAt); err != nil {
+			return nil, err
+		}
+		item.Period, err = item.Period.WithDates(start, end)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, item)
+	}
+	return result, rows.Err()
+}

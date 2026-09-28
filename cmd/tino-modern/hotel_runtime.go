@@ -13,6 +13,8 @@ import (
 	assistconfig "github.com/gadevsbr/tino/internal/assistente/config"
 	"github.com/gadevsbr/tino/internal/assistente/conversation"
 	assistdb "github.com/gadevsbr/tino/internal/assistente/database"
+	"github.com/gadevsbr/tino/internal/assistente/extratos"
+	"github.com/gadevsbr/tino/internal/assistente/reports"
 	"github.com/gadevsbr/tino/internal/assistente/rooms"
 	assistwa "github.com/gadevsbr/tino/internal/assistente/whatsapp"
 	"github.com/gadevsbr/tino/internal/capability"
@@ -20,9 +22,16 @@ import (
 )
 
 type hotelRuntime struct {
-	db      *sql.DB
-	service *assistwa.Service
-	cancel  context.CancelFunc
+	db       *sql.DB
+	service  *assistwa.Service
+	cancel   context.CancelFunc
+	dataDir  string
+	zone     *time.Location
+	rooms    *rooms.Repository
+	cash     *cash.Repository
+	advances *advances.Repository
+	extratos *extratos.Repository
+	reports  *reports.Generator
 }
 
 func openHotelRuntime(parent context.Context, dataDir string, settings capability.Settings, client *whatsmeow.Client) (*hotelRuntime, error) {
@@ -40,9 +49,10 @@ func openHotelRuntime(parent context.Context, dataDir string, settings capabilit
 		authorized[number] = struct{}{}
 	}
 	cfg := assistconfig.Config{Authorized: authorized, Timezone: location, DataDir: operationsDir, ReportRetentionDays: 7, BackupRetentionDays: 30, LogRetentionDays: 14, DailySummaryHour: 17, BackupHour: 16}
-	application := assistapp.New(rooms.NewRepository(db, location), conversation.NewRepository(db)).
-		EnableCash(cash.NewRepository(db, location)).
-		EnableAdvances(advances.NewRepository(db, location))
+	roomRepo := rooms.NewRepository(db, location)
+	cashRepo := cash.NewRepository(db, location)
+	advanceRepo := advances.NewRepository(db, location)
+	application := assistapp.New(roomRepo, conversation.NewRepository(db)).EnableCash(cashRepo).EnableAdvances(advanceRepo)
 	service, err := assistwa.NewWithClient(parent, cfg, db, application, client)
 	if err != nil {
 		_ = db.Close()
@@ -50,7 +60,7 @@ func openHotelRuntime(parent context.Context, dataDir string, settings capabilit
 	}
 	ctx, cancel := context.WithCancel(parent)
 	service.StartAttached(ctx)
-	return &hotelRuntime{db: db, service: service, cancel: cancel}, nil
+	return &hotelRuntime{db: db, service: service, cancel: cancel, dataDir: operationsDir, zone: location, rooms: roomRepo, cash: cashRepo, advances: advanceRepo, extratos: extratos.NewRepository(db), reports: reports.New(location)}, nil
 }
 
 func (r *hotelRuntime) Close() {

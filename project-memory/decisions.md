@@ -21,3 +21,5 @@
 - 2026-09-28 — O Tino passa a ser o runtime canônico das funções do Assistente Paraíso. O transporte operacional é anexado ao mesmo cliente `whatsmeow`, sem segundo QR ou banco de sessão; somente o banco de domínio fica separado em `data/operations/hotel.db`.
 - 2026-09-28 — Operadores de comandos internos são cadastrados pela UI com telefone e DDI. Sessões, segredos e dados reais do projeto de origem não são migrados.
 - 2026-09-28 — Superseded: a integração deixou de ser apenas um inventário planejado. O núcleo operacional está integrado, mas os cards continuam planejados até existirem telas administrativas e bloqueio seletivo completos.
+- 2026-09-28 — Superseded parcialmente: caixa, comprovantes, extratos e vales deixam de ser apenas planejados. Eles passam a ter uma área operacional comum com filtros por período; comercial, catálogo, quartos e backup continuam aguardando painéis completos.
+- 2026-09-28 — PDFs de quartos, caixa e vales podem ser salvos localmente ou enviados pela mesma sessão WhatsApp para telefone com DDI ou JID de grupo. O envio continua condicionado a uma sessão autenticada.

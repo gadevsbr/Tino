@@ -11,7 +11,7 @@
 
 ## Estado de entrega
 
-O motor de domínio e o transporte completo foram migrados e anexados ao cliente `whatsmeow` existente. A Central de Recursos permite cadastrar operadores. As telas administrativas especializadas e o bloqueio seletivo por módulo ainda são etapas abertas; por isso os cards permanecem como planejados.
+O motor de domínio e o transporte completo foram migrados e anexados ao cliente `whatsmeow` existente. A Central de Recursos permite cadastrar operadores. A área **Operação financeira** oferece dashboard por período, geração e compartilhamento de PDFs, consulta visual de comprovantes e painéis de extratos e vales. Os módulos de caixa, extratos e vales estão disponíveis na Central de Recursos.
 
 ## Gates de validação
 

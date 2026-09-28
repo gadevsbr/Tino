@@ -104,4 +104,13 @@
 - Evidência: `go test -count=1 ./...` passou para todos os pacotes; testes Node do contrato passaram; build Vite passou; Wails gerou o executável 0.8.0, que abriu responsivo com WebView2 ativo.
 - SHA-256 local do `Tino.exe`: `020076CAE1B9F2882417AFC7D0967549CE277E571B3DE82DBD21306DC041E838`.
 - Evidência de release: commit `d7631e8` enviado à `main`; release `v0.8.0` publicada com UI e CLI auxiliar.
-- Pendente: telas de PDFs, dashboard de caixa, comprovantes, extratos, vales, catálogo e backup; controles seletivos por módulo; teste real com conta WhatsApp e provedores externos.
+- Pendente após esta etapa: painéis de quartos, comercial, catálogo e backup; teste real com conta WhatsApp e provedores externos.
+
+## Etapa 13 — Operação financeira visual v0.9.0
+
+- Status: concluída e validada localmente; compartilhamento real depende de conta WhatsApp autenticada.
+- Escopo: dashboard de caixa com hoje, sete dias, mês ou período personalizado; totais de entradas, saídas, saldo, dinheiro, PIX e cartão; PDFs de quartos, caixa e vales; envio para telefone ou grupo; consulta e preview de comprovantes; painéis de semanas de extratos e vales mensais.
+- Segurança: preview valida que o arquivo permanece dentro de `data/operations`; intervalo máximo de consulta é 366 dias.
+- Evidência: teste de integração criou caixa, movimentos, comprovante e vale em banco temporário e validou totais, listagem e preview; `go test -count=1 ./...`, `go vet ./...`, testes Node e build Vite passaram; build Wails 0.9.0 passou.
+- SHA-256 local do `Tino.exe`: `B2C1354B55007E7D512EA88761A6909E3C9C13B30380B98E1C3B1BB776A58D3E`.
+- Limite: a skill de controle do Windows não encontrou superfícies de aplicativos expostas nesta sessão. O processo abriu responsivo com WebView2, mas a inspeção visual automatizada não foi possível.

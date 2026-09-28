@@ -567,7 +567,11 @@ func (s *Service) sendStoredReceipt(ctx context.Context, to types.JID, id int64)
 }
 
 func (s *Service) sendAdvanceReport(ctx context.Context, to types.JID, employee string) error {
-	now := time.Now().In(s.cfg.Timezone)
+	return s.sendAdvanceReportForMonth(ctx, to, employee, time.Now().In(s.cfg.Timezone))
+}
+
+func (s *Service) sendAdvanceReportForMonth(ctx context.Context, to types.JID, employee string, month time.Time) error {
+	now := month.In(s.cfg.Timezone)
 	items, err := s.advances.Month(ctx, employee, now)
 	if err != nil {
 		return err
@@ -588,6 +592,29 @@ func (s *Service) sendAdvanceReport(ctx context.Context, to types.JID, employee 
 	doc := &waE2E.DocumentMessage{URL: &up.URL, DirectPath: &up.DirectPath, MediaKey: up.MediaKey, FileEncSHA256: up.FileEncSHA256, FileSHA256: up.FileSHA256, FileLength: &up.FileLength, Mimetype: proto.String("application/pdf"), FileName: &name, Title: &name, PageCount: proto.Uint32(1), Caption: proto.String("💵 Relatório mensal de vales.")}
 	_, err = s.sendMessage(ctx, to, &waE2E.Message{DocumentMessage: doc})
 	return err
+}
+
+// ShareReport exposes the same audited WhatsApp delivery used by chat commands
+// to the desktop UI. Kind accepts ROOMS, CASH or ADVANCES.
+func (s *Service) ShareReport(ctx context.Context, kind string, to types.JID, from, until, employee string) error {
+	switch strings.ToUpper(strings.TrimSpace(kind)) {
+	case "ROOMS":
+		return s.sendReport(ctx, to)
+	case "CASH":
+		return s.sendCashReportFor(ctx, to, from, until)
+	case "ADVANCES":
+		month := time.Now().In(s.cfg.Timezone)
+		if strings.TrimSpace(from) != "" {
+			parsed, err := time.ParseInLocation("2006-01", from, s.cfg.Timezone)
+			if err != nil {
+				return fmt.Errorf("mês inválido: %w", err)
+			}
+			month = parsed
+		}
+		return s.sendAdvanceReportForMonth(ctx, to, employee, month)
+	default:
+		return fmt.Errorf("tipo de relatório inválido: %s", kind)
+	}
 }
 
 func (s *Service) sendMessage(ctx context.Context, to types.JID, message *waE2E.Message) (whatsmeow.SendResponse, error) {

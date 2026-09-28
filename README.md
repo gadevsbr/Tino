@@ -70,6 +70,8 @@ As funções mapeadas do Assistente Paraíso aparecem como **Planejado** e não 
 
 O núcleo operacional do Assistente já está anexado à mesma sessão WhatsApp do Tino. Cadastre telefones com DDI em **Central de recursos > Operadores do WhatsApp**. Os cards especializados continuam como planejados enquanto as respectivas telas e os controles seletivos não estiverem concluídos; veja [`docs/OPERATIONS_INTEGRATION_SPEC.md`](docs/OPERATIONS_INTEGRATION_SPEC.md).
 
+Em **Operação financeira**, o dashboard consulta dia, sete dias, mês ou intervalo personalizado. A mesma área salva e compartilha PDFs de quartos, caixa e vales, apresenta os comprovantes originais e lista semanas de extratos e vales por funcionário.
+
 ## Evidência de entrega
 
 Build e testes locais validam apenas código/artefato. Pareamento QR, estabilidade prolongada, entrega real, políticas do provedor e comportamento em uma máquina Windows diferente exigem validação externa separada.

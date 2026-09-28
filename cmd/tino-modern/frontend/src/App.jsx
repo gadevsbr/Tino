@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
   Activity, Archive, ArrowDown, ArrowUp, Bot, Check, ChevronRight, CircleHelp,
+  CalendarRange, Download, Eye, FileText, Receipt, Share2, WalletCards,
   Database, FileLock2, FileSpreadsheet, FolderOpen, GitBranch, LoaderCircle,
   LockKeyhole, MessageCircle, MoreHorizontal, Plus, RefreshCw, Search, Send,
   Settings2, ShieldCheck, Sparkles, Trash2, Upload, Users, Workflow, X
@@ -9,6 +10,8 @@ import {
   ChooseCSV, ChooseWorkspace, Connect, ExportAudit, GetCapabilities, GetFlow,
   GetMessages, GetStatus, ListChats, ResetSession, RunBatch, SaveCapabilities,
   SaveFlow, SendMessage, StartFlow, TestFlow
+  , ExportOperationalPDF, FinanceDashboard, GetReceiptPreview, ListAdvances,
+  ListReceipts, ListStatementWeeks, ShareOperationalPDF
 } from '../wailsjs/go/main/App'
 import { EventsOn } from '../wailsjs/runtime/runtime'
 import { normalizeCapabilities } from './capabilities'
@@ -16,6 +19,7 @@ import { normalizeCapabilities } from './capabilities'
 const nav = [
   ['conversations', 'Conversas', MessageCircle],
   ['contacts', 'Base e notificações', Users],
+  ['operations', 'Operação financeira', WalletCards],
   ['flow', 'Flow Builder', GitBranch],
   ['capabilities', 'Central de recursos', Settings2],
   ['activity', 'Atividade', Activity],
@@ -69,6 +73,7 @@ export default function App() {
       <div className="content">
         {page === 'conversations' && <Conversations status={status} qr={qr} busy={busy} connect={connect} reset={reset} refreshStatus={refreshStatus} notify={notify}/>} 
         {page === 'contacts' && <Contacts busy={busy} run={run} notify={notify}/>} 
+        {page === 'operations' && <OperationsPage notify={notify}/>} 
         {page === 'flow' && <FlowPage busy={busy} run={run} notify={notify}/>} 
         {page === 'capabilities' && <Capabilities notify={notify}/>} 
         {page === 'activity' && <ActivityPage items={activities}/>} 
@@ -118,6 +123,38 @@ function Contacts({ busy, run, notify }) {
       <label className="field"><span>Mensagem da campanha</span><textarea value={message} onChange={e=>setMessage(e.target.value)} placeholder="Olá! Escreva aqui sua comunicação..."/></label><label className="check"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/><span>Confirmo que estes contatos autorizaram esta comunicação.</span></label><button className="primary wide" disabled={!csv||busy==='batch'} onClick={send}><Send/>Revisar e iniciar</button></section>
       <section className="panel audit-panel"><div className="panel-icon navy"><Database/></div><h3>Auditoria da base</h3><p>Gere arquivos JSON e CSV com os contatos sincronizados e participantes dos grupos.</p><div className="audit-visual"><Archive/><div><b>Exportação local</b><span>Nenhum dado é enviado para serviços externos.</span></div></div><button className="secondary wide" disabled={busy==='audit'} onClick={exportData}><Archive/>Exportar contatos e grupos</button></section></div></div>
 }
+
+function OperationsPage({ notify }) {
+  const today=()=>new Date().toLocaleDateString('sv-SE'), month=()=>today().slice(0,7)
+  const [tab,setTab]=useState('dashboard'),[from,setFrom]=useState(today()),[to,setTo]=useState(today()),[employee,setEmployee]=useState(''),[target,setTarget]=useState('')
+  const [finance,setFinance]=useState(null),[receipts,setReceipts]=useState([]),[advances,setAdvances]=useState([]),[weeks,setWeeks]=useState([]),[preview,setPreview]=useState(null),[loading,setLoading]=useState(false)
+  const money=cents=>(Number(cents||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})
+  const guard=async action=>{setLoading(true);try{return await action()}catch(e){notify(String(e),'error')}finally{setLoading(false)}}
+  const loadDashboard=()=>guard(async()=>setFinance(await FinanceDashboard(from,to)))
+  const loadReceipts=()=>guard(async()=>setReceipts(await ListReceipts(from,to)||[]))
+  const loadAdvances=()=>guard(async()=>setAdvances(await ListAdvances(from.slice(0,7),employee)||[]))
+  const loadWeeks=()=>guard(async()=>setWeeks(await ListStatementWeeks()||[]))
+  useEffect(()=>{loadDashboard()},[])
+  const preset=kind=>{const end=new Date(),start=new Date(end);if(kind==='week')start.setDate(end.getDate()-6);if(kind==='month')start.setDate(1);const f=start.toLocaleDateString('sv-SE'),t=end.toLocaleDateString('sv-SE');setFrom(f);setTo(t)}
+  const exportPDF=kind=>guard(async()=>{const path=await ExportOperationalPDF(kind,kind==='ADVANCES'?from.slice(0,7):from,to,employee);if(path)notify(`PDF salvo em ${path}`)})
+  const share=kind=>{if(!target)return notify('Informe o telefone com DDI ou JID do grupo','error');guard(async()=>{await ShareOperationalPDF({Kind:kind,Target:target,From:kind==='ADVANCES'?from.slice(0,7):from,To:to,Employee:employee});notify('PDF compartilhado pelo WhatsApp')})}
+  const openReceipt=id=>guard(async()=>setPreview(await GetReceiptPreview(id)))
+  return <div className="stack operations"><div className="page-intro"><div><span className="section-kicker">GESTÃO OPERACIONAL</span><h2>Financeiro, documentos e auditoria</h2><p>Consulte os dados registrados pelo WhatsApp, gere PDFs e compartilhe relatórios sem sair do Tino.</p></div></div>
+    <div className="segmented"><button className={tab==='dashboard'?'active':''} onClick={()=>setTab('dashboard')}>Dashboard</button><button className={tab==='pdfs'?'active':''} onClick={()=>setTab('pdfs')}>PDFs</button><button className={tab==='receipts'?'active':''} onClick={()=>{setTab('receipts');loadReceipts()}}>Comprovantes</button><button className={tab==='statements'?'active':''} onClick={()=>{setTab('statements');loadWeeks()}}>Extratos</button><button className={tab==='advances'?'active':''} onClick={()=>{setTab('advances');loadAdvances()}}>Vales</button></div>
+    {(tab==='dashboard'||tab==='receipts'||tab==='pdfs')&&<section className="panel filter-bar"><label>Data inicial<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label>Data final<input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label><div className="preset-buttons"><button className="secondary" onClick={()=>{setFrom(today());setTo(today())}}>Hoje</button><button className="secondary" onClick={()=>preset('week')}>7 dias</button><button className="secondary" onClick={()=>preset('month')}>Mês</button></div>{tab==='dashboard'&&<button className="primary" onClick={loadDashboard}><RefreshCw/>Atualizar</button>}{tab==='receipts'&&<button className="primary" onClick={loadReceipts}><Search/>Consultar</button>}</section>}
+    {loading&&<div className="loading-line"><LoaderCircle className="spin"/>Atualizando dados...</div>}
+    {tab==='dashboard'&&finance&&<><div className="metric-grid"><Metric title="Saldo consolidado" value={money(finance.BalanceCents)} tone="teal"/><Metric title="Entradas" value={money(finance.EntryCents)}/><Metric title="Saídas" value={money(finance.ExitCents)} tone="danger"/><Metric title="Saldo de abertura" value={money(finance.OpeningCents)}/></div><div className="two-cards"><section className="panel"><div className="section-title"><div><h3>Recebimentos por meio</h3><span>{finance.Label}</span></div></div><div className="channel-bars">{[['Dinheiro',finance.CashCents],['PIX',finance.PixCents],['Cartão',finance.CardCents]].map(([name,value])=><div key={name}><span>{name}</span><b>{money(value)}</b><i style={{width:`${finance.EntryCents?Math.max(4,value/finance.EntryCents*100):0}%`}}/></div>)}</div></section><section className="panel operational-summary"><h3>Volume operacional</h3><div><b>{finance.Days}</b><span>dias com caixa</span></div><div><b>{finance.Movements}</b><span>movimentos</span></div><div><b>{finance.Receipts}</b><span>comprovantes</span></div></section></div></>}
+    {tab==='pdfs'&&<><section className="panel share-panel"><div><span className="section-kicker">DESTINO WHATSAPP</span><h3>Compartilhar documento</h3><p>Use telefone com DDI ou JID de grupo.</p></div><input value={target} onChange={e=>setTarget(e.target.value)} placeholder="5573999999999 ou 123@g.us"/></section><div className="document-grid"><DocumentCard title="Situação dos quartos" text="Resumo visual atualizado dos 42 quartos." onDownload={()=>exportPDF('ROOMS')} onShare={()=>share('ROOMS')}/><DocumentCard title="Caixa por período" text={`${from} a ${to}, com movimentos e totais.`} onDownload={()=>exportPDF('CASH')} onShare={()=>share('CASH')}/><DocumentCard title="Vales do mês" text="Relatório mensal completo ou filtrado por funcionário." onDownload={()=>exportPDF('ADVANCES')} onShare={()=>share('ADVANCES')}/></div></>}
+    {tab==='receipts'&&<DataTable headers={['ID','Data','Método','Descrição','Valor','Arquivo']} empty="Nenhum comprovante no período.">{receipts.map(x=><tr key={x.ID}><td>#{x.ID}</td><td>{x.Date}</td><td><span className="tag ready">{x.Method}</span></td><td>{x.Description}</td><td><b>{money(x.Cents)}</b></td><td><button className="secondary compact" disabled={!x.HasFile} onClick={()=>openReceipt(x.ID)}><Eye/>Visualizar</button></td></tr>)}</DataTable>}
+    {tab==='statements'&&<DataTable headers={['Semana','Status','Arquivos','Gerado em','Responsável']} empty="Nenhuma semana de extratos registrada.">{weeks.map(x=><tr key={x.ID}><td><b>{x.Label}</b><small>{(x.Files||[]).map(f=>f.Name).join(' • ')}</small></td><td><span className="tag ready">{x.Status}</span></td><td>{x.FileCount}</td><td>{x.LastGeneratedAt||'—'}</td><td>{x.CreatedBy}</td></tr>)}</DataTable>}
+    {tab==='advances'&&<><section className="panel filter-bar"><label>Mês<input type="month" value={from.slice(0,7)} onChange={e=>setFrom(e.target.value+'-01')}/></label><label>Funcionário<input value={employee} onChange={e=>setEmployee(e.target.value)} placeholder="Todos"/></label><button className="primary" onClick={loadAdvances}><Search/>Consultar</button><button className="secondary" onClick={()=>exportPDF('ADVANCES')}><Download/>Gerar PDF</button></section><DataTable headers={['Data','Funcionário','Observação','Valor','Caixa']} empty="Nenhum vale encontrado.">{advances.map(x=><tr key={x.ID}><td>{x.Date}</td><td><b>{x.Employee}</b></td><td>{x.Note||'—'}</td><td>{money(x.Cents)}</td><td>{x.DeductCash?'Descontado':'Não descontado'}</td></tr>)}</DataTable></>}
+    {preview&&<div className="modal-backdrop" onClick={()=>setPreview(null)}><section className="receipt-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setPreview(null)}><X/></button><span className="section-kicker">COMPROVANTE #{preview.receipt.ID}</span><h3>{preview.receipt.Description}</h3><p>{preview.receipt.Date} • {preview.receipt.Method} • {money(preview.receipt.Cents)}</p>{preview.dataURL?(preview.receipt.MediaType?.startsWith('image/')?<img src={preview.dataURL}/>:<iframe src={preview.dataURL} title="Comprovante PDF"/>):<Empty icon={Receipt} title="Original indisponível" text="Este lançamento não possui arquivo armazenado."/>}</section></div>}
+  </div>
+}
+
+function Metric({title,value,tone=''}){return <section className={`metric-card ${tone}`}><span>{title}</span><b>{value}</b></section>}
+function DocumentCard({title,text,onDownload,onShare}){return <section className="panel document-card"><div className="panel-icon"><FileText/></div><h3>{title}</h3><p>{text}</p><div className="button-row"><button className="secondary" onClick={onDownload}><Download/>Salvar PDF</button><button className="primary" onClick={onShare}><Share2/>WhatsApp</button></div></section>}
+function DataTable({headers,empty,children}){const rows=React.Children.count(children);return <section className="panel table-panel">{rows?<div className="data-table-wrap"><table className="data-table"><thead><tr>{headers.map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{children}</tbody></table></div>:<Empty icon={Database} title={empty} text="Ajuste os filtros ou registre dados pelo WhatsApp."/>}</section>}
 
 function FlowPage({ busy, run, notify }) {
   const [def,setDef]=useState({Rules:[],DefaultReply:''}),[test,setTest]=useState(''),[result,setResult]=useState('')

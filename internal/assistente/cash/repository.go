@@ -181,6 +181,23 @@ func (r *Repository) ReceiptsByDate(ctx context.Context, date string) ([]Receipt
 	return result, rows.Err()
 }
 
+func (r *Repository) ReceiptsRange(ctx context.Context, from, to string) ([]Receipt, error) {
+	rows, err := r.db.QueryContext(ctx, `SELECT id,business_date,method,amount_cents,description,actor,movement_id,file_path,media_type,created_at FROM cash_receipts WHERE business_date BETWEEN ? AND ? ORDER BY business_date DESC,id DESC`, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []Receipt
+	for rows.Next() {
+		var item Receipt
+		if err := rows.Scan(&item.ID, &item.BusinessDate, &item.Method, &item.Cents, &item.Description, &item.Actor, &item.MovementID, &item.FilePath, &item.MediaType, &item.CreatedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, item)
+	}
+	return result, rows.Err()
+}
+
 func (r *Repository) Receipt(ctx context.Context, id int64) (Receipt, error) {
 	var item Receipt
 	err := r.db.QueryRowContext(ctx, `SELECT id,business_date,method,amount_cents,description,actor,movement_id,file_path,media_type,created_at FROM cash_receipts WHERE id=?`, id).Scan(&item.ID, &item.BusinessDate, &item.Method, &item.Cents, &item.Description, &item.Actor, &item.MovementID, &item.FilePath, &item.MediaType, &item.CreatedAt)
