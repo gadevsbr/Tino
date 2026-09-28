@@ -103,4 +103,5 @@
 - Persistência: `data/operations/hotel.db`, ignorada pelo Git; nenhuma sessão, segredo ou base real do Assistente foi copiada.
 - Evidência: `go test -count=1 ./...` passou para todos os pacotes; testes Node do contrato passaram; build Vite passou; Wails gerou o executável 0.8.0, que abriu responsivo com WebView2 ativo.
 - SHA-256 local do `Tino.exe`: `020076CAE1B9F2882417AFC7D0967549CE277E571B3DE82DBD21306DC041E838`.
+- Evidência de release: commit `d7631e8` enviado à `main`; release `v0.8.0` publicada com UI e CLI auxiliar.
 - Pendente: telas de PDFs, dashboard de caixa, comprovantes, extratos, vales, catálogo e backup; controles seletivos por módulo; teste real com conta WhatsApp e provedores externos.
