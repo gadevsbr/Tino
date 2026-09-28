@@ -89,6 +89,26 @@ func (r *Repository) List(ctx context.Context, account string) ([]Entry, error) 
 	return entries, rows.Err()
 }
 
+func (r *Repository) Delete(ctx context.Context, account, category string) error {
+	account = NormalizeAccount(account)
+	category = strings.TrimSpace(category)
+	if account == "" || category == "" {
+		return errors.New("conta e categoria são obrigatórias")
+	}
+	result, err := r.db.ExecContext(ctx, `DELETE FROM catalog_entries WHERE account=? AND category=?`, account, category)
+	if err != nil {
+		return err
+	}
+	changed, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if changed == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 // Sanitize reconstructs an allowlisted snapshot. Media, URLs, context, catalog
 // thumbnails and unknown protobuf fields are intentionally never persisted.
 // The transport must upload Entry.Image freshly and set Product.ProductImage.

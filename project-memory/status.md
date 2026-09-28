@@ -115,3 +115,16 @@
 - SHA-256 local do `Tino.exe`: `B2C1354B55007E7D512EA88761A6909E3C9C13B30380B98E1C3B1BB776A58D3E`.
 - Evidência de release: commit funcional `df6f90d` enviado à `main`; release `v0.9.0` publicada com UI e CLI auxiliar.
 - Limite: a skill de controle do Windows não encontrou superfícies de aplicativos expostas nesta sessão. O processo abriu responsivo com WebView2, mas a inspeção visual automatizada não foi possível.
+
+## Etapa 14 — Gestão completa do Assistente v0.10.0
+
+- Status: implementada e validada localmente; fluxos com provedores e WhatsApp real permanecem gates externos.
+- Quartos: painel dos 42 quartos, contagem por situação, hóspedes, observação, atualização auditada e histórico recente.
+- Comercial: modos desativado, teste por números autorizados e público persistidos na mesma configuração lida pelo bot.
+- Catálogo: inventário de produtos reais vinculados, metadados e remoção por categoria; captura continua pelo compartilhamento de produto no WhatsApp Business.
+- Backup/saúde: diagnóstico de banco, socket e autenticação; criação manual de ZIP verificado contendo banco, comprovantes e extratos, sem sessão ou segredo.
+- Migração: configurações `capabilities.json` antigas recebem os novos metadados de disponibilidade sem perder operadores, pasta autorizada ou opções previamente habilitadas.
+- Evidência parcial: teste de API atualizou quarto, hóspedes e observação e conferiu os 42 registros e histórico; testes de comercial, catálogo e backup permanecem na suíte migrada.
+- Evidência: `go test -count=1 ./...`, `go vet ./...`, testes Node, build Vite e build Wails passaram; `Tino.exe` abriu responsivo com WebView2 ativo.
+- SHA-256 local do `Tino.exe`: `B5EDDE0E7C1A50A2CCEC4C474F13D4E4F3CD4E60F811EE3F4A2A2CC265F46D9E`.
+- Limite: a configuração comercial, o catálogo e os comandos foram validados em testes locais; mensagens reais, captura de produto e OmniBees exigem conta e provedor externos.

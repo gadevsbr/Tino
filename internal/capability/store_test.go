@@ -22,3 +22,26 @@ func TestStoreRoundTrip(t *testing.T) {
 		t.Fatalf("configuração não persistida: %#v", got)
 	}
 }
+
+func TestLoadPromotesNewlyAvailableModules(t *testing.T) {
+	s := NewStore(filepath.Join(t.TempDir(), "capabilities.json"))
+	old := Defaults()
+	for i := range old.Modules {
+		if old.Modules[i].ID == "rooms" {
+			old.Modules[i].Available = false
+			old.Modules[i].Enabled = false
+		}
+	}
+	if err := s.Save(old); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, module := range got.Modules {
+		if module.ID == "rooms" && (!module.Available || !module.Enabled) {
+			t.Fatalf("módulo novo não promovido: %#v", module)
+		}
+	}
+}

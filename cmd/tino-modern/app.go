@@ -37,6 +37,7 @@ type App struct {
 	mu           sync.Mutex
 	hotelMu      sync.Mutex
 	hotel        *hotelRuntime
+	eventsReady  bool
 }
 
 type StatusDTO struct {
@@ -74,6 +75,7 @@ func NewApp(cfg config.Config, mgr *session.Manager, chats *chat.Store, capabili
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.eventsReady = true
 	a.mgr.Client.AddEventHandler(a.handleEvent)
 	if err := a.restartHotelRuntime(); err != nil {
 		a.emitActivity("Operação hoteleira", err.Error(), "error")

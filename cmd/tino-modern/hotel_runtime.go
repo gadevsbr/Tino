@@ -9,7 +9,10 @@ import (
 
 	"github.com/gadevsbr/tino/internal/assistente/advances"
 	assistapp "github.com/gadevsbr/tino/internal/assistente/app"
+	"github.com/gadevsbr/tino/internal/assistente/backup"
 	"github.com/gadevsbr/tino/internal/assistente/cash"
+	"github.com/gadevsbr/tino/internal/assistente/catalog"
+	"github.com/gadevsbr/tino/internal/assistente/commercial"
 	assistconfig "github.com/gadevsbr/tino/internal/assistente/config"
 	"github.com/gadevsbr/tino/internal/assistente/conversation"
 	assistdb "github.com/gadevsbr/tino/internal/assistente/database"
@@ -22,16 +25,19 @@ import (
 )
 
 type hotelRuntime struct {
-	db       *sql.DB
-	service  *assistwa.Service
-	cancel   context.CancelFunc
-	dataDir  string
-	zone     *time.Location
-	rooms    *rooms.Repository
-	cash     *cash.Repository
-	advances *advances.Repository
-	extratos *extratos.Repository
-	reports  *reports.Generator
+	db         *sql.DB
+	service    *assistwa.Service
+	cancel     context.CancelFunc
+	dataDir    string
+	zone       *time.Location
+	rooms      *rooms.Repository
+	cash       *cash.Repository
+	advances   *advances.Repository
+	extratos   *extratos.Repository
+	reports    *reports.Generator
+	commercial *commercial.Service
+	catalog    *catalog.Repository
+	backup     *backup.Manager
 }
 
 func openHotelRuntime(parent context.Context, dataDir string, settings capability.Settings, client *whatsmeow.Client) (*hotelRuntime, error) {
@@ -60,7 +66,23 @@ func openHotelRuntime(parent context.Context, dataDir string, settings capabilit
 	}
 	ctx, cancel := context.WithCancel(parent)
 	service.StartAttached(ctx)
-	return &hotelRuntime{db: db, service: service, cancel: cancel, dataDir: operationsDir, zone: location, rooms: roomRepo, cash: cashRepo, advances: advanceRepo, extratos: extratos.NewRepository(db), reports: reports.New(location)}, nil
+	commercialService, err := commercial.New(parent, db, func(context.Context, string, string, string) (commercial.QuoteReply, error) {
+		return commercial.QuoteReply{}, nil
+	})
+	if err != nil {
+		cancel()
+		service.Close()
+		_ = db.Close()
+		return nil, err
+	}
+	catalogRepo := catalog.NewRepository(db)
+	if err := catalogRepo.EnsureSchema(parent); err != nil {
+		cancel()
+		service.Close()
+		_ = db.Close()
+		return nil, err
+	}
+	return &hotelRuntime{db: db, service: service, cancel: cancel, dataDir: operationsDir, zone: location, rooms: roomRepo, cash: cashRepo, advances: advanceRepo, extratos: extratos.NewRepository(db), reports: reports.New(location), commercial: commercialService, catalog: catalogRepo, backup: backup.New(db, operationsDir, cfg.BackupRetentionDays, location)}, nil
 }
 
 func (r *hotelRuntime) Close() {

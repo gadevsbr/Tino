@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
   Activity, Archive, ArrowDown, ArrowUp, Bot, Check, ChevronRight, CircleHelp,
-  CalendarRange, Download, Eye, FileText, Receipt, Share2, WalletCards,
+  Building2, CalendarRange, Download, Eye, FileText, Receipt, Share2, WalletCards,
   Database, FileLock2, FileSpreadsheet, FolderOpen, GitBranch, LoaderCircle,
   LockKeyhole, MessageCircle, MoreHorizontal, Plus, RefreshCw, Search, Send,
   Settings2, ShieldCheck, Sparkles, Trash2, Upload, Users, Workflow, X
@@ -15,11 +15,13 @@ import {
 } from '../wailsjs/go/main/App'
 import { EventsOn } from '../wailsjs/runtime/runtime'
 import { normalizeCapabilities } from './capabilities'
+import AssistantOps from './AssistantOps'
 
 const nav = [
   ['conversations', 'Conversas', MessageCircle],
   ['contacts', 'Base e notificações', Users],
   ['operations', 'Operação financeira', WalletCards],
+  ['assistant', 'Gestão Assistente', Building2],
   ['flow', 'Flow Builder', GitBranch],
   ['capabilities', 'Central de recursos', Settings2],
   ['activity', 'Atividade', Activity],
@@ -74,6 +76,7 @@ export default function App() {
         {page === 'conversations' && <Conversations status={status} qr={qr} busy={busy} connect={connect} reset={reset} refreshStatus={refreshStatus} notify={notify}/>} 
         {page === 'contacts' && <Contacts busy={busy} run={run} notify={notify}/>} 
         {page === 'operations' && <OperationsPage notify={notify}/>}
+        {page === 'assistant' && <AssistantOps notify={notify}/>}
         {page === 'flow' && <FlowPage busy={busy} run={run} notify={notify}/>} 
         {page === 'capabilities' && <Capabilities notify={notify}/>} 
         {page === 'activity' && <ActivityPage items={activities}/>} 
@@ -183,7 +186,7 @@ function Capabilities({ notify }) {
   const removeOperator=phone=>save({...cfg,operators:cfg.operators.filter(x=>x!==phone)})
   return <div className="stack"><div className="page-intro"><div><span className="section-kicker">GOVERNANÇA</span><h2>Central de recursos e permissões</h2><p>Controle o que está ativo, quais perfis podem usar cada função e quais arquivos ficam dentro do escopo autorizado.</p></div></div>
     <div className="segmented"><button className={tab==='modules'?'active':''} onClick={()=>setTab('modules')}>Recursos</button><button className={tab==='operators'?'active':''} onClick={()=>setTab('operators')}>Operadores do WhatsApp</button><button className={tab==='roles'?'active':''} onClick={()=>setTab('roles')}>Perfis e privilégios</button><button className={tab==='files'?'active':''} onClick={()=>setTab('files')}>Arquivos</button></div>
-    {tab==='modules'&&<div className="module-groups">{['Tino','Plataforma','Assistente Paraíso'].map(cat=><section key={cat}><div className="section-title"><div><h3>{cat}</h3><span>{cat==='Assistente Paraíso'?'Mapeados para integração progressiva':'Disponíveis nesta versão'}</span></div></div><div className="module-grid">{cfg.modules.filter(m=>m.category===cat).map(m=><article className={`module-card ${!m.available?'planned':''}`} key={m.id}><div className="module-top"><div className="panel-icon small"><Workflow/></div><span className={`tag ${m.available?'ready':'planned'}`}>{m.available?'Disponível':'Planejado'}</span></div><h4>{m.name}</h4><p>{m.description}</p><button className={`switch ${m.enabled?'on':''}`} disabled={!m.available} onClick={()=>toggle(m.id)} aria-label={`Ativar ${m.name}`}><span/></button></article>)}</div></section>)}</div>}
+    {tab==='modules'&&<div className="module-groups">{['Tino','Plataforma','Assistente Paraíso'].map(cat=><section key={cat}><div className="section-title"><div><h3>{cat}</h3><span>{cat==='Assistente Paraíso'?'Operação integrada ao Tino':'Disponíveis nesta versão'}</span></div></div><div className="module-grid">{cfg.modules.filter(m=>m.category===cat).map(m=><article className={`module-card ${!m.available?'planned':''}`} key={m.id}><div className="module-top"><div className="panel-icon small"><Workflow/></div><span className={`tag ${m.available?'ready':'planned'}`}>{m.available?'Disponível':'Planejado'}</span></div><h4>{m.name}</h4><p>{m.description}</p><button className={`switch ${m.enabled?'on':''}`} disabled={!m.available} onClick={()=>toggle(m.id)} aria-label={`Ativar ${m.name}`}><span/></button></article>)}</div></section>)}</div>}
     {tab==='roles'&&<div className="role-grid">{cfg.roles.map(role=><section className="panel" key={role.id}><div className="role-title"><span className="avatar"><ShieldCheck/></span><div><h3>{role.name}</h3><p>{role.modules.length} recursos permitidos</p></div></div><div className="permission-list">{cfg.modules.filter(m=>m.available).map(m=><label key={m.id}><input type="checkbox" checked={role.modules.includes(m.id)} onChange={e=>{const roles=cfg.roles.map(r=>r.id!==role.id?r:{...r,modules:e.target.checked?[...r.modules,m.id]:r.modules.filter(x=>x!==m.id)});save({...cfg,roles})}}/><span>{m.name}</span></label>)}</div></section>)}</div>}
     {tab==='operators'&&<section className="panel file-access"><div className="panel-icon teal"><Users/></div><h3>Operadores autorizados</h3><p>Somente estes números, além da conversa da própria conta, podem executar comandos internos de quartos, caixa, relatórios, comprovantes, vales e backup.</p><div className="button-row"><input value={operator} onChange={e=>setOperator(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addOperator()} placeholder="Ex.: 5573999999999"/><button className="primary" onClick={addOperator}><Plus/>Adicionar</button></div><div className="permission-list">{cfg.operators.length?cfg.operators.map(phone=><div className="role-title" key={phone}><span className="avatar"><ShieldCheck/></span><div><h3>+{phone}</h3><p>Operador de comandos internos</p></div><button className="danger" onClick={()=>removeOperator(phone)}><Trash2/></button></div>):<Empty icon={Users} title="Nenhum operador cadastrado" text="Cadastre ao menos um telefone com DDI para administrar pelo WhatsApp."/>}</div></section>}
     {tab==='files'&&<section className="panel file-access"><div className="panel-icon teal"><FolderOpen/></div><h3>Pasta autorizada</h3><p>O módulo de arquivos será limitado a esta raiz. Caminhos fora dela não entram no escopo do assistente.</p><div className="path-box"><FolderOpen/><span>{cfg.workspaceRoot||'Nenhuma pasta autorizada'}</span></div><button className="primary" onClick={workspace}>Escolher pasta</button><div className="info-strip"><ShieldCheck/><span>Esta seleção não concede acesso automático: cada operação futura ainda deverá validar o perfil e registrar auditoria.</span></div></section>}

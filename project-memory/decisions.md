@@ -23,3 +23,5 @@
 - 2026-09-28 — Superseded: a integração deixou de ser apenas um inventário planejado. O núcleo operacional está integrado, mas os cards continuam planejados até existirem telas administrativas e bloqueio seletivo completos.
 - 2026-09-28 — Superseded parcialmente: caixa, comprovantes, extratos e vales deixam de ser apenas planejados. Eles passam a ter uma área operacional comum com filtros por período; comercial, catálogo, quartos e backup continuam aguardando painéis completos.
 - 2026-09-28 — PDFs de quartos, caixa e vales podem ser salvos localmente ou enviados pela mesma sessão WhatsApp para telefone com DDI ou JID de grupo. O envio continua condicionado a uma sessão autenticada.
+- 2026-09-28 — Superseded: quartos, comercial, catálogo e backup deixam de aguardar painéis. A UI usa os mesmos repositórios do transporte WhatsApp; não existe estado administrativo paralelo.
+- 2026-09-28 — O atendimento comercial tem três modos persistentes: desativado, teste por allowlist e público. A captura de produto continua no WhatsApp Business porque depende de uma mensagem de produto real; a UI consulta e remove os vínculos resultantes.

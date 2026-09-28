@@ -66,11 +66,13 @@ O fluxo continua persistido em YAML para portabilidade e backup, mas o arquivo n
 
 A tela **Central de recursos** permite ativar ou desativar módulos disponíveis, preparar permissões por perfil e escolher uma pasta explicitamente autorizada. As configurações ficam em `data/capabilities.json`, fora do Git. Recursos desativados são recusados também pelo backend, não apenas ocultados visualmente.
 
-As funções mapeadas do Assistente Paraíso aparecem como **Planejado** e não podem ser ativadas antes de uma migração segura. A análise, os limites e a sequência proposta estão em [`docs/ASSISTENTE_PARAISO_INTEGRATION.md`](docs/ASSISTENTE_PARAISO_INTEGRATION.md). A configuração atual de perfis é a fundação da autorização; ela ainda não substitui autenticação local por usuário.
+As funções operacionais do Assistente Paraíso estão integradas ao banco e à sessão do Tino. A configuração de perfis é a fundação da autorização; ela ainda não substitui autenticação local por usuário.
 
 O núcleo operacional do Assistente já está anexado à mesma sessão WhatsApp do Tino. Cadastre telefones com DDI em **Central de recursos > Operadores do WhatsApp**. Os cards especializados continuam como planejados enquanto as respectivas telas e os controles seletivos não estiverem concluídos; veja [`docs/OPERATIONS_INTEGRATION_SPEC.md`](docs/OPERATIONS_INTEGRATION_SPEC.md).
 
 Em **Operação financeira**, o dashboard consulta dia, sete dias, mês ou intervalo personalizado. A mesma área salva e compartilha PDFs de quartos, caixa e vales, apresenta os comprovantes originais e lista semanas de extratos e vales por funcionário.
+
+Em **Gestão Assistente**, o operador administra os 42 quartos, histórico e ocupação; liga o atendimento comercial nos modos desativado, teste ou público; consulta e remove vínculos do catálogo; e executa backups verificados com diagnóstico do banco e WhatsApp.
 
 ## Evidência de entrega
 

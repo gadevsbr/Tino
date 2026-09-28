@@ -13,6 +13,8 @@ import (
 	"github.com/gadevsbr/tino/internal/assistente/cash"
 	assistdb "github.com/gadevsbr/tino/internal/assistente/database"
 	"github.com/gadevsbr/tino/internal/assistente/extratos"
+	"github.com/gadevsbr/tino/internal/assistente/rooms"
+	"github.com/gadevsbr/tino/internal/capability"
 )
 
 func TestOperationalDashboardReceiptsAndAdvances(t *testing.T) {
@@ -79,5 +81,31 @@ func TestOperationalRangeValidation(t *testing.T) {
 	}
 	if _, _, err := validRange("", "2026-09-01"); err == nil {
 		t.Fatal("intervalo vazio deveria falhar")
+	}
+}
+
+func TestRoomManagementUsesOperationalRepository(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	db, err := assistdb.Open(ctx, filepath.Join(dir, "hotel.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	roomRepo := rooms.NewRepository(db, time.UTC)
+	app := &App{ctx: ctx, capabilities: capability.NewStore(filepath.Join(dir, "capabilities.json")), hotel: &hotelRuntime{db: db, dataDir: dir, zone: time.UTC, rooms: roomRepo}}
+	if err := app.UpdateRoom(RoomUpdateRequest{Number: 101, Status: string(rooms.Entry), Guests: 2, Note: "Chegada tardia"}); err != nil {
+		t.Fatal(err)
+	}
+	items, err := app.ListRooms()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 42 || items[0].Number != 101 || items[0].Status != string(rooms.Entry) || items[0].Guests != 2 || items[0].Note != "Chegada tardia" {
+		t.Fatalf("quarto não atualizado: %#v", items[0])
+	}
+	history, err := app.RoomHistory(101)
+	if err != nil || len(history) != 1 {
+		t.Fatalf("histórico inesperado: %#v %v", history, err)
 	}
 }

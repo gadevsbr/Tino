@@ -11,7 +11,7 @@
 
 ## Estado de entrega
 
-O motor de domínio e o transporte completo foram migrados e anexados ao cliente `whatsmeow` existente. A Central de Recursos permite cadastrar operadores. A área **Operação financeira** oferece dashboard por período, geração e compartilhamento de PDFs, consulta visual de comprovantes e painéis de extratos e vales. Os módulos de caixa, extratos e vales estão disponíveis na Central de Recursos.
+O motor de domínio e o transporte completo foram migrados e anexados ao cliente `whatsmeow` existente. A Central de Recursos permite cadastrar operadores. A área **Operação financeira** oferece dashboard por período, geração e compartilhamento de PDFs, consulta visual de comprovantes e painéis de extratos e vales. **Gestão Assistente** administra quartos, modo comercial, catálogo, backup e saúde sobre as mesmas tabelas e regras usadas pelos comandos do WhatsApp.
 
 ## Gates de validação
 
