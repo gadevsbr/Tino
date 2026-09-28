@@ -57,9 +57,10 @@
 
 ## Etapa 8 — Conversas na home v0.6.0
 
-- Status: concluído localmente; publicação em andamento.
+- Status: concluído e publicado.
 - Escopo: QR condicional, lista pesquisável de chats, histórico persistente, novas mensagens, não lidas, importação HistorySync e resposta manual.
 - Persistência: `data/chats-<profile>.db`, ignorado pelo Git.
 - Evidência: testes do armazenamento SQLite passaram; suíte completa e `go vet` passaram; UI `0.6.0` abriu responsiva sem erro de inicialização.
 - Limite: volume do histórico antigo depende dos blocos enviados pelo WhatsApp; pareamento e sincronização reais ainda exigem conta/dispositivo autorizado.
 - SHA-256 local: `0430742955D161C5D25E64733B164C0C8E7ABB7BC8C2EC5B8A7A9FE39A5F3F5D`.
+- Evidência de release: commit `36d62c2` enviado à `main`; release `v0.6.0` publicada com UI e CLI auxiliar.
