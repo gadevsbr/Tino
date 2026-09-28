@@ -168,3 +168,4 @@
 - Resultado: as seis acomodações confirmadas na resposta real agora aparecem no orçamento, com identidade física e preço preservados.
 - Evidência: teste ao vivo retornou Superluxo, Triplo Deluxe, Quádruplo Deluxe, Quádruplo Deluxe com vista mar, Triplo com varanda e Quádruplo com varanda; testes determinísticos cobrem a retenção das seis categorias.
 - Evidência de build: `go test -count=1 ./...`, `go vet ./...` e Wails 0.11.3 passaram; SHA-256 do `Tino.exe`: `0F08F931647B4692C88B86737A0FEC73159446B8698E4D2A4CBF7331DC2E83E2`.
+- Evidência de release: commit funcional `f8bed17` enviado à `main`; release `v0.11.3` publicada com a interface e a CLI auxiliar.
