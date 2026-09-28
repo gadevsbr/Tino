@@ -67,9 +67,10 @@
 
 ## Etapa 9 — Correção de autenticação v0.6.1
 
-- Status: concluída localmente; publicação pendente.
+- Status: concluída e publicada.
 - Causa: a UI usava `IsConnected()`, que representa somente a conexão do socket, e podia mostrar uma sessão local obsoleta como conectada sem vínculo ativo no celular.
 - Correção: estado e operações agora exigem `IsLoggedIn()`; reconexão persistida aguarda autenticação; eventos de desconexão atualizam a UI; a ação **Gerar novo QR Code/Trocar conta** limpa somente a credencial local e preserva o histórico.
 - Evidência: `go test ./...` e `go vet ./...` passaram; build Windows amd64 `0.6.1` passou; `Tino.exe` abriu responsivo com o título `Tino • Central de Comunicação 0.6.1`, sem log de erro de inicialização.
 - Limite: o inventário da ferramenta de inspeção visual retornou vazio; pareamento real e confirmação em **Dispositivos conectados** ainda exigem o celular do usuário.
 - SHA-256 local do `Tino.exe`: `052D4BC1A859A573AC8A6751FC741584ED1E416C00F7C962ED6CFB67C67777EA`.
+- Evidência de release: commit `2a9f304` enviado à `main`; release `v0.6.1` publicada com UI e CLI auxiliar.
