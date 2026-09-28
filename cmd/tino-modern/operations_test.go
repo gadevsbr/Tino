@@ -84,6 +84,37 @@ func TestOperationalRangeValidation(t *testing.T) {
 	}
 }
 
+func TestOperationalDashboardUsesFirstOpeningAndLastBalance(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	db, err := assistdb.Open(ctx, filepath.Join(dir, "hotel.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	repo := cash.NewRepository(db, time.UTC)
+	if err = repo.OpenDate(ctx, "2026-09-01", 10000, "admin"); err != nil {
+		t.Fatal(err)
+	}
+	if err = repo.AddDate(ctx, "2026-09-01", "ENTRY", "PIX", 5000, "entrada", "admin", "range-1"); err != nil {
+		t.Fatal(err)
+	}
+	if err = repo.OpenDate(ctx, "2026-09-02", 15000, "admin"); err != nil {
+		t.Fatal(err)
+	}
+	if err = repo.AddDate(ctx, "2026-09-02", "EXIT", "", 2000, "saida", "admin", "range-2"); err != nil {
+		t.Fatal(err)
+	}
+	a := &App{ctx: ctx, hotel: &hotelRuntime{db: db, dataDir: dir, zone: time.UTC, cash: repo}}
+	got, err := a.FinanceDashboard("2026-09-01", "2026-09-02")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.OpeningCents != 10000 || got.EntryCents != 5000 || got.ExitCents != 2000 || got.BalanceCents != 13000 {
+		t.Fatalf("dashboard multi-dia incorreto: %#v", got)
+	}
+}
+
 func TestRoomManagementUsesOperationalRepository(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()

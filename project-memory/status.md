@@ -138,3 +138,12 @@
 - Evidência: a segunda leitura classificou os 18 como `IMPORTED` e manteve os 6 como `REVIEW`; `go test -count=1 ./...`, `go vet ./...`, testes Node e build Vite passaram; o build Wails 0.11.0 gerou `Tino.exe`, que iniciou com processo responsivo.
 - SHA-256 local do `Tino.exe`: `A04C65673751D622FDB9704F3D47699AA1AEB765B15446E45C6D59DA6E60EF4F`.
 - Evidência de release: commit funcional `8831b7c` enviado à `main`; release `v0.11.0` publicada com a interface e a CLI auxiliar.
+
+## Etapa 16 — Dashboard, quartos e categorias OmniBees v0.11.1
+
+- Status: implementada e validada localmente; release pendente nesta etapa.
+- Dashboard: abre no mês corrente, seleciona o período importado automaticamente e calcula abertura/fechamento sem somar saldos diários repetidos.
+- Quartos: o resumo enviado antes do PDF lista separadamente os números sujos/para limpar e limpos/desforrados.
+- OmniBees: nomes equivalentes de categorias são normalizados; quando a mesma suíte aparece em mais de uma tarifa, o menor total positivo é preservado. Teste com três categorias confirma que todas chegam ao orçamento.
+- Evidência: testes direcionados, `go test -count=1 ./...`, `go vet ./...`, testes Node e build Vite passaram; uma consulta real da OmniBees retornou cinco categorias para ocupação dupla e três para ocupação quádrupla; o build Wails 0.11.1 gerou `Tino.exe`, que iniciou responsivo.
+- SHA-256 local do `Tino.exe`: `88CE704875611EA10B0EB6662477C5F54AEF93A2415E11D5BE669207779A3130`.

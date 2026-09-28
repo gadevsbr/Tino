@@ -70,10 +70,14 @@ func (a *App) FinanceDashboard(from, to string) (FinanceDTO, error) {
 		return FinanceDTO{}, err
 	}
 	result := FinanceDTO{From: from, To: to, Label: periodLabel(from, to), Days: len(days)}
-	for _, day := range days {
-		result.OpeningCents += day.OpeningCents
+	for index, day := range days {
+		if index == 0 {
+			result.OpeningCents = day.OpeningCents
+		}
+		dayBalance := day.OpeningCents
 		for _, item := range day.Entries {
 			result.EntryCents += item.Cents
+			dayBalance += item.Cents
 			result.Movements++
 			switch item.Method {
 			case "DINHEIRO":
@@ -86,15 +90,16 @@ func (a *App) FinanceDashboard(from, to string) (FinanceDTO, error) {
 		}
 		for _, item := range day.Exits {
 			result.ExitCents += item.Cents
+			dayBalance -= item.Cents
 			result.Movements++
 		}
+		result.BalanceCents = dayBalance
 	}
 	receipts, err := r.cash.ReceiptsRange(a.ctx, from, to)
 	if err != nil {
 		return FinanceDTO{}, err
 	}
 	result.Receipts = len(receipts)
-	result.BalanceCents = result.OpeningCents + result.EntryCents - result.ExitCents
 	return result, nil
 }
 

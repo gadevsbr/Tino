@@ -79,6 +79,39 @@ func TestExtractAndFormat(t *testing.T) {
 	}
 }
 
+func TestExtractAndFormatAllAvailableCategoryNameVariants(t *testing.T) {
+	page := `<html>
+	<div data-room-name="Suíte Super Luxo com Varanda e Vista para o Mar"><span class="price-total-bold">R$ 1.500,00</span></div>
+	<div data-room-name="Suíte Família Deluxe Vista Mar"><span class="price-total-bold">R$ 1.300,00</span></div>
+	<div data-room-name="Quarto Triplo Deluxe Varanda"><span class="price-total-bold">R$ 1.100,00</span></div>
+	<div data-room-name="Quarto Triplo Deluxe Varanda"><span class="price-total-bold">R$ 1.050,00</span></div>
+	</html>`
+	prices, err := ExtractPrices(page)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, _ := ParseLink(sampleURL, 0)
+	categories := Categories(s, prices)
+	if len(categories) != 3 {
+		t.Fatalf("esperava 3 categorias, recebeu %d: %#v", len(categories), categories)
+	}
+	want := []struct {
+		key   string
+		cents int64
+	}{{"superluxo", 150000}, {"deluxe_vista_mar", 130000}, {"deluxe_varanda", 105000}}
+	for i, item := range want {
+		if categories[i].Key != item.key || categories[i].TotalCents != item.cents {
+			t.Fatalf("categoria %d = %#v", i, categories[i])
+		}
+	}
+	text := Format(s, prices)
+	for _, name := range []string{"Suíte Superluxo", "Suíte Deluxe com vista", "Suíte Deluxe com varanda"} {
+		if !strings.Contains(text, name) {
+			t.Fatalf("orçamento não contém %q: %s", name, text)
+		}
+	}
+}
+
 func TestCourtesyUsesPhysicalOccupancy(t *testing.T) {
 	s, err := ParseLink(strings.Replace(sampleURL, "ch=0&ag=", "ch=2&ag=7%3B10", 1), 0)
 	if err != nil {

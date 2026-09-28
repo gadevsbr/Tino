@@ -162,7 +162,7 @@ func ExtractPrices(page string) (map[string]int64, error) {
 				if total := findClass(n, "price-total-bold"); total != nil {
 					if cents, ok := parseBRL(textContent(total)); ok {
 						key := normalize(name)
-						if _, exists := prices[key]; !exists {
+						if current, exists := prices[key]; !exists || cents < current {
 							prices[key] = cents
 						}
 					}
@@ -259,6 +259,33 @@ func normalize(s string) string {
 	return strings.Join(strings.Fields(replacer.Replace(s)), " ")
 }
 
+func canonicalRoomName(s string) string {
+	s = normalize(s)
+	s = strings.NewReplacer("super luxo", "superluxo", "vista para o mar", "vista mar").Replace(s)
+	if strings.Contains(s, "superluxo") {
+		s = strings.ReplaceAll(s, "duplo", "")
+	}
+	ignored := map[string]bool{"quarto": true, "suite": true, "com": true, "e": true, "de": true, "do": true, "da": true, "para": true, "o": true, "a": true}
+	fields := strings.Fields(s)
+	kept := fields[:0]
+	for _, field := range fields {
+		if !ignored[field] {
+			kept = append(kept, field)
+		}
+	}
+	return strings.Join(kept, " ")
+}
+
+func roomPrice(prices map[string]int64, sourceKey string) (int64, bool) {
+	wanted := canonicalRoomName(roomNames[sourceKey])
+	for name, cents := range prices {
+		if canonicalRoomName(name) == wanted && cents > 0 {
+			return cents, true
+		}
+	}
+	return 0, false
+}
+
 func Format(s Search, prices map[string]int64) string {
 	courtesy := 0
 	for _, age := range s.Ages {
@@ -319,7 +346,7 @@ func Categories(s Search, prices map[string]int64) []Category {
 	}
 	result := []Category{}
 	for _, o := range options {
-		cents, ok := prices[normalize(roomNames[o.key])]
+		cents, ok := roomPrice(prices, o.key)
 		if !ok || cents <= 0 {
 			continue
 		}

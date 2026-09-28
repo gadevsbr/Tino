@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/gadevsbr/tino/internal/assistente/rooms"
 	"github.com/go-pdf/fpdf"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -15,13 +17,26 @@ func New(location *time.Location) *Generator { return &Generator{location: locat
 func Summary(list []rooms.Room, now time.Time, location *time.Location) string {
 	counts := map[rooms.Status]int{}
 	guests := map[rooms.Status]int{}
+	numbers := map[rooms.Status][]int{}
 	for _, room := range list {
 		counts[room.Status]++
+		numbers[room.Status] = append(numbers[room.Status], room.Number)
 		if room.Status == rooms.Entry || room.Status == rooms.OccupiedClean {
 			guests[room.Status] += room.GuestCount
 		}
 	}
-	return fmt.Sprintf("🏨 RESUMO DO RELATÓRIO\nAtualizado em %s\n\n🟢 Disponíveis: %d\n🟢🟣 Limpos, mas desforrados: %d\n🟠 Manutenção de limpeza: %d quartos — 👥 %d pessoas\n🩷 Saída e entrada: %d\n🟡 Entrada: %d quartos — 👥 %d pessoas\n🟥 Saída: %d\n⬜ Interditados: %d\n🟣 Limpar: %d\n\nTotal: %d quartos", now.In(location).Format("02/01/2006 às 15:04"), counts[rooms.AvailableClean], counts[rooms.CleanUnmade], counts[rooms.OccupiedClean], guests[rooms.OccupiedClean], counts[rooms.CheckoutEntry], counts[rooms.Entry], guests[rooms.Entry], counts[rooms.CheckoutToday], counts[rooms.Maintenance], counts[rooms.Dirty], len(list))
+	return fmt.Sprintf("🏨 RESUMO DO RELATÓRIO\nAtualizado em %s\n\n🟢 Disponíveis: %d\n🟢🟣 Limpos, mas desforrados: %d\n🟠 Manutenção de limpeza: %d quartos — 👥 %d pessoas\n🩷 Saída e entrada: %d\n🟡 Entrada: %d quartos — 👥 %d pessoas\n🟥 Saída: %d\n⬜ Interditados: %d\n🟣 Limpar: %d\n\n🟣 QUARTOS SUJOS / PARA LIMPAR (%d)\n%s\n\n🟢🟣 QUARTOS LIMPOS, MAS DESFORRADOS (%d)\n%s\n\nTotal: %d quartos", now.In(location).Format("02/01/2006 às 15:04"), counts[rooms.AvailableClean], counts[rooms.CleanUnmade], counts[rooms.OccupiedClean], guests[rooms.OccupiedClean], counts[rooms.CheckoutEntry], counts[rooms.Entry], guests[rooms.Entry], counts[rooms.CheckoutToday], counts[rooms.Maintenance], counts[rooms.Dirty], counts[rooms.Dirty], formatRoomNumbers(numbers[rooms.Dirty]), counts[rooms.CleanUnmade], formatRoomNumbers(numbers[rooms.CleanUnmade]), len(list))
+}
+
+func formatRoomNumbers(numbers []int) string {
+	if len(numbers) == 0 {
+		return "Nenhum quarto."
+	}
+	items := make([]string, len(numbers))
+	for i, number := range numbers {
+		items[i] = strconv.Itoa(number)
+	}
+	return strings.Join(items, ", ")
 }
 
 func (g *Generator) Generate(list []rooms.Room, now time.Time) ([]byte, error) {

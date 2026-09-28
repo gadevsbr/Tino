@@ -37,9 +37,11 @@ func TestSummaryIncludesStatusAndGuestTotals(t *testing.T) {
 		{Number: 102, Status: rooms.OccupiedClean, GuestCount: 2},
 		{Number: 103, Status: rooms.AvailableClean},
 		{Number: 104, Status: rooms.CleanUnmade},
+		{Number: 105, Status: rooms.Dirty},
+		{Number: 106, Status: rooms.Dirty},
 	}
 	got := Summary(list, time.Date(2026, 8, 14, 9, 30, 0, 0, time.UTC), time.UTC)
-	for _, want := range []string{"RESUMO DO RELATÓRIO", "Limpos, mas desforrados: 1", "Entrada: 1 quartos — 👥 3 pessoas", "Manutenção de limpeza: 1 quartos — 👥 2 pessoas", "Total: 4 quartos"} {
+	for _, want := range []string{"RESUMO DO RELATÓRIO", "Limpos, mas desforrados: 1", "Entrada: 1 quartos — 👥 3 pessoas", "Manutenção de limpeza: 1 quartos — 👥 2 pessoas", "QUARTOS SUJOS / PARA LIMPAR (2)\n105, 106", "QUARTOS LIMPOS, MAS DESFORRADOS (1)\n104", "Total: 6 quartos"} {
 		if !bytes.Contains([]byte(got), []byte(want)) {
 			t.Fatalf("summary missing %q: %s", want, got)
 		}

@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.11.0
+.\scripts\build.ps1 -Version 0.11.1
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -77,6 +77,8 @@ Em **Gestão Assistente**, o operador administra os 42 quartos, histórico e ocu
 ## Importação de caixa por PDF
 
 Na aba **Importar caixa**, vários relatórios diários podem ser selecionados de uma vez. Antes da gravação, o Tino extrai saldo inicial, entradas, saídas e saldo final, confere a equação contábil, bloqueia datas duplicadas e mantém divergências separadas para revisão. Os originais aceitos ficam preservados em `data/operations/caixa-importados/` e são identificados por SHA-256.
+
+O dashboard abre no mês corrente e, após uma importação, passa automaticamente ao intervalo importado. Em períodos com vários dias, o saldo inicial é o do primeiro dia e o saldo consolidado é o fechamento do último dia, sem somar saldos de abertura repetidamente.
 
 ## Evidência de entrega
 

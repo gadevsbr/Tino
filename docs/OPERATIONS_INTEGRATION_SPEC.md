@@ -17,6 +17,10 @@ O motor de domínio e o transporte completo foram migrados e anexados ao cliente
 
 O Tino aceita seleção múltipla dos PDFs diários, reconhece os layouts legado e atual e mostra uma prévia antes de gravar. Apenas dias conciliados são importados. SHA-256 e data operacional impedem repetição, e o documento original é guardado em `data/operations/caixa-importados/`. Divergências ficam visíveis como **Revisar** e não alteram o banco.
 
+O dashboard financeiro usa o primeiro saldo de abertura do período e o saldo final do último dia. Depois da importação, a UI seleciona o intervalo importado e atualiza os indicadores automaticamente.
+
+Ao enviar a situação dos quartos por WhatsApp, o resumo textual que acompanha o PDF lista separadamente os números dos quartos **sujos/para limpar** e dos quartos **limpos, mas desforrados**.
+
 ## Gates de validação
 
 - Testes automatizados e build provam integração local.
