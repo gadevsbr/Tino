@@ -128,3 +128,4 @@
 - Evidência: `go test -count=1 ./...`, `go vet ./...`, testes Node, build Vite e build Wails passaram; `Tino.exe` abriu responsivo com WebView2 ativo.
 - SHA-256 local do `Tino.exe`: `B5EDDE0E7C1A50A2CCEC4C474F13D4E4F3CD4E60F811EE3F4A2A2CC265F46D9E`.
 - Limite: a configuração comercial, o catálogo e os comandos foram validados em testes locais; mensagens reais, captura de produto e OmniBees exigem conta e provedor externos.
+- Evidência de release: commit funcional `ca783ca` enviado à `main`; release `v0.10.0` publicada com UI e CLI auxiliar.
