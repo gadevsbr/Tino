@@ -26,6 +26,7 @@ internal/audit/     coleta e exportação JSON/CSV
 internal/batch/     leitura CSV, limites e envio sequencial
 internal/chat/      histórico local e consultas de conversas
 internal/flow/      roteamento de mensagens por templates
+internal/assistente/ domínio operacional migrado: hotel, caixa e comercial
 config/             configuração e regras de exemplo
 scripts/            build reproduzível do executável
 project-memory/     decisões e evidências curtas
@@ -66,6 +67,8 @@ O fluxo continua persistido em YAML para portabilidade e backup, mas o arquivo n
 A tela **Central de recursos** permite ativar ou desativar módulos disponíveis, preparar permissões por perfil e escolher uma pasta explicitamente autorizada. As configurações ficam em `data/capabilities.json`, fora do Git. Recursos desativados são recusados também pelo backend, não apenas ocultados visualmente.
 
 As funções mapeadas do Assistente Paraíso aparecem como **Planejado** e não podem ser ativadas antes de uma migração segura. A análise, os limites e a sequência proposta estão em [`docs/ASSISTENTE_PARAISO_INTEGRATION.md`](docs/ASSISTENTE_PARAISO_INTEGRATION.md). A configuração atual de perfis é a fundação da autorização; ela ainda não substitui autenticação local por usuário.
+
+O núcleo operacional do Assistente já está anexado à mesma sessão WhatsApp do Tino. Cadastre telefones com DDI em **Central de recursos > Operadores do WhatsApp**. Os cards especializados continuam como planejados enquanto as respectivas telas e os controles seletivos não estiverem concluídos; veja [`docs/OPERATIONS_INTEGRATION_SPEC.md`](docs/OPERATIONS_INTEGRATION_SPEC.md).
 
 ## Evidência de entrega
 

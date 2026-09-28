@@ -1,0 +1,47 @@
+package reports
+
+import (
+	"bytes"
+	"github.com/gadevsbr/tino/internal/assistente/rooms"
+	"testing"
+	"time"
+)
+
+func TestPDFHasOneLandscapePageAnd42Rooms(t *testing.T) {
+	list := make([]rooms.Room, 42)
+	for i, n := range rooms.OfficialNumbers {
+		list[i] = rooms.Room{Number: n, Status: rooms.AvailableClean}
+	}
+	list[0] = rooms.Room{Number: 101, Status: rooms.Entry, GuestCount: 3}
+	list[1] = rooms.Room{Number: 102, Status: rooms.CleanUnmade}
+	data, err := New(time.UTC).Generate(list, time.Date(2026, 8, 13, 12, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.HasPrefix(data, []byte("%PDF-")) {
+		t.Fatal("invalid PDF")
+	}
+	for _, needle := range [][]byte{[]byte("/MediaBox [0 0 841.89 595.28]"), []byte("%%EOF")} {
+		if !bytes.Contains(data, needle) {
+			t.Fatalf("missing %s", needle)
+		}
+	}
+	if got := roomFormatting(list[0]); got != "ENTRADA | 3 pessoa(s)" {
+		t.Fatalf("guest formatting=%q", got)
+	}
+}
+
+func TestSummaryIncludesStatusAndGuestTotals(t *testing.T) {
+	list := []rooms.Room{
+		{Number: 101, Status: rooms.Entry, GuestCount: 3},
+		{Number: 102, Status: rooms.OccupiedClean, GuestCount: 2},
+		{Number: 103, Status: rooms.AvailableClean},
+		{Number: 104, Status: rooms.CleanUnmade},
+	}
+	got := Summary(list, time.Date(2026, 8, 14, 9, 30, 0, 0, time.UTC), time.UTC)
+	for _, want := range []string{"RESUMO DO RELATÓRIO", "Limpos, mas desforrados: 1", "Entrada: 1 quartos — 👥 3 pessoas", "Manutenção de limpeza: 1 quartos — 👥 2 pessoas", "Total: 4 quartos"} {
+		if !bytes.Contains([]byte(got), []byte(want)) {
+			t.Fatalf("summary missing %q: %s", want, got)
+		}
+	}
+}

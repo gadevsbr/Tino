@@ -35,6 +35,8 @@ type App struct {
 	version      string
 	flowStarted  bool
 	mu           sync.Mutex
+	hotelMu      sync.Mutex
+	hotel        *hotelRuntime
 }
 
 type StatusDTO struct {
@@ -73,10 +75,19 @@ func NewApp(cfg config.Config, mgr *session.Manager, chats *chat.Store, capabili
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.mgr.Client.AddEventHandler(a.handleEvent)
+	if err := a.restartHotelRuntime(); err != nil {
+		a.emitActivity("Operação hoteleira", err.Error(), "error")
+	} else {
+		a.emitActivity("Operação hoteleira", "Motor operacional carregado no WhatsApp do Tino", "success")
+	}
 	a.emitStatus()
 }
 
 func (a *App) shutdown(context.Context) {
+	a.hotelMu.Lock()
+	a.hotel.Close()
+	a.hotel = nil
+	a.hotelMu.Unlock()
 	_ = a.chats.Close()
 	_ = a.mgr.Close()
 }
@@ -119,6 +130,9 @@ func (a *App) ResetSession() error {
 		return err
 	}
 	a.mgr.Client.AddEventHandler(a.handleEvent)
+	if err := a.restartHotelRuntime(); err != nil {
+		return fmt.Errorf("reiniciar motor operacional: %w", err)
+	}
 	a.mu.Lock()
 	a.flowStarted = false
 	a.mu.Unlock()
@@ -281,6 +295,18 @@ func (a *App) StartFlow(def flow.Definition) error {
 
 func (a *App) GetCapabilities() (capability.Settings, error) { return a.capabilities.Load() }
 func (a *App) SaveCapabilities(settings capability.Settings) error {
+	seenOperators := map[string]bool{}
+	for i, raw := range settings.Operators {
+		number := digitsOnly(raw)
+		if len(number) < 10 || len(number) > 15 {
+			return fmt.Errorf("operador %q precisa ter DDI e entre 10 e 15 dígitos", raw)
+		}
+		if seenOperators[number] {
+			return fmt.Errorf("operador duplicado: %s", number)
+		}
+		seenOperators[number] = true
+		settings.Operators[i] = number
+	}
 	known := map[string]bool{}
 	for _, module := range settings.Modules {
 		if !module.Available && module.Enabled {
@@ -295,7 +321,44 @@ func (a *App) SaveCapabilities(settings capability.Settings) error {
 			}
 		}
 	}
-	return a.capabilities.Save(settings)
+	if err := a.capabilities.Save(settings); err != nil {
+		return err
+	}
+	if a.ctx != nil {
+		if err := a.restartHotelRuntime(); err != nil {
+			return fmt.Errorf("configuração salva, mas o motor operacional não reiniciou: %w", err)
+		}
+	}
+	return nil
+}
+
+func (a *App) restartHotelRuntime() error {
+	a.hotelMu.Lock()
+	defer a.hotelMu.Unlock()
+	if a.hotel != nil {
+		a.hotel.Close()
+		a.hotel = nil
+	}
+	settings, err := a.capabilities.Load()
+	if err != nil {
+		return err
+	}
+	runtime, err := openHotelRuntime(a.ctx, a.cfg.DataDir, settings, a.mgr.Client)
+	if err != nil {
+		return err
+	}
+	a.hotel = runtime
+	return nil
+}
+
+func digitsOnly(value string) string {
+	var b strings.Builder
+	for _, r := range value {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 func (a *App) ChooseWorkspace() (string, error) {
 	path, err := wailsRuntime.OpenDirectoryDialog(a.ctx, wailsRuntime.OpenDialogOptions{Title: "Escolha a pasta autorizada"})

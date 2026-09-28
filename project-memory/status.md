@@ -95,3 +95,12 @@
 - Evidência: dois testes Node do contrato passaram; build Vite passou; o binding Wails confirmou os nomes camelCase; `go test -count=1 ./...` e `go vet ./...` passaram; `Tino.exe` 0.7.1 abriu responsivo com WebView2 ativo.
 - SHA-256 local do `Tino.exe`: `6D8CC2EDD2E477D840809CA6617D1689D8C5E555D836007F0E4E697F14D0810C`.
 - Evidência de release: commit `152c46a` enviado à `main`; release `v0.7.1` publicada com UI e CLI auxiliar.
+
+## Etapa 12 — Núcleo operacional unificado
+
+- Status: integrado e validado localmente; telas administrativas especializadas ainda em desenvolvimento.
+- Escopo concluído nesta etapa: código de quartos, relatórios, caixa/OCR/comprovantes, extratos, vales, OmniBees, comercial, catálogo e backup migrado; transporte anexado à sessão `whatsmeow` do Tino; cadastro de operadores na Central de Recursos.
+- Persistência: `data/operations/hotel.db`, ignorada pelo Git; nenhuma sessão, segredo ou base real do Assistente foi copiada.
+- Evidência: `go test -count=1 ./...` passou para todos os pacotes; testes Node do contrato passaram; build Vite passou; Wails gerou o executável 0.8.0, que abriu responsivo com WebView2 ativo.
+- SHA-256 local do `Tino.exe`: `020076CAE1B9F2882417AFC7D0967549CE277E571B3DE82DBD21306DC041E838`.
+- Pendente: telas de PDFs, dashboard de caixa, comprovantes, extratos, vales, catálogo e backup; controles seletivos por módulo; teste real com conta WhatsApp e provedores externos.

@@ -26,6 +26,7 @@ type Role struct {
 type Settings struct {
 	Modules       []Module `json:"modules"`
 	Roles         []Role   `json:"roles"`
+	Operators     []string `json:"operators"`
 	WorkspaceRoot string   `json:"workspaceRoot"`
 }
 
@@ -38,6 +39,7 @@ func NewStore(path string) *Store { return &Store{path: path} }
 
 func Defaults() Settings {
 	return Settings{
+		Operators: []string{},
 		Modules: []Module{
 			{ID: "conversations", Name: "Conversas", Description: "Histórico local e respostas manuais.", Category: "Tino", Enabled: true, Available: true},
 			{ID: "notifications", Name: "Notificações", Description: "Listas consentidas com limites operacionais.", Category: "Tino", Enabled: true, Available: true},

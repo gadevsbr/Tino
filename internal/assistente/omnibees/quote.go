@@ -1,0 +1,334 @@
+package omnibees
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
+	"golang.org/x/net/html"
+)
+
+var ErrNoPrices = errors.New("nenhum preço total confirmado na OmniBees")
+
+var roomNames = map[string]string{
+	"superluxo":        "Quarto Duplo Superluxo com Varanda e Vista Mar",
+	"familia":          "Quarto Família Deluxe com Vista Mar",
+	"triploDeluxe":     "Quarto Triplo Deluxe com Varanda",
+	"quadruploDeluxe":  "Quarto Quadruplo Deluxe com Varanda",
+	"quadruploVista":   "Quarto Quadruplo Deluxe com Varanda e Vista Mar",
+	"triploVaranda":    "Quarto Triplo com Varanda",
+	"triplo":           "Quarto Triplo",
+	"quadruploVaranda": "Quarto Quádruplo Com Varanda",
+	"duplo":            "Quarto Duplo",
+}
+
+type Search struct {
+	URL      *url.URL
+	CheckIn  time.Time
+	CheckOut time.Time
+	Adults   int
+	Children int
+	Ages     []int
+	Discount int
+}
+
+func ParseLink(raw string, discount int) (Search, error) {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u.Scheme != "https" || !strings.EqualFold(u.Hostname(), "book.omnibees.com") || u.User != nil || u.Port() != "" || u.Path != "/hotelresults" {
+		return Search{}, errors.New("envie um link HTTPS de resultados da OmniBees")
+	}
+	q := u.Query()
+	if q.Get("q") != "17134" || q.Get("c") != "9224" || q.Get("currencyId") != "16" || q.Get("NRooms") != "1" {
+		return Search{}, errors.New("o link precisa ser da busca do Hotel Paraíso Tropical, em reais e para um quarto")
+	}
+	checkIn, err := time.Parse("02012006", q.Get("CheckIn"))
+	if err != nil || checkIn.Format("02012006") != q.Get("CheckIn") {
+		return Search{}, errors.New("CheckIn inválido no link")
+	}
+	checkOut, err := time.Parse("02012006", q.Get("CheckOut"))
+	if err != nil || checkOut.Format("02012006") != q.Get("CheckOut") || !checkOut.After(checkIn) {
+		return Search{}, errors.New("CheckOut inválido no link")
+	}
+	adults, err := strconv.Atoi(q.Get("ad"))
+	if err != nil || adults < 1 || adults > 5 {
+		return Search{}, errors.New("quantidade de adultos inválida no link")
+	}
+	children, err := strconv.Atoi(q.Get("ch"))
+	if err != nil || children < 0 || children > 4 || adults+children > 5 {
+		return Search{}, errors.New("quantidade de crianças inválida no link")
+	}
+	ages := []int{}
+	if strings.TrimSpace(q.Get("ag")) != "" {
+		for _, item := range regexp.MustCompile(`[;,\s]+`).Split(strings.TrimSpace(q.Get("ag")), -1) {
+			if item == "" {
+				continue
+			}
+			age, err := strconv.Atoi(item)
+			if err != nil || age < 0 || age > 17 {
+				return Search{}, errors.New("idade infantil inválida no link")
+			}
+			ages = append(ages, age)
+		}
+	}
+	if len(ages) != children {
+		return Search{}, errors.New("o link não informa a idade de todas as crianças")
+	}
+	if discount < 0 || discount > 8 {
+		return Search{}, errors.New("desconto deve ser de 0% a 8%")
+	}
+	return Search{URL: u, CheckIn: checkIn, CheckOut: checkOut, Adults: adults, Children: children, Ages: ages, Discount: discount}, nil
+}
+
+func Fetch(ctx context.Context, search Search) (string, error) {
+	result, err := FetchResult(ctx, search)
+	return result.Text, err
+}
+
+// FetchResult keeps category identities alongside the same verified totals used
+// by the operator quote. Callers must never reconstruct categories from prose.
+func FetchResult(ctx context.Context, search Search) (Result, error) {
+	prices, err := fetchPrices(ctx, search)
+	if err != nil {
+		return Result{}, err
+	}
+	return Result{Text: Format(search, prices), Categories: Categories(search, prices)}, nil
+}
+
+func fetchPrices(ctx context.Context, search Search) (map[string]int64, error) {
+	if search.URL == nil {
+		return nil, errors.New("URL de orçamento ausente")
+	}
+	validated, err := ParseLink(search.URL.String(), search.Discount)
+	if err != nil {
+		return nil, err
+	}
+	if validated.Adults != search.Adults || validated.Children != search.Children || !validated.CheckIn.Equal(search.CheckIn) || !validated.CheckOut.Equal(search.CheckOut) || fmt.Sprint(validated.Ages) != fmt.Sprint(search.Ages) {
+		return nil, errors.New("dados do orçamento divergem da URL")
+	}
+	client := &http.Client{Timeout: 25 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		if len(via) > 3 || req.URL.Scheme != "https" || !strings.EqualFold(req.URL.Hostname(), "book.omnibees.com") {
+			return errors.New("redirecionamento fora da OmniBees")
+		}
+		return nil
+	}}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, search.URL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; AssistenteParaiso/1.0)")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("OmniBees respondeu HTTP %d", resp.StatusCode)
+	}
+	if !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "html") {
+		return nil, errors.New("resposta da OmniBees não é HTML")
+	}
+	page, err := io.ReadAll(io.LimitReader(resp.Body, (5<<20)+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(page) > 5<<20 {
+		return nil, errors.New("resposta da OmniBees maior que o limite de segurança")
+	}
+	prices, err := ExtractPrices(string(page))
+	if err != nil {
+		return nil, err
+	}
+	return prices, nil
+}
+
+func ExtractPrices(page string) (map[string]int64, error) {
+	root, err := html.Parse(strings.NewReader(page))
+	if err != nil {
+		return nil, err
+	}
+	prices := map[string]int64{}
+	var visit func(*html.Node)
+	visit = func(n *html.Node) {
+		if n.Type == html.ElementNode {
+			name := attr(n, "data-room-name")
+			if name != "" && !hidden(n) {
+				if total := findClass(n, "price-total-bold"); total != nil {
+					if cents, ok := parseBRL(textContent(total)); ok {
+						key := normalize(name)
+						if _, exists := prices[key]; !exists {
+							prices[key] = cents
+						}
+					}
+				}
+			}
+		}
+		for child := n.FirstChild; child != nil; child = child.NextSibling {
+			visit(child)
+		}
+	}
+	visit(root)
+	if len(prices) == 0 {
+		return nil, ErrNoPrices
+	}
+	return prices, nil
+}
+
+func attr(n *html.Node, key string) string {
+	for _, a := range n.Attr {
+		if a.Key == key {
+			return a.Val
+		}
+	}
+	return ""
+}
+func hasAttr(n *html.Node, key string) bool {
+	for _, a := range n.Attr {
+		if a.Key == key {
+			return true
+		}
+	}
+	return false
+}
+func findClass(n *html.Node, class string) *html.Node {
+	if n.Type == html.ElementNode && hasClass(n, class) {
+		return n
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if found := findClass(c, class); found != nil {
+			return found
+		}
+	}
+	return nil
+}
+func hasClass(n *html.Node, class string) bool {
+	for _, item := range strings.Fields(attr(n, "class")) {
+		if item == class {
+			return true
+		}
+	}
+	return false
+}
+func hidden(n *html.Node) bool {
+	for current := n; current != nil; current = current.Parent {
+		if current.Type != html.ElementNode {
+			continue
+		}
+		style := strings.ToLower(strings.ReplaceAll(attr(current, "style"), " ", ""))
+		if strings.Contains(style, "display:none") || hasAttr(current, "hidden") || strings.EqualFold(attr(current, "aria-hidden"), "true") || hasClass(current, "d-none") || hasClass(current, "hidden") {
+			return true
+		}
+	}
+	return false
+}
+func textContent(n *html.Node) string {
+	var b strings.Builder
+	var walk func(*html.Node)
+	walk = func(node *html.Node) {
+		if node.Type == html.TextNode {
+			b.WriteString(node.Data)
+		}
+		for c := node.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
+		}
+	}
+	walk(n)
+	return b.String()
+}
+func parseBRL(value string) (int64, bool) {
+	m := regexp.MustCompile(`R\$\s*([\d.]+),(\d{2})`).FindStringSubmatch(value)
+	if len(m) == 0 {
+		return 0, false
+	}
+	whole, err := strconv.ParseInt(strings.ReplaceAll(m[1], ".", ""), 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	frac, _ := strconv.ParseInt(m[2], 10, 64)
+	return whole*100 + frac, true
+}
+func normalize(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	replacer := strings.NewReplacer("á", "a", "à", "a", "â", "a", "ã", "a", "é", "e", "ê", "e", "í", "i", "ó", "o", "ô", "o", "õ", "o", "ú", "u", "ç", "c")
+	return strings.Join(strings.Fields(replacer.Replace(s)), " ")
+}
+
+func Format(s Search, prices map[string]int64) string {
+	courtesy := 0
+	for _, age := range s.Ages {
+		if age <= 7 {
+			courtesy++
+		}
+	}
+	paying := s.Adults + s.Children - courtesy
+	configuration := map[int]string{1: "Solo", 2: "Duplo", 3: "Triplo", 4: "Quádruplo", 5: "Quíntuplo"}[paying]
+	if courtesy == 1 {
+		configuration += " + 01 cortesia infantil"
+	} else if courtesy > 1 {
+		configuration += fmt.Sprintf(" + %02d cortesias infantis", courtesy)
+	}
+	lines := []string{}
+	for _, category := range Categories(s, prices) {
+		lines = append(lines, fmt.Sprintf("• %s: R$ %d,%02d", category.Name, category.TotalCents/100, category.TotalCents%100))
+	}
+	if len(lines) == 0 {
+		lines = []string{"Nenhuma suíte disponível foi localizada."}
+	}
+	nights := int(s.CheckOut.Sub(s.CheckIn).Hours() / 24)
+	nightLabel := "noites"
+	if nights == 1 {
+		nightLabel = "noite"
+	}
+	return fmt.Sprintf("Período: %s a %s (%d %s)\nRegime: Café da manhã\nConfiguração: %s\n\nSuítes disponíveis\n%s\n\nOrçamento válido por 24 horas", s.CheckIn.Format("02/01/2006"), s.CheckOut.Format("02/01/2006"), nights, nightLabel, configuration, strings.Join(lines, "\n"))
+}
+
+type Category struct {
+	Key        string `json:"key"`
+	SourceKey  string `json:"source_key"`
+	Name       string `json:"name"`
+	TotalCents int64  `json:"total_cents"`
+}
+
+type Result struct {
+	Text       string
+	Categories []Category
+}
+
+// Categories uses physical occupancy even when a child receives a courtesy.
+func Categories(s Search, prices map[string]int64) []Category {
+	occupants := s.Adults + s.Children
+	type option struct{ name, key string }
+	options := []option{}
+	switch {
+	case occupants >= 5:
+		options = []option{{roomNames["familia"], "familia"}}
+	case occupants == 4:
+		options = []option{{"Suíte Deluxe com vista para o mar", "quadruploVista"}, {"Suíte Deluxe com varanda", "quadruploDeluxe"}, {"Suíte com varanda", "quadruploVaranda"}}
+	default:
+		internal := "duplo"
+		if occupants >= 3 {
+			internal = "triplo"
+		}
+		options = []option{{"Suíte Superluxo com varanda e vista mar", "superluxo"}, {"Suíte Deluxe com vista para o mar", "familia"}, {"Suíte Deluxe com varanda", "triploDeluxe"}, {"Suíte com varanda", "triploVaranda"}, {"Suíte interna", internal}}
+	}
+	result := []Category{}
+	for _, o := range options {
+		cents, ok := prices[normalize(roomNames[o.key])]
+		if !ok || cents <= 0 {
+			continue
+		}
+		cents = (cents*int64(100-s.Discount) + 50) / 100
+		key := map[string]string{"superluxo": "superluxo", "familia": "deluxe_vista_mar", "quadruploVista": "deluxe_vista_mar", "triploDeluxe": "deluxe_varanda", "quadruploDeluxe": "deluxe_varanda", "triploVaranda": "varanda", "quadruploVaranda": "varanda", "duplo": "interna", "triplo": "interna"}[o.key]
+		if occupants >= 5 {
+			key = "familia"
+		}
+		result = append(result, Category{Key: key, SourceKey: o.key, Name: o.name, TotalCents: cents})
+	}
+	return result
+}
