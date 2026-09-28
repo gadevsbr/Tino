@@ -157,4 +157,5 @@
 - Relatório genérico: `relatorio em pdf` envia quartos e, em seguida, o caixa do mês corrente.
 - Evidência: testes direcionados de filtro de grupo e intervalo mensal passaram; `go test -count=1 ./...`, `go vet ./...` e build Wails 0.11.2 passaram.
 - SHA-256 local do `Tino.exe`: `14C0DD540C5CB462A894ED38D277A1933DA56D0C199581EBF2E316D98B44FA97`.
+- Evidência de release: commit funcional `75202b3` enviado à `main`; release `v0.11.2` publicada com a interface e a CLI auxiliar.
 - Limite: falta confirmar recebimento em conversa/grupo reais após a reabertura do executável.
