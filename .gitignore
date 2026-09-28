@@ -15,8 +15,15 @@ exports/
 
 # Build output
 dist/
+!cmd/tino-modern/frontend/dist/
+!cmd/tino-modern/frontend/dist/**
 *.exe
 coverage.out
+cmd/tino-modern/build/bin/
+cmd/tino-modern/frontend/node_modules/
+cmd/tino-modern/frontend/wailsjs/
+cmd/tino-modern/frontend/tino-modern-preview.png
+cmd/tino-modern/frontend/package.json.md5
 
 # Editors and OS
 .idea/

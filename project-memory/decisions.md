@@ -13,3 +13,7 @@
 - 2026-09-27 — A home usa o QR apenas durante o pareamento; depois da autenticação, o mesmo espaço mostra conversas e histórico. Mensagens novas e blocos de HistorySync são persistidos em SQLite local, sem prometer recuperação integral do histórico antigo controlado pelo WhatsApp.
 - 2026-09-27 — Superseded: considerar `Client.IsConnected()` suficiente para exibir a conta como conectada estava incorreto, pois esse método confirma apenas o socket.
 - 2026-09-27 — O estado conectado, a home de conversas e as operações protegidas passam a exigir `Client.IsLoggedIn()`. Sessões locais obsoletas podem ser removidas pela UI para gerar outro QR, preservando o banco de histórico.
+- 2026-09-28 — Superseded: a UI Win32/Walk, mesmo tematizada, mantém controles e composição visual com aparência legada e deixa de ser a interface principal.
+- 2026-09-28 — A interface principal passa a usar Wails v2.15 com React, Vite e Lucide, embarcada no executável Windows via WebView2. O motor Go, Whatsmeow e os bancos SQLite permanecem locais.
+- 2026-09-28 — A Central de Recursos persiste feature flags, perfis e uma raiz de arquivos autorizada em `data/capabilities.json`. Módulos desativados são validados no backend; perfis só serão barreira de segurança após autenticação local.
+- 2026-09-28 — As funções do Assistente Paraíso serão migradas como plugins de domínio. Bancos, sessões, `.env`, comprovantes e dados reais não serão copiados; recursos ainda não integrados aparecem como planejados e não podem ser ativados.

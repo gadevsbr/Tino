@@ -1,14 +1,15 @@
 # Tino
 
-Aplicação desktop Windows com interface gráfica nativa que mantém uma sessão WhatsApp Multi-Device com `whatsmeow`, apresenta conversas e histórico local, audita contatos/grupos, processa notificações consentidas e responde mensagens por regras declarativas. Uma CLI auxiliar também acompanha o projeto.
+Aplicação desktop Windows com interface moderna React/Wails que mantém uma sessão WhatsApp Multi-Device com `whatsmeow`, apresenta conversas e histórico local, audita contatos/grupos, processa notificações consentidas e responde mensagens por regras declarativas. Uma CLI auxiliar também acompanha o projeto.
 
-A interface utiliza identidade visual própria, navegação por áreas, hierarquia tipográfica Segoe UI, estados operacionais visíveis e ícone incorporado ao executável.
+A interface utiliza identidade visual própria, navegação lateral, cards responsivos, ícones Lucide, estados operacionais visíveis e ícone incorporado ao executável. O React é embarcado no `Tino.exe`; nenhum servidor web precisa permanecer ativo.
 
 > `whatsmeow` não usa MTProto. MTProto é do Telegram; o WhatsApp Multi-Device usa Noise e protocolos próprios. O projeto também não implementa aquecimento artificial de conta nem atrasos para imitar pessoas ou contornar controles. Os intervalos existem como limitação operacional explícita e não garantem aceitação pela plataforma.
 
 ## Requisitos e limites
 
-- Go 1.26 ou o executável pronto em `dist/`.
+- Go 1.26 e Node.js apenas para desenvolvimento, ou o executável pronto em `dist/`.
+- Microsoft WebView2 Runtime, já presente por padrão no Windows 11 e na maioria das instalações atuais do Windows 10.
 - Uma conta autorizada e uso em conformidade com os termos do WhatsApp e a legislação aplicável.
 - O contato precisa ter consentido; o CSV exige `consent=true`.
 - `whatsmeow` é um cliente não oficial. Para campanhas e uso empresarial em produção, prefira a WhatsApp Business Platform oficial.
@@ -17,7 +18,8 @@ A interface utiliza identidade visual própria, navegação por áreas, hierarqu
 ## Estrutura
 
 ```text
-cmd/tino-ui/        aplicação desktop e recursos incorporados
+cmd/tino-modern/    aplicação Wails, ponte Go e frontend React
+cmd/tino-ui/        interface Win32 anterior mantida como referência temporária
 cmd/tino/           CLI auxiliar
 internal/session/   sessão SQLite, reconexão e QR
 internal/audit/     coleta e exportação JSON/CSV
@@ -33,7 +35,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.6.1
+.\scripts\build.ps1 -Version 0.7.0
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -58,6 +60,12 @@ Quando o CSV não contém `message`/`mensagem`, a mensagem é preenchida na pró
 Na aba **Flow Builder**, use **Nova regra** para definir a condição e a resposta sem editar arquivos. As regras podem ser editadas, excluídas e movidas para cima ou para baixo; a primeira correspondência vence. O simulador mostra a resposta antes da ativação. A resposta padrão é usada quando nenhuma regra combina.
 
 O fluxo continua persistido em YAML para portabilidade e backup, mas o arquivo não precisa ser manipulado manualmente. Apenas conversas individuais recebidas são respondidas; grupos e mensagens do próprio usuário são ignorados.
+
+## Central de recursos
+
+A tela **Central de recursos** permite ativar ou desativar módulos disponíveis, preparar permissões por perfil e escolher uma pasta explicitamente autorizada. As configurações ficam em `data/capabilities.json`, fora do Git. Recursos desativados são recusados também pelo backend, não apenas ocultados visualmente.
+
+As funções mapeadas do Assistente Paraíso aparecem como **Planejado** e não podem ser ativadas antes de uma migração segura. A análise, os limites e a sequência proposta estão em [`docs/ASSISTENTE_PARAISO_INTEGRATION.md`](docs/ASSISTENTE_PARAISO_INTEGRATION.md). A configuração atual de perfis é a fundação da autorização; ela ainda não substitui autenticação local por usuário.
 
 ## Evidência de entrega
 
