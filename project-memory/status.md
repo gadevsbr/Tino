@@ -177,3 +177,4 @@
 - Consulta real de 15/10/2026 a 18/10/2026: 2 pessoas retornaram apenas Superluxo dupla; 3 retornaram dois triplos; 4 retornaram três quádruplos; 5 não tinham preço disponível.
 - Evidência: testes determinísticos cobrem cada capacidade e impedem regressão para quartos maiores.
 - Evidência de build: `go test -count=1 ./...`, `go vet ./...` e Wails 0.11.4 passaram; SHA-256 do `Tino.exe`: `CB8B9407CE06F91293ABD159ED532D4468BA13B550AF6C20B4C6E79CEE65090B`.
+- Evidência de release: commit funcional `d31a4ee` enviado à `main`; release `v0.11.4` publicada com a interface e a CLI auxiliar.
