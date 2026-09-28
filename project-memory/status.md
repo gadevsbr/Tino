@@ -77,10 +77,11 @@
 
 ## Etapa 10 — Interface moderna e Central de Recursos v0.7.0
 
-- Status: implementação e validação local concluídas; publicação pendente.
+- Status: concluída e publicada.
 - Interface: Wails v2.15 + React 19 + Vite + Lucide; navegação lateral, onboarding/QR, conversas, base/notificações, Flow Builder, recursos/perfis/arquivos e atividade foram reconstruídos.
 - Governança: feature flags persistentes, bloqueio backend de notificações/auditoria/flow quando desativados, matriz inicial de perfis e seleção de pasta autorizada.
 - Assistente Paraíso: quartos, caixa/OCR, extratos, vales, comercial/OmniBees/catálogo e backup foram mapeados na UI como planejados e documentados, sem importar segredos ou dados.
 - Evidência: `go test -count=1 ./...` e `go vet ./...` passaram; teste de persistência da Central de Recursos passou; build Vite produziu bundle sem vulnerabilidades reportadas pelo npm; build Wails 0.7.0 gerou executável; `Tino.exe` abriu responsivo e iniciou o processo filho `msedgewebview2.exe`.
 - Limite: a ferramenta de inspeção visual não expôs a janela nativa nem navegador nesta sessão; falta inspeção automatizada pixel a pixel. Pareamento e operações WhatsApp reais continuam dependentes de conta/dispositivo autorizado.
 - SHA-256 local do `Tino.exe`: `20B1368A1B73EC131EDAC2F4AA5C1B3E4959FFB80800F027B150AA03D968FCA2`.
+- Evidência de release: commit `3bdc89d` enviado à `main`; release `v0.7.0` publicada com a interface moderna e a CLI auxiliar.
