@@ -69,7 +69,7 @@ func TestExtractAndFormat(t *testing.T) {
 	}
 	s, _ := ParseLink(sampleURL, 5)
 	text := Format(s, prices)
-	for _, want := range []string{"19/09/2026 a 20/09/2026", "Duplo", "Suíte Duplo interna", "R$ 1172,83"} {
+	for _, want := range []string{"19/09/2026 a 20/09/2026", "Duplo", "Suíte Duplo interna", "R$ 1.172,83"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in %s", want, text)
 		}
@@ -136,5 +136,21 @@ func TestCategoriesKeepsOnlyExactCapacityOfferedByOmniBees(t *testing.T) {
 	categories := Categories(s, prices)
 	if len(categories) != 1 || categories[0].SourceKey != "superluxo" {
 		t.Fatalf("orçamento para duas pessoas deve conter somente opções duplas: %#v", categories)
+	}
+}
+
+func TestFormatBRLUsesBrazilianThousandsSeparator(t *testing.T) {
+	for _, tc := range []struct {
+		cents int64
+		want  string
+	}{
+		{0, "R$ 0,00"},
+		{99999, "R$ 999,99"},
+		{250420, "R$ 2.504,20"},
+		{123456789, "R$ 1.234.567,89"},
+	} {
+		if got := formatBRL(tc.cents); got != tc.want {
+			t.Fatalf("formatBRL(%d)=%q, want %q", tc.cents, got, tc.want)
+		}
 	}
 }

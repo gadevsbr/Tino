@@ -47,7 +47,8 @@ type Repository struct {
 func NewRepository(db *sql.DB, location *time.Location) *Repository {
 	return &Repository{db: db, location: location}
 }
-func (r *Repository) date(now time.Time) string { return now.In(r.location).Format("2006-01-02") }
+func (r *Repository) date(now time.Time) string         { return now.In(r.location).Format("2006-01-02") }
+func (r *Repository) BusinessDate(now time.Time) string { return r.date(now) }
 
 func (r *Repository) Open(ctx context.Context, cents int64, actor string, now time.Time) error {
 	return r.OpenDate(ctx, r.date(now), cents, actor)

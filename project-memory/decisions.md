@@ -34,3 +34,4 @@
 - 2026-09-28 — A resposta real da OmniBees é a fonte de disponibilidade: toda categoria visível com total confirmado entra no orçamento, preservando a acomodação física e o menor total quando houver tarifas repetidas.
 - 2026-09-28 — Superseded: incluir toda acomodação devolvida no HTML da OmniBees oferecia quartos maiores sem necessidade e contrariava a regra comercial definida pelo usuário.
 - 2026-09-28 — O orçamento cruza disponibilidade real com capacidade física exata: 1–2 pessoas recebem apenas duplos, 3 apenas triplos, 4 apenas quádruplos e 5 apenas família. Cortesia infantil altera a cobrança, não a ocupação física.
+- 2026-09-28 — Valores monetários do orçamento OmniBees usam o padrão brasileiro completo, com ponto de milhar e vírgula decimal (`R$ 2.504,20`).

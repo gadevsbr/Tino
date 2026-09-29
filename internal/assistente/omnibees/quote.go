@@ -302,7 +302,7 @@ func Format(s Search, prices map[string]int64) string {
 	}
 	lines := []string{}
 	for _, category := range Categories(s, prices) {
-		lines = append(lines, fmt.Sprintf("• %s: R$ %d,%02d", category.Name, category.TotalCents/100, category.TotalCents%100))
+		lines = append(lines, fmt.Sprintf("• %s: %s", category.Name, formatBRL(category.TotalCents)))
 	}
 	if len(lines) == 0 {
 		lines = []string{"Nenhuma suíte disponível foi localizada."}
@@ -313,6 +313,19 @@ func Format(s Search, prices map[string]int64) string {
 		nightLabel = "noite"
 	}
 	return fmt.Sprintf("Período: %s a %s (%d %s)\nRegime: Café da manhã\nConfiguração: %s\n\nSuítes disponíveis\n%s\n\nOrçamento válido por 24 horas", s.CheckIn.Format("02/01/2006"), s.CheckOut.Format("02/01/2006"), nights, nightLabel, configuration, strings.Join(lines, "\n"))
+}
+
+func formatBRL(cents int64) string {
+	sign := ""
+	if cents < 0 {
+		sign = "-"
+		cents = -cents
+	}
+	whole := strconv.FormatInt(cents/100, 10)
+	for i := len(whole) - 3; i > 0; i -= 3 {
+		whole = whole[:i] + "." + whole[i:]
+	}
+	return fmt.Sprintf("%sR$ %s,%02d", sign, whole, cents%100)
 }
 
 type Category struct {

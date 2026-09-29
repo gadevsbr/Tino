@@ -207,7 +207,7 @@ func (a *App) Handle(ctx context.Context, user, messageID, text string) (string,
 			if cmd.Date != "" {
 				return cmd.Date
 			}
-			return time.Now().Format("2006-01-02")
+			return a.cash.BusinessDate(time.Now())
 		}(), cmd.Cents, user); errors.Is(err, cash.ErrCashClosed) {
 			return "🔒 O caixa de hoje está fechado. Use `reabrir caixa` antes de alterar.", nil
 		} else if err != nil {
@@ -230,7 +230,7 @@ func (a *App) Handle(ctx context.Context, user, messageID, text string) (string,
 			if cmd.Date != "" {
 				return cmd.Date
 			}
-			return time.Now().Format("2006-01-02")
+			return a.cash.BusinessDate(time.Now())
 		}(), "ENTRY", cmd.Method, cmd.Cents, cmd.Text, user, messageID); errors.Is(err, cash.ErrCashClosed) {
 			return "🔒 O caixa de hoje está fechado. Use `reabrir caixa` antes de alterar.", nil
 		} else if err != nil {
@@ -245,7 +245,7 @@ func (a *App) Handle(ctx context.Context, user, messageID, text string) (string,
 			if cmd.Date != "" {
 				return cmd.Date
 			}
-			return time.Now().Format("2006-01-02")
+			return a.cash.BusinessDate(time.Now())
 		}(), "EXIT", "", cmd.Cents, cmd.Text, user, messageID); errors.Is(err, cash.ErrCashClosed) {
 			return "🔒 O caixa de hoje está fechado. Use `reabrir caixa` antes de alterar.", nil
 		} else if err != nil {

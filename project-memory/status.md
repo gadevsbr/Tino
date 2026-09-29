@@ -178,3 +178,11 @@
 - Evidência: testes determinísticos cobrem cada capacidade e impedem regressão para quartos maiores.
 - Evidência de build: `go test -count=1 ./...`, `go vet ./...` e Wails 0.11.4 passaram; SHA-256 do `Tino.exe`: `CB8B9407CE06F91293ABD159ED532D4468BA13B550AF6C20B4C6E79CEE65090B`.
 - Evidência de release: commit funcional `d31a4ee` enviado à `main`; release `v0.11.4` publicada com a interface e a CLI auxiliar.
+
+## Etapa 20 — Formatação monetária brasileira v0.11.5
+
+- Status: corrigida e validada.
+- Orçamentos passam a usar ponto para milhares e vírgula para centavos; por exemplo, `R$ 2.504,20`.
+- Evidência: testes cobrem zero, centenas, milhares e milhões; consulta real de 15/10/2026 a 18/10/2026 exibiu `R$ 2.235,54`.
+- Robustez: comandos de caixa passam a usar a data operacional do repositório, evitando divergência na virada do dia quando o fuso configurado difere do fuso do processo.
+- Evidência de build: `go test -count=1 ./...`, `go vet ./...` e Wails 0.11.5 passaram; SHA-256 do `Tino.exe`: `B0B2B4C316296E495121A3FB8E330800A5E7D4C401BE06CF3CC1FF53294E415A`.
