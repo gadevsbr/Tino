@@ -175,3 +175,46 @@ func TestCategoriesAcceptsOmniBeesLabelVariantsWithoutMixingCapacity(t *testing.
 		t.Fatalf("quadruplos=%#v", quadruplos)
 	}
 }
+
+func TestCategoriesMatchesFiveObservedOmniBeesOccupancies(t *testing.T) {
+	// Snapshot of the room labels observed in the five live searches supplied by
+	// the operator. OmniBees may advertise larger rooms in the HTML, so each
+	// quote must retain every available option of the requested capacity only.
+	prices := map[string]int64{
+		normalize("Quarto Duplo"):                                    132908,
+		normalize("Quarto Duplo Superluxo com Varanda e Vista Mar"):  257240,
+		normalize("Quarto Triplo"):                                   174116,
+		normalize("Quarto Triplo com Varanda"):                       179476,
+		normalize("Quarto Triplo Deluxe com Varanda"):                219656,
+		normalize("Quarto Quadruplo com Varanda"):                    187512,
+		normalize("Quarto Quadruplo Deluxe com Varanda"):             227692,
+		normalize("Quarto Quadruplo Deluxe com Varanda e Vista Mar"): 259836,
+		normalize("Quarto Familia Deluxe com Vista Mar"):             308000,
+	}
+	cases := []struct {
+		name       string
+		adults     int
+		children   int
+		ages       []int
+		wantSource []string
+	}{
+		{"dois adultos", 2, 0, nil, []string{"superluxo", "duplo"}},
+		{"tres adultos", 3, 0, nil, []string{"triploDeluxe", "triploVaranda", "triplo"}},
+		{"dois adultos e duas criancas", 2, 2, []int{5, 10}, []string{"quadruploVista", "quadruploDeluxe", "quadruploVaranda"}},
+		{"dois adultos, uma cortesia e uma crianca", 2, 2, []int{1, 10}, []string{"quadruploVista", "quadruploDeluxe", "quadruploVaranda"}},
+		{"tres adultos e duas criancas", 3, 2, []int{5, 10}, []string{"familia"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := Categories(Search{Adults: tc.adults, Children: tc.children, Ages: tc.ages}, prices)
+			if len(got) != len(tc.wantSource) {
+				t.Fatalf("categorias=%#v, esperava %v", got, tc.wantSource)
+			}
+			for i, want := range tc.wantSource {
+				if got[i].SourceKey != want {
+					t.Fatalf("categoria[%d]=%q, esperava %q; todas=%#v", i, got[i].SourceKey, want, got)
+				}
+			}
+		})
+	}
+}

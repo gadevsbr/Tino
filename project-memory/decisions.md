@@ -1,5 +1,7 @@
 # Decisões
 
+- 2026-09-30 — A matriz de capacidade exata passa a ter regressão baseada em cinco consultas reais fornecidas pelo operador, incluindo cortesia infantil e período de Réveillon. A resposta HTML pode conter quartos maiores, mas eles não entram no orçamento se excederem a ocupação física solicitada.
+
 - 2026-09-27 — O motor usa `whatsmeow` e o protocolo WhatsApp Multi-Device/Noise. A solicitação de MTProto foi corrigida porque MTProto pertence ao Telegram.
 - 2026-09-27 — Envios em lote exigem consentimento registrado, lista de supressão, limite configurável e intervalo uniforme com jitter operacional. Não há imitação humana, aquecimento de conta ou troca artificial de mensagens para contornar controles da plataforma.
 - 2026-09-27 — SQLite puro Go (`modernc.org/sqlite`) foi escolhido para permitir compilação Windows sem CGO. O banco e os dados pessoais permanecem fora do Git.

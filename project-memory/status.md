@@ -1,5 +1,13 @@
 # Estado
 
+## Etapa 22 — Matriz real de ocupação OmniBees v0.11.7
+
+- Status: cinco configurações fornecidas pelo operador foram consultadas ao vivo e convertidas em regressões determinísticas.
+- Consultas: dois adultos; três adultos; dois adultos com duas crianças (idades 1/10 e 5/10); três adultos com duas crianças (5/10).
+- Resultado: o HTML da OmniBees oferece acomodações maiores em algumas buscas, mas o Tino manteve exatamente duplos para 2, triplos para 3, quádruplos para 4 e família para 5 hóspedes. Cortesia infantil não reduziu a capacidade física.
+- Evidência ao vivo: as cinco buscas retornaram categorias e preços; nenhuma terminou vazia no Tino. A virada do ano retornou dois quádruplos, a busca dupla retornou dois duplos, a tripla retornou três triplos, a quádrupla comum retornou três quádruplos e a quíntupla retornou uma família.
+- Evidência automatizada: o teste permanente reproduz os nomes reais observados e valida as cinco ocupações; `go test -count=1 ./...` e `go vet ./...` passaram.
+
 ## Etapa 1 — Fundação e implementação
 
 - Status: concluída localmente.
