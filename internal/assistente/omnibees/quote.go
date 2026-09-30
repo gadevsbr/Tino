@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -341,39 +342,63 @@ type Result struct {
 }
 
 // Categories intersects OmniBees availability with the exact physical capacity
-// requested by the guest. Larger rooms are not offered as unnecessary upgrades.
+// requested by the guest. Classification is semantic because OmniBees changes
+// labels (Quarto/Suíte, Super Luxo/Superluxo, Vista para o Mar/Vista Mar).
 func Categories(s Search, prices map[string]int64) []Category {
-	type option struct{ name, sourceKey, catalogKey string }
-	var options []option
-	switch occupants := s.Adults + s.Children; occupants {
-	case 1, 2:
-		options = []option{
-			{"Suíte Superluxo com varanda e vista mar", "superluxo", "superluxo"},
-			{"Suíte Duplo interna", "duplo", "interna"},
-		}
-	case 3:
-		options = []option{
-			{"Suíte Triplo Deluxe com varanda", "triploDeluxe", "deluxe_varanda"},
-			{"Suíte Triplo com varanda", "triploVaranda", "varanda"},
-			{"Suíte Triplo interna", "triplo", "interna"},
-		}
-	case 4:
-		options = []option{
-			{"Suíte Quádruplo Deluxe com varanda e vista mar", "quadruploVista", "deluxe_vista_mar"},
-			{"Suíte Quádruplo Deluxe com varanda", "quadruploDeluxe", "deluxe_varanda"},
-			{"Suíte Quádruplo com varanda", "quadruploVaranda", "varanda"},
-		}
-	case 5:
-		options = []option{{"Suíte Família Deluxe com vista mar", "familia", "familia"}}
-	}
-	result := []Category{}
-	for _, o := range options {
-		cents, ok := roomPrice(prices, o.sourceKey)
-		if !ok || cents <= 0 {
+	occupants := s.Adults + s.Children
+	bySource := map[string]Category{}
+	for rawName, cents := range prices {
+		category, capacity, ok := classifyRoom(rawName)
+		if !ok || capacity != occupants && !(occupants == 1 && capacity == 2) || cents <= 0 {
 			continue
 		}
 		cents = (cents*int64(100-s.Discount) + 50) / 100
-		result = append(result, Category{Key: o.catalogKey, SourceKey: o.sourceKey, Name: o.name, TotalCents: cents})
+		category.TotalCents = cents
+		if current, exists := bySource[category.SourceKey]; !exists || cents < current.TotalCents {
+			bySource[category.SourceKey] = category
+		}
 	}
+	order := map[string]int{"superluxo": 0, "duploVista": 1, "duploDeluxe": 2, "duploVaranda": 3, "duplo": 4, "triploVista": 5, "triploDeluxe": 6, "triploVaranda": 7, "triplo": 8, "quadruploVista": 9, "quadruploDeluxe": 10, "quadruploVaranda": 11, "quadruplo": 12, "familia": 13}
+	result := make([]Category, 0, len(bySource))
+	for _, category := range bySource {
+		result = append(result, category)
+	}
+	sort.Slice(result, func(i, j int) bool { return order[result[i].SourceKey] < order[result[j].SourceKey] })
 	return result
+}
+
+func classifyRoom(rawName string) (Category, int, bool) {
+	name := canonicalRoomName(rawName)
+	has := func(value string) bool { return strings.Contains(name, value) }
+	capacity := 0
+	switch {
+	case has("familia"):
+		capacity = 5
+	case has("quadruplo"):
+		capacity = 4
+	case has("triplo"):
+		capacity = 3
+	case has("duplo") || has("superluxo"):
+		capacity = 2
+	default:
+		return Category{}, 0, false
+	}
+	if capacity == 5 {
+		return Category{Key: "familia", SourceKey: "familia", Name: "Suíte Família Deluxe com vista mar"}, capacity, true
+	}
+	if has("superluxo") {
+		return Category{Key: "superluxo", SourceKey: "superluxo", Name: "Suíte Superluxo com varanda e vista mar"}, capacity, true
+	}
+	prefix := map[int]string{2: "Duplo", 3: "Triplo", 4: "Quádruplo"}[capacity]
+	sourcePrefix := map[int]string{2: "duplo", 3: "triplo", 4: "quadruplo"}[capacity]
+	switch {
+	case has("deluxe") && has("vista mar"):
+		return Category{Key: "deluxe_vista_mar", SourceKey: sourcePrefix + "Vista", Name: "Suíte " + prefix + " Deluxe com varanda e vista mar"}, capacity, true
+	case has("deluxe"):
+		return Category{Key: "deluxe_varanda", SourceKey: sourcePrefix + "Deluxe", Name: "Suíte " + prefix + " Deluxe com varanda"}, capacity, true
+	case has("varanda"):
+		return Category{Key: "varanda", SourceKey: sourcePrefix + "Varanda", Name: "Suíte " + prefix + " com varanda"}, capacity, true
+	default:
+		return Category{Key: "interna", SourceKey: sourcePrefix, Name: "Suíte " + prefix + " interna"}, capacity, true
+	}
 }

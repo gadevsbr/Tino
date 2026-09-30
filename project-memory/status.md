@@ -187,3 +187,11 @@
 - Robustez: comandos de caixa passam a usar a data operacional do repositório, evitando divergência na virada do dia quando o fuso configurado difere do fuso do processo.
 - Evidência de build: `go test -count=1 ./...`, `go vet ./...` e Wails 0.11.5 passaram; SHA-256 do `Tino.exe`: `B0B2B4C316296E495121A3FB8E330800A5E7D4C401BE06CF3CC1FF53294E415A`.
 - Evidência de release: commit funcional `5a0da2d` enviado à `main`; release `v0.11.5` publicada com a interface e a CLI auxiliar.
+
+## Etapa 21 — Reconhecimento semântico de categorias v0.11.6
+
+- Status: corrigido e validado localmente e contra consulta real.
+- Causa: nomes fora da lista textual fixa, embora contivessem capacidade e características válidas, não eram associados a nenhuma categoria.
+- Correção: classificação por capacidade e atributos tolera variações de `Quarto`/`Suíte`/`Apartamento`, mantendo a regra de capacidade exata e escolhendo o menor total entre variações equivalentes.
+- Evidência: testes cobrem Duplo Deluxe, Duplo Standard, Triplo Super Deluxe e Quádruplo com Vista para o Mar; consulta real continuou retornando a categoria dupla esperada com preço formatado.
+- Evidência de build: `go test -count=1 ./...`, `go vet ./...` e Wails 0.11.6 passaram; SHA-256 do `Tino.exe`: `24319FB96930AD76D018D97CC2C7DD3D5B8078DEABB72E44F907B9AB8AF049E7`.

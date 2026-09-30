@@ -154,3 +154,24 @@ func TestFormatBRLUsesBrazilianThousandsSeparator(t *testing.T) {
 		}
 	}
 }
+
+func TestCategoriesAcceptsOmniBeesLabelVariantsWithoutMixingCapacity(t *testing.T) {
+	prices := map[string]int64{
+		normalize("Suíte Duplo Deluxe com Varanda"):              250420,
+		normalize("Apartamento Duplo Standard Interno"):          180000,
+		normalize("Suíte Triplo Super Deluxe com Varanda"):       310000,
+		normalize("Suíte Quádruplo Deluxe com Vista para o Mar"): 400000,
+	}
+	duplos := Categories(Search{Adults: 2}, prices)
+	if len(duplos) != 2 || duplos[0].SourceKey != "duploDeluxe" || duplos[0].TotalCents != 250420 || duplos[1].SourceKey != "duplo" {
+		t.Fatalf("duplos=%#v", duplos)
+	}
+	triplos := Categories(Search{Adults: 3}, prices)
+	if len(triplos) != 1 || triplos[0].SourceKey != "triploDeluxe" {
+		t.Fatalf("triplos=%#v", triplos)
+	}
+	quadruplos := Categories(Search{Adults: 4}, prices)
+	if len(quadruplos) != 1 || quadruplos[0].SourceKey != "quadruploVista" {
+		t.Fatalf("quadruplos=%#v", quadruplos)
+	}
+}
