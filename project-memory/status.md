@@ -7,6 +7,8 @@
 - Resultado: o HTML da OmniBees oferece acomodações maiores em algumas buscas, mas o Tino manteve exatamente duplos para 2, triplos para 3, quádruplos para 4 e família para 5 hóspedes. Cortesia infantil não reduziu a capacidade física.
 - Evidência ao vivo: as cinco buscas retornaram categorias e preços; nenhuma terminou vazia no Tino. A virada do ano retornou dois quádruplos, a busca dupla retornou dois duplos, a tripla retornou três triplos, a quádrupla comum retornou três quádruplos e a quíntupla retornou uma família.
 - Evidência automatizada: o teste permanente reproduz os nomes reais observados e valida as cinco ocupações; `go test -count=1 ./...` e `go vet ./...` passaram.
+- Evidência de build: testes Node e Vite passaram; Wails gerou o executável 0.11.7, iniciado com processo responsivo. SHA-256 do `Tino.exe`: `90DFC01BFA08BB1C4090CB657C19F802E331D32CCC3D4E41F383AE49F74C1B46`.
+- Evidência de release: commit funcional `db2f2c7` enviado à `main`; release `v0.11.7` publicada com a interface e a CLI auxiliar.
 
 ## Etapa 1 — Fundação e implementação
 
