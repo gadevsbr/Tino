@@ -9,6 +9,7 @@
 - Referência aprovada: `docs/design/tino-conversations-approved.png`.
 - Evidência: `go test -count=1 ./...`, `go vet ./...`, testes Node, Vite e Wails passaram; `Tino.exe` 0.12.0 abriu responsivo com título correto. SHA-256: `DD5AC04ACEFC652040FFE19D4E5C5D9FF163D47FA037865855D2E48F670AC86B`.
 - Limite de evidência: a ferramenta de controle visual não expôs janelas nativas nesta sessão; portanto, a comparação pixel a pixel com o mockup aprovado permanece pendente, embora build e runtime tenham sido confirmados.
+- Evidência de release: commit funcional `8dce63e` enviado à `main`; release `v0.12.0` publicada com a interface e a CLI auxiliar.
 
 ## Etapa 23 — Paridade com a extensão original OmniBees v0.11.8
 
