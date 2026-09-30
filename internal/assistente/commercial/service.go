@@ -321,7 +321,9 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		r.Text = greeting + "\n\n" + menu
 		return finish()
 	}
-	budgetChoice := text == "orçamento" || text == "orcamento" || text == "1"
+	explicitBudget := text == "orçamento" || text == "orcamento"
+	menuBudget := text == "1"
+	budgetChoice := explicitBudget || menuBudget
 	if st.AwaitingChoice && !budgetChoice {
 		st.AwaitingChoice = false
 		st.Paused = true
@@ -337,7 +339,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		st.QuoteActive = false
 		r.Handoff = true
 		r.Text = "Você solicitou atendimento humano. O assistente automático ficará pausado. Para voltar ao assistente, envie retomar atendimento."
-	} else if budgetChoice {
+	} else if explicitBudget || (menuBudget && !st.QuoteActive && len(st.Categories) == 0) {
 		st.AwaitingChoice = false
 		q, e := s.quote(ctx, in.Account, in.Contact, "orçamento")
 		if e != nil {

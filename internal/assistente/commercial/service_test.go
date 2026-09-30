@@ -85,6 +85,28 @@ func TestBudgetSequenceAddsTwoConfiguredMessages(t *testing.T) {
 	}
 }
 
+func TestNumericOneIsMenuChoiceOnlyDuringTriage(t *testing.T) {
+	inputs := []string{}
+	s := fixture(t, func(_ context.Context, _, _, text string) (QuoteReply, error) {
+		inputs = append(inputs, text)
+		if text == "orçamento" {
+			return QuoteReply{Text: "Para quantos quartos?", Active: true}, nil
+		}
+		return QuoteReply{Text: "próxima etapa", Active: true}, nil
+	})
+	configure(t, s, Config{Mode: Public})
+	now := time.Now()
+	handle(t, s, "1", "oi", now)
+	handle(t, s, "2", "1", now.Add(time.Minute))
+	r := handle(t, s, "3", "1", now.Add(2*time.Minute))
+	if r.Text != "próxima etapa" {
+		t.Fatal(r)
+	}
+	if strings.Join(inputs, ",") != "orçamento,1" {
+		t.Fatalf("a quantidade reiniciou o orçamento: %v", inputs)
+	}
+}
+
 func TestConcurrentDuplicateIsHandledOnce(t *testing.T) {
 	s := fixture(t, func(context.Context, string, string, string) (QuoteReply, error) { return QuoteReply{}, nil })
 	configure(t, s, Config{Mode: Public})

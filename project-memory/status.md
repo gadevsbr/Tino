@@ -1,5 +1,12 @@
 # Estado
 
+## Etapa 26 — Correção do reinício por resposta `1` v0.13.1
+
+- Status: corrigido e validado localmente após teste real do operador.
+- Causa: o roteador comercial tratava `1` como comando global para iniciar orçamento, inclusive quando a sessão já aguardava quantidade de quartos ou adultos. O valor `01` avançava apenas porque não correspondia ao comando.
+- Correção: `1` só seleciona orçamento durante a triagem; em sessão de cotação ativa, o valor é encaminhado à etapa atual.
+- Evidência: teste de regressão reproduz `oi → 1 → 1` e confirma chamadas `orçamento → 1`, sem reinício; testes direcionados, `go test -count=1 ./...`, `go vet ./...` e build Wails 0.13.1 passaram. SHA-256: `1FEFF84725EF21CF0DB0324748F8EC2A5EF7261997A21D145A59576B67FC5074`.
+
 ## Etapa 25 — Orçamento multi-quarto e triagem comercial v0.13.0
 
 - Status: implementado, testado e compilado localmente; entrega real no WhatsApp permanece um gate externo.

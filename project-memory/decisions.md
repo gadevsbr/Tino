@@ -1,5 +1,7 @@
 # Decisões
 
+- 2026-09-30 — A opção numérica `1` significa “fazer orçamento” somente enquanto a triagem aguarda uma escolha. Depois que a cotação está ativa, `1` é dado da etapa corrente, como quantidade de quartos ou adultos, e nunca reinicia a sessão.
+
 - 2026-09-30 — A primeira mensagem e a primeira após 24 horas sempre recebem triagem. Qualquer escolha diferente de orçamento transfere a conversa ao humano, pausa o bot persistentemente e força um marcador não lido no Tino.
 - 2026-09-30 — Orçamentos de até seis quartos coletam todas as ocupações antes de qualquer consulta à OmniBees; cada resultado é enviado com sua configuração em negrito. Depois seguem duas mensagens configuráveis e, por último, os produtos únicos associados às categorias retornadas.
 - 2026-09-30 — Pedidos acima de seis quartos não consultam a OmniBees automaticamente. O bot coleta período, total de adultos, crianças e idades, encaminha o resumo ao telefone de grupos configurado (padrão `5573988240413`) e confirma o encaminhamento ao solicitante.
