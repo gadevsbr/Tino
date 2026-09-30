@@ -1,5 +1,13 @@
 # Estado
 
+## Etapa 27 — Seleção numerada e encerramento comercial v0.13.2
+
+- Status: corrigido e validado localmente após retorno do teste real.
+- Categorias: depois dos produtos do catálogo, o bot envia a relação numerada e pede explicitamente que o cliente escolha pelo número.
+- Atendimento: a alternativa `*atendente*` usa negrito do WhatsApp.
+- Encerramento: `sair` cancela a cotação ativa, limpa categorias/pausa/seleção e encerra; a próxima mensagem inicia uma triagem nova.
+- Evidência: regressões validam numeração, destaque de atendente e `sair` seguido de nova saudação; testes direcionados, `go test -count=1 ./...`, `go vet ./...` e build Wails 0.13.2 passaram. SHA-256: `9804A6AA1E836DE79165536F9AF662EE77E3D07B9EA4909094F22AC5A97F7830`.
+
 ## Etapa 26 — Correção do reinício por resposta `1` v0.13.1
 
 - Status: corrigido e validado localmente após teste real do operador.

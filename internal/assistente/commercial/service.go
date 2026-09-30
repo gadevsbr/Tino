@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"hash/fnv"
 	"strconv"
 	"strings"
@@ -41,6 +42,7 @@ type Reply struct {
 	Messages         []string
 	Handled, Handoff bool
 	GroupRequest     string
+	SelectionPrompt  string
 	Categories       []omnibees.Category
 	SelectedCategory *omnibees.Category
 }
@@ -295,6 +297,16 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		}
 		return r, nil
 	}
+	if text == "sair" {
+		if st.QuoteActive {
+			if _, err = s.quote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
+				return Reply{}, err
+			}
+		}
+		st = state{ConfigEpoch: config.Epoch}
+		r.Text = "Atendimento encerrado. Quando precisar, é só enviar uma nova mensagem."
+		return finish()
+	}
 	if st.Paused {
 		if text == "retomar atendimento" {
 			st.Paused = false
@@ -353,6 +365,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		r.Categories = q.Categories
 		if len(q.Categories) > 0 {
 			st.QuotedAt = in.Now
+			r.SelectionPrompt = categorySelectionPrompt(q.Categories)
 		}
 	} else if text == "cancelar" || text == "menu" {
 		if st.QuoteActive {
@@ -382,6 +395,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 			if strings.TrimSpace(config.FinalMessage2) != "" {
 				r.Messages = append(r.Messages, config.FinalMessage2)
 			}
+			r.SelectionPrompt = categorySelectionPrompt(q.Categories)
 		}
 	} else if len(st.Categories) > 0 {
 		if in.Now.Sub(st.QuotedAt) >= 24*time.Hour {
@@ -400,11 +414,21 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 				}
 			}
 			if r.SelectedCategory == nil {
-				r.Text = "Escolha um dos números das categorias do orçamento ou envie atendente."
+				r.Text = categorySelectionPrompt(st.Categories)
 			}
 		}
 	} else {
 		r.Text = menu
 	}
 	return finish()
+}
+
+func categorySelectionPrompt(categories []omnibees.Category) string {
+	var b strings.Builder
+	b.WriteString("Escolha uma categoria pelo número:\n")
+	for i, category := range categories {
+		fmt.Fprintf(&b, "%d — %s\n", i+1, category.Name)
+	}
+	b.WriteString("\nOu envie *atendente* para falar com nossa equipe. Para encerrar, envie *sair*.")
+	return b.String()
 }

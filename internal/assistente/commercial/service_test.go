@@ -83,6 +83,9 @@ func TestBudgetSequenceAddsTwoConfiguredMessages(t *testing.T) {
 	if calls != 2 || len(r.Messages) != 3 || r.Messages[1] != "mensagem um" || r.Messages[2] != "mensagem dois" || len(r.Categories) != 1 {
 		t.Fatal(r)
 	}
+	if !strings.Contains(r.SelectionPrompt, "1 — Interna") || !strings.Contains(r.SelectionPrompt, "*atendente*") {
+		t.Fatal(r.SelectionPrompt)
+	}
 }
 
 func TestNumericOneIsMenuChoiceOnlyDuringTriage(t *testing.T) {
@@ -141,5 +144,28 @@ func TestConfigurationDefaultsAndValidation(t *testing.T) {
 	}
 	if err = s.Configure(context.Background(), "a", Config{Mode: Public, GroupPhone: "123"}); err == nil {
 		t.Fatal("invalid group phone accepted")
+	}
+}
+
+func TestExitClosesQuoteAndNextMessageStartsFreshTriage(t *testing.T) {
+	cancelled := false
+	s := fixture(t, func(_ context.Context, _, _, text string) (QuoteReply, error) {
+		if text == "cancelar" {
+			cancelled = true
+			return QuoteReply{}, nil
+		}
+		return QuoteReply{Text: "etapa ativa", Active: true}, nil
+	})
+	configure(t, s, Config{Mode: Public})
+	now := time.Now()
+	handle(t, s, "1", "oi", now)
+	handle(t, s, "2", "1", now.Add(time.Minute))
+	r := handle(t, s, "3", "sair", now.Add(2*time.Minute))
+	if !cancelled || !strings.Contains(r.Text, "encerrado") {
+		t.Fatal(cancelled, r)
+	}
+	r = handle(t, s, "4", "oi", now.Add(3*time.Minute))
+	if !strings.Contains(r.Text, greeting) {
+		t.Fatal(r)
 	}
 }

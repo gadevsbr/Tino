@@ -1,5 +1,7 @@
 # Decisões
 
+- 2026-09-30 — Ao concluir a cotação, os produtos do catálogo são seguidos por uma lista numerada das categorias e instrução explícita para responder pelo número. `*atendente*` é destacado em negrito e `sair` tem prioridade sobre a seleção, cancela qualquer cotação ativa, limpa o estado e faz a próxima mensagem começar uma nova triagem.
+
 - 2026-09-30 — A opção numérica `1` significa “fazer orçamento” somente enquanto a triagem aguarda uma escolha. Depois que a cotação está ativa, `1` é dado da etapa corrente, como quantidade de quartos ou adultos, e nunca reinicia a sessão.
 
 - 2026-09-30 — A primeira mensagem e a primeira após 24 horas sempre recebem triagem. Qualquer escolha diferente de orçamento transfere a conversa ao humano, pausa o bot persistentemente e força um marcador não lido no Tino.

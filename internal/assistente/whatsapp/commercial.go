@@ -370,6 +370,11 @@ func (s *Service) handleGuest(ctx context.Context, account, contact, messageID, 
 			s.replyText(ctx, chat, "Não consegui enviar todos os produtos do catálogo. O orçamento acima continua disponível; a equipe pode ajudar com as fotos.")
 		}
 	}
+	if strings.TrimSpace(result.SelectionPrompt) != "" {
+		if _, err := s.sendMessage(ctx, chat, &waE2E.Message{Conversation: proto.String(result.SelectionPrompt)}); err != nil {
+			slog.Error("commercial category prompt failed")
+		}
+	}
 }
 
 // Claim before sending: a crash or an ambiguous network failure must never
