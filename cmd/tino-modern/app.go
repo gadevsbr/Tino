@@ -151,6 +151,16 @@ func (a *App) ListChats(search string) ([]ConversationDTO, error) {
 	out := make([]ConversationDTO, 0, len(items))
 	for _, c := range items {
 		name := c.Name
+		if jid, parseErr := types.ParseJID(c.JID); parseErr == nil && jid.Server != types.GroupServer {
+			if contact, contactErr := a.mgr.Client.Store.Contacts.GetContact(a.ctx, jid); contactErr == nil && contact.Found {
+				for _, candidate := range []string{contact.BusinessName, contact.FullName, contact.PushName, contact.FirstName} {
+					if strings.TrimSpace(candidate) != "" {
+						name = strings.TrimSpace(candidate)
+						break
+					}
+				}
+			}
+		}
 		if name == "" {
 			name = c.JID
 		}
@@ -194,7 +204,7 @@ func (a *App) SendMessage(jidRaw, text string) error {
 	if err := a.chats.SaveEvent(a.ctx, evt, false); err != nil {
 		return err
 	}
-	wailsRuntime.EventsEmit(a.ctx, "chats:changed")
+	wailsRuntime.EventsEmit(a.ctx, "chats:changed", map[string]string{"jid": jid.String()})
 	return nil
 }
 
@@ -416,8 +426,10 @@ func (a *App) handleEvent(raw any) {
 	switch evt := raw.(type) {
 	case *events.Message:
 		if err := a.chats.SaveEvent(context.Background(), evt, true); err == nil {
-			wailsRuntime.EventsEmit(a.ctx, "chats:changed")
+			wailsRuntime.EventsEmit(a.ctx, "chats:changed", map[string]string{"jid": evt.Info.Chat.String()})
 		}
+	case *events.ChatPresence:
+		wailsRuntime.EventsEmit(a.ctx, "chats:presence", map[string]string{"jid": evt.Chat.String(), "state": string(evt.State), "media": string(evt.Media)})
 	case *events.HistorySync:
 		go a.importHistory(evt)
 	case *events.Connected:
@@ -443,6 +455,10 @@ func (a *App) importHistory(evt *events.HistorySync) {
 		if err != nil {
 			continue
 		}
+		name := strings.TrimSpace(conv.GetDisplayName())
+		if name == "" {
+			name = strings.TrimSpace(conv.GetName())
+		}
 		for _, item := range conv.GetMessages() {
 			parsed, err := a.mgr.Client.ParseWebMessage(jid, item.GetMessage())
 			if err != nil {
@@ -452,6 +468,7 @@ func (a *App) importHistory(evt *events.HistorySync) {
 				count++
 			}
 		}
+		_ = a.chats.UpdateName(context.Background(), jid.String(), name)
 	}
 	a.emitActivity("Sincronização", fmt.Sprintf("%d mensagens processadas", count), "success")
 	wailsRuntime.EventsEmit(a.ctx, "chats:changed")

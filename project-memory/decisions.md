@@ -1,5 +1,7 @@
 # Decisões
 
+- 2026-09-30 — A tela de conversas segue a densidade e os padrões de interação familiares do WhatsApp Web, mantendo identidade Tino e sem usar logotipo ou arte proprietária do WhatsApp. Atualização primária ocorre por eventos Wails do Whatsmeow, com reconciliação periódica apenas como proteção contra perda de evento.
+
 - 2026-09-30 — Superseded: usar a capacidade escrita no nome físico como filtro exclusivo para 1–3 hóspedes divergia da extensão original e ocultava alternativas comerciais válidas da OmniBees.
 - 2026-09-30 — O orçamento replica a matriz `getPrices()` da extensão original: até 3 ocupantes usam Superluxo, Família como Deluxe vista mar, Triplo Deluxe como Deluxe varanda, Triplo com varanda e a interna adequada; 4 usam apenas os três quádruplos; 5 usam apenas Família. Categorias sem preço continuam omitidas.
 

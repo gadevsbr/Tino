@@ -1,5 +1,15 @@
 # Estado
 
+## Etapa 24 — Conversas em tempo real v0.12.0
+
+- Status: implementação visual aprovada e integrada ao runtime Wails/Whatsmeow.
+- Interface: lista compacta, busca, filtros de não lidas e grupos, nomes sincronizados, conversa ativa, separadores de data, balões, horários, confirmação visual de envio, composer e estado de conexão ao vivo.
+- Tempo real: mensagens recebidas e enviadas emitem o JID alterado; a conversa aberta e a lista são reconciliadas imediatamente. Eventos reais de `ChatPresence` exibem “digitando”; uma reconciliação periódica cobre eventos eventualmente perdidos.
+- Histórico: nomes de contatos são enriquecidos pelo armazenamento local do Whatsmeow e nomes de conversas/grupos vindos do HistorySync são persistidos.
+- Referência aprovada: `docs/design/tino-conversations-approved.png`.
+- Evidência: `go test -count=1 ./...`, `go vet ./...`, testes Node, Vite e Wails passaram; `Tino.exe` 0.12.0 abriu responsivo com título correto. SHA-256: `DD5AC04ACEFC652040FFE19D4E5C5D9FF163D47FA037865855D2E48F670AC86B`.
+- Limite de evidência: a ferramenta de controle visual não expôs janelas nativas nesta sessão; portanto, a comparação pixel a pixel com o mockup aprovado permanece pendente, embora build e runtime tenham sido confirmados.
+
 ## Etapa 23 — Paridade com a extensão original OmniBees v0.11.8
 
 - Status: corrigida e validada comparando diretamente `orçamentoominibees/content.js` com o motor do Tino.

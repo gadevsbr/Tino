@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity, Archive, ArrowDown, ArrowUp, Bot, Check, ChevronRight, CircleHelp,
   Building2, CalendarRange, Download, Eye, FileText, Receipt, Share2, WalletCards,
   Database, FileLock2, FileSpreadsheet, FolderOpen, GitBranch, LoaderCircle,
-  LockKeyhole, MessageCircle, MoreHorizontal, Plus, RefreshCw, Search, Send,
+  CheckCheck, LockKeyhole, MessageCircle, Mic, MoreHorizontal, Paperclip, Plus,
+  RefreshCw, Search, Send, Smile,
   Settings2, ShieldCheck, Sparkles, Trash2, Upload, Users, Workflow, X
 } from 'lucide-react'
 import {
@@ -106,14 +107,53 @@ function Conversations({ status, qr, busy, connect, reset, refreshStatus, notify
 }
 
 function ChatWorkspace({ notify }) {
-  const [search, setSearch] = useState(''), [chats, setChats] = useState([]), [selected, setSelected] = useState(null), [messages, setMessages] = useState([]), [text, setText] = useState(''), [sending, setSending] = useState(false)
-  const load = async () => setChats(await ListChats(search))
-  useEffect(() => { load(); const off=EventsOn('chats:changed', load); return off }, [search])
-  const open = async c => { setSelected(c); setMessages(await GetMessages(c.JID)) }
-  const send = async () => { if(!selected || !text.trim()) return; setSending(true); try { await SendMessage(selected.JID,text); setText(''); setMessages(await GetMessages(selected.JID)) } catch(e){ notify(String(e),'error') } finally { setSending(false) } }
-  return <div className="chat-shell"><section className="chat-list"><div className="search"><Search/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar conversa..."/></div><div className="conversation-list">{chats.map(c=><button key={c.JID} className={selected?.JID===c.JID?'selected':''} onClick={()=>open(c)}><span className="avatar">{c.Name.slice(0,1).toUpperCase()}</span><span className="conversation-copy"><b>{c.Name}</b><small>{c.LastMessage}</small></span>{c.Unread>0&&<span className="unread">{c.Unread}</span>}</button>)}{!chats.length&&<Empty icon={MessageCircle} title="Nenhuma conversa ainda" text="As conversas sincronizadas aparecerão aqui."/>}</div></section>
-    <section className="messages">{selected ? <><div className="message-head"><span className="avatar">{selected.Name.slice(0,1)}</span><div><b>{selected.Name}</b><small>Histórico armazenado localmente</small></div><MoreHorizontal/></div><div className="message-scroll">{messages.map(m=><div key={m.ID} className={`bubble ${m.FromMe?'mine':''}`}><p>{m.Text}</p><time>{new Date(m.Timestamp).toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time></div>)}</div><div className="composer"><textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Escreva uma mensagem..."/><button className="primary" onClick={send} disabled={sending}><Send/></button></div></> : <Empty icon={MessageCircle} title="Selecione uma conversa" text="Abra um atendimento para visualizar o histórico e responder."/>}</section></div>
+  const [search,setSearch]=useState(''),[filter,setFilter]=useState('all'),[chats,setChats]=useState([]),[selected,setSelected]=useState(null),[messages,setMessages]=useState([]),[text,setText]=useState(''),[sending,setSending]=useState(false),[typing,setTyping]=useState(false),[live,setLive]=useState(true)
+  const scrollRef=useRef(null),stickRef=useRef(true),selectedRef=useRef(null),refreshSeq=useRef(0)
+  selectedRef.current=selected
+  const refresh=async(markRead=false)=>{
+    const seq=++refreshSeq.current
+    try{
+      const fresh=await ListChats(search)||[]
+      if(seq!==refreshSeq.current)return
+      setChats(fresh)
+      const current=selectedRef.current
+      if(current){
+        const updated=fresh.find(c=>c.JID===current.JID)||current
+        setSelected(updated)
+        const next=await GetMessages(current.JID)||[]
+        if(seq===refreshSeq.current)setMessages(next)
+      }
+      setLive(true)
+    }catch(e){setLive(false);if(markRead)notify(String(e),'error')}
+  }
+  useEffect(()=>{refresh();const offChanged=EventsOn('chats:changed',()=>refresh());const offPresence=EventsOn('chats:presence',evt=>{if(evt?.jid===selectedRef.current?.JID)setTyping(evt.state==='composing')});const timer=setInterval(()=>refresh(),15000);return()=>{offChanged();offPresence();clearInterval(timer)}},[search])
+  useEffect(()=>{const el=scrollRef.current;if(!el)return;if(stickRef.current||messages.at(-1)?.FromMe)requestAnimationFrame(()=>el.scrollTo({top:el.scrollHeight,behavior:'smooth'}))},[messages])
+  const open=async c=>{setSelected(c);selectedRef.current=c;stickRef.current=true;try{setMessages(await GetMessages(c.JID)||[]);setChats(await ListChats(search)||[])}catch(e){notify(String(e),'error')}}
+  const send=async()=>{if(!selected||!text.trim())return;const body=text.trim();setSending(true);try{await SendMessage(selected.JID,body);setText('');stickRef.current=true;await refresh()}catch(e){notify(String(e),'error')}finally{setSending(false)}}
+  const onKeyDown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}}
+  const visible=chats.filter(c=>filter==='unread'?c.Unread>0:filter==='groups'?c.JID.endsWith('@g.us'):true)
+  const unreadTotal=chats.reduce((sum,c)=>sum+c.Unread,0)
+  return <div className="wa-workspace">
+    <section className="wa-sidebar">
+      <header className="wa-list-head"><div><span className="wa-title">Conversas</span><small>{chats.length} atendimentos</small></div><div className="wa-head-actions"><button title="Atualizar conversas" onClick={()=>refresh(true)}><RefreshCw/></button><button title="Mais opções"><MoreHorizontal/></button></div></header>
+      <div className="wa-search"><Search/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar ou iniciar nova conversa"/></div>
+      <div className="wa-filters"><button className={filter==='all'?'active':''} onClick={()=>setFilter('all')}>Todas</button><button className={filter==='unread'?'active':''} onClick={()=>setFilter('unread')}>Não lidas {unreadTotal>0&&<span>{unreadTotal}</span>}</button><button className={filter==='groups'?'active':''} onClick={()=>setFilter('groups')}>Grupos</button></div>
+      <div className="wa-conversation-list">{visible.map(c=><button key={c.JID} className={selected?.JID===c.JID?'selected':''} onClick={()=>open(c)}><ChatAvatar chat={c}/><span className="wa-conversation-copy"><span className="wa-row-top"><b>{displayChatName(c)}</b><time>{chatTime(c.LastAt)}</time></span><span className="wa-row-bottom"><small>{c.LastMessage||'Sem mensagens de texto'}</small>{c.Unread>0&&<span className="wa-unread">{c.Unread}</span>}</span></span></button>)}{!visible.length&&<Empty icon={MessageCircle} title="Nenhuma conversa encontrada" text="Tente outro filtro ou aguarde a sincronização."/>}</div>
+    </section>
+    <section className="wa-chat">{selected?<>
+      <header className="wa-chat-head"><ChatAvatar chat={selected}/><div className="wa-chat-identity"><b>{displayChatName(selected)}</b><small className={typing?'typing':''}>{typing?'digitando…':selected.JID.endsWith('@g.us')?'grupo do WhatsApp':'mensagens sincronizadas em tempo real'}</small></div><span className={`wa-live ${live?'online':''}`}><i/>{live?'Ao vivo':'Reconectando'}</span><button className="wa-icon" title="Buscar nesta conversa"><Search/></button><button className="wa-icon" title="Mais opções"><MoreHorizontal/></button></header>
+      <div className="wa-message-scroll" ref={scrollRef} onScroll={e=>{const el=e.currentTarget;stickRef.current=el.scrollHeight-el.scrollTop-el.clientHeight<90}}>{messages.length>0&&<div className="wa-day"><span>{messageDay(messages[0].Timestamp)}</span></div>}{messages.map((m,i)=><React.Fragment key={m.ID}>{i>0&&dayKey(messages[i-1].Timestamp)!==dayKey(m.Timestamp)&&<div className="wa-day"><span>{messageDay(m.Timestamp)}</span></div>}<div className={`wa-bubble ${m.FromMe?'mine':'theirs'}`}><p>{m.Text}</p><span className="wa-meta"><time>{messageTime(m.Timestamp)}</time>{m.FromMe&&<CheckCheck/>}</span></div></React.Fragment>)}{typing&&<div className="wa-typing"><i/><i/><i/></div>}</div>
+      <footer className="wa-composer"><button title="Emoji"><Smile/></button><button title="Anexar"><Paperclip/></button><textarea rows="1" value={text} onChange={e=>setText(e.target.value)} onKeyDown={onKeyDown} placeholder="Digite uma mensagem"/><button className={text.trim()?'send':'mic'} title={text.trim()?'Enviar':'Mensagem de voz'} onClick={text.trim()?send:undefined} disabled={sending}>{sending?<LoaderCircle className="spin"/>:text.trim()?<Send/>:<Mic/>}</button></footer>
+    </>:<div className="wa-chat-empty"><div className="wa-empty-orbit"><MessageCircle/></div><h2>Tino Conversas</h2><p>Envie e receba mensagens sem precisar atualizar a tela.</p><span className={`wa-live ${live?'online':''}`}><i/>{live?'Sincronização em tempo real ativa':'Reconectando eventos'}</span></div>}</section>
+  </div>
 }
+
+function displayChatName(chat){const value=(chat?.Name||chat?.JID||'Contato').replace(/@.+$/,'');return value}
+function ChatAvatar({chat}){const name=displayChatName(chat),parts=name.trim().split(/\s+/),initials=parts.length>1?(parts[0][0]+parts.at(-1)[0]):name.slice(0,2);return <span className={`wa-avatar ${chat?.JID?.endsWith('@g.us')?'group':''}`}>{initials.toUpperCase()}</span>}
+function messageTime(value){return new Date(value).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+function dayKey(value){return new Date(value).toLocaleDateString('sv-SE')}
+function messageDay(value){const d=new Date(value),today=new Date(),yesterday=new Date();yesterday.setDate(today.getDate()-1);if(dayKey(d)===dayKey(today))return'Hoje';if(dayKey(d)===dayKey(yesterday))return'Ontem';return d.toLocaleDateString('pt-BR')}
+function chatTime(value){const d=new Date(value),today=new Date();if(dayKey(d)===dayKey(today))return messageTime(value);return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}
 
 function Contacts({ busy, run, notify }) {
   const [csv, setCSV] = useState(null), [message,setMessage]=useState(''), [consent,setConsent]=useState(false)

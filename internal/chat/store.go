@@ -130,6 +130,15 @@ func (s *Store) MarkRead(ctx context.Context, jid string) error {
 	return err
 }
 
+func (s *Store) UpdateName(ctx context.Context, jid, name string) error {
+	name = strings.TrimSpace(name)
+	if jid == "" || name == "" {
+		return nil
+	}
+	_, err := s.db.ExecContext(ctx, `UPDATE chats SET name=? WHERE jid=?`, name, jid)
+	return err
+}
+
 func ExtractText(evt *events.Message) string {
 	if evt == nil || evt.Message == nil {
 		return ""
