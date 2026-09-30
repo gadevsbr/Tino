@@ -86,6 +86,10 @@ func TestBudgetSequenceAddsTwoConfiguredMessages(t *testing.T) {
 	if !strings.Contains(r.SelectionPrompt, "1 — Interna") || !strings.Contains(r.SelectionPrompt, "*atendente*") {
 		t.Fatal(r.SelectionPrompt)
 	}
+	r = handle(t, s, "4", "1", now.Add(3*time.Minute))
+	if !r.Handoff || !strings.Contains(r.Text, "*Interna*, disponível para o período consultado") || !strings.Contains(r.Text, "*atendente* concluir sua reserva") || strings.Contains(r.Text, "confirmar disponibilidade") {
+		t.Fatal(r)
+	}
 }
 
 func TestNumericOneIsMenuChoiceOnlyDuringTriage(t *testing.T) {

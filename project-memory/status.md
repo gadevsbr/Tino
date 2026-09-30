@@ -1,5 +1,11 @@
 # Estado
 
+## Etapa 28 — Confirmação objetiva da categoria selecionada v0.13.3
+
+- Status: corrigido e validado localmente após retorno do teste real.
+- Correção: a escolha confirma que a suíte está disponível no período consultado e informa que o atendente concluirá a reserva; foram removidas as frases que pediam nova confirmação de disponibilidade ou sugeriam incerteza.
+- Evidência: regressão seleciona a categoria `1`, exige disponibilidade afirmativa e rejeita o texto antigo; `go test -count=1 ./...`, `go vet ./...` e build Wails 0.13.3 passaram. SHA-256: `59247A862C6DA707FF17E85DE7CB63C50198AA418F9D408515AC896FBC5B748C`.
+
 ## Etapa 27 — Seleção numerada e encerramento comercial v0.13.2
 
 - Status: corrigido e validado localmente após retorno do teste real.

@@ -409,7 +409,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 					st.SelectedCategory = &selected
 					r.Handoff = true
 					st.Paused = true
-					r.Text = "Você escolheu " + c.Name + ". Solicitação de atendimento humano registrada para a equipe confirmar disponibilidade e reserva. Nenhuma reserva foi confirmada. Para voltar ao assistente, envie retomar atendimento."
+					r.Text = "Você escolheu *" + c.Name + "*, disponível para o período consultado. Vou encaminhar a conversa para um *atendente* concluir sua reserva."
 					break
 				}
 			}

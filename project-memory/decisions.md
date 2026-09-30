@@ -1,5 +1,7 @@
 # Decisões
 
+- 2026-09-30 — Uma categoria apresentada no orçamento é descrita como disponível para o período consultado. Após a escolha, o atendente conclui a reserva; o texto não volta a colocar a disponibilidade em dúvida.
+
 - 2026-09-30 — Ao concluir a cotação, os produtos do catálogo são seguidos por uma lista numerada das categorias e instrução explícita para responder pelo número. `*atendente*` é destacado em negrito e `sair` tem prioridade sobre a seleção, cancela qualquer cotação ativa, limpa o estado e faz a próxima mensagem começar uma nova triagem.
 
 - 2026-09-30 — A opção numérica `1` significa “fazer orçamento” somente enquanto a triagem aguarda uma escolha. Depois que a cotação está ativa, `1` é dado da etapa corrente, como quantidade de quartos ou adultos, e nunca reinicia a sessão.
