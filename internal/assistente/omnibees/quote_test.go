@@ -69,7 +69,7 @@ func TestExtractAndFormat(t *testing.T) {
 	}
 	s, _ := ParseLink(sampleURL, 5)
 	text := Format(s, prices)
-	for _, want := range []string{"19/09/2026 a 20/09/2026", "Duplo", "Suíte Duplo interna", "R$ 1.172,83"} {
+	for _, want := range []string{"19/09/2026 a 20/09/2026", "Duplo", "Suíte interna", "R$ 1.172,83"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in %s", want, text)
 		}
@@ -92,11 +92,11 @@ func TestExtractAndFormatAllAvailableCategoryNameVariants(t *testing.T) {
 	}
 	s, _ := ParseLink(sampleURL, 0)
 	categories := Categories(s, prices)
-	if len(categories) != 1 || categories[0].Key != "superluxo" || categories[0].TotalCents != 150000 {
+	if len(categories) != 3 || categories[0].Key != "superluxo" || categories[0].TotalCents != 150000 || categories[1].SourceKey != "familia" || categories[2].SourceKey != "triploDeluxe" {
 		t.Fatalf("duplo incorreto: %#v", categories)
 	}
 	triplo := Categories(Search{Adults: 3}, prices)
-	if len(triplo) != 1 || triplo[0].SourceKey != "triploDeluxe" || triplo[0].TotalCents != 105000 {
+	if len(triplo) != 3 || triplo[0].SourceKey != "superluxo" || triplo[1].SourceKey != "familia" || triplo[2].SourceKey != "triploDeluxe" || triplo[2].TotalCents != 105000 {
 		t.Fatalf("triplo incorreto: %#v", triplo)
 	}
 	familia := Categories(Search{Adults: 5}, prices)
@@ -115,12 +115,12 @@ func TestCourtesyUsesPhysicalOccupancy(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := Format(s, map[string]int64{normalize(roomNames["quadruploVista"]): 90000})
-	if !strings.Contains(text, "Triplo + 01 cortesia infantil") || !strings.Contains(text, "Suíte Quádruplo Deluxe com varanda e vista mar") {
+	if !strings.Contains(text, "Triplo + 01 cortesia infantil") || !strings.Contains(text, "Suíte Deluxe com vista para o mar") {
 		t.Fatal(text)
 	}
 }
 
-func TestCategoriesKeepsOnlyExactCapacityOfferedByOmniBees(t *testing.T) {
+func TestCategoriesUsesOriginalExtensionCommercialSlots(t *testing.T) {
 	s, err := ParseLink(sampleURL, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -134,8 +134,8 @@ func TestCategoriesKeepsOnlyExactCapacityOfferedByOmniBees(t *testing.T) {
 		normalize(roomNames["triploDeluxe"]):     152762,
 	}
 	categories := Categories(s, prices)
-	if len(categories) != 1 || categories[0].SourceKey != "superluxo" {
-		t.Fatalf("orçamento para duas pessoas deve conter somente opções duplas: %#v", categories)
+	if len(categories) != 3 || categories[0].SourceKey != "superluxo" || categories[1].SourceKey != "triploDeluxe" || categories[2].SourceKey != "triploVaranda" {
+		t.Fatalf("slots comerciais divergiram da extensão original: %#v", categories)
 	}
 }
 
@@ -163,7 +163,7 @@ func TestCategoriesAcceptsOmniBeesLabelVariantsWithoutMixingCapacity(t *testing.
 		normalize("Suíte Quádruplo Deluxe com Vista para o Mar"): 400000,
 	}
 	duplos := Categories(Search{Adults: 2}, prices)
-	if len(duplos) != 2 || duplos[0].SourceKey != "duploDeluxe" || duplos[0].TotalCents != 250420 || duplos[1].SourceKey != "duplo" {
+	if len(duplos) != 2 || duplos[0].SourceKey != "triploDeluxe" || duplos[0].TotalCents != 310000 || duplos[1].SourceKey != "duplo" {
 		t.Fatalf("duplos=%#v", duplos)
 	}
 	triplos := Categories(Search{Adults: 3}, prices)
@@ -178,8 +178,8 @@ func TestCategoriesAcceptsOmniBeesLabelVariantsWithoutMixingCapacity(t *testing.
 
 func TestCategoriesMatchesFiveObservedOmniBeesOccupancies(t *testing.T) {
 	// Snapshot of the room labels observed in the five live searches supplied by
-	// the operator. OmniBees may advertise larger rooms in the HTML, so each
-	// quote must retain every available option of the requested capacity only.
+	// the operator. These expectations mirror getPrices() from the original
+	// extension, including its commercial aliases for searches up to 3 guests.
 	prices := map[string]int64{
 		normalize("Quarto Duplo"):                                    132908,
 		normalize("Quarto Duplo Superluxo com Varanda e Vista Mar"):  257240,
@@ -198,8 +198,8 @@ func TestCategoriesMatchesFiveObservedOmniBeesOccupancies(t *testing.T) {
 		ages       []int
 		wantSource []string
 	}{
-		{"dois adultos", 2, 0, nil, []string{"superluxo", "duplo"}},
-		{"tres adultos", 3, 0, nil, []string{"triploDeluxe", "triploVaranda", "triplo"}},
+		{"dois adultos", 2, 0, nil, []string{"superluxo", "familia", "triploDeluxe", "triploVaranda", "duplo"}},
+		{"tres adultos", 3, 0, nil, []string{"superluxo", "familia", "triploDeluxe", "triploVaranda", "triplo"}},
 		{"dois adultos e duas criancas", 2, 2, []int{5, 10}, []string{"quadruploVista", "quadruploDeluxe", "quadruploVaranda"}},
 		{"dois adultos, uma cortesia e uma crianca", 2, 2, []int{1, 10}, []string{"quadruploVista", "quadruploDeluxe", "quadruploVaranda"}},
 		{"tres adultos e duas criancas", 3, 2, []int{5, 10}, []string{"familia"}},

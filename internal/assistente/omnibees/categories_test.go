@@ -12,8 +12,8 @@ func TestSemanticCategoriesPreservePhysicalSources(t *testing.T) {
 		ages        []int
 		wantSources []string
 	}{
-		{2, nil, []string{"superluxo", "duplo"}},
-		{2, []int{5}, []string{"triploDeluxe", "triploVaranda", "triplo"}},
+		{2, nil, []string{"superluxo", "familia", "triploDeluxe", "triploVaranda", "duplo"}},
+		{2, []int{5}, []string{"superluxo", "familia", "triploDeluxe", "triploVaranda", "triplo"}},
 		{2, []int{5, 6}, []string{"quadruploVista", "quadruploDeluxe", "quadruploVaranda"}},
 		{3, []int{5, 6}, []string{"familia"}},
 	} {

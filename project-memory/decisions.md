@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-09-30 — Superseded: usar a capacidade escrita no nome físico como filtro exclusivo para 1–3 hóspedes divergia da extensão original e ocultava alternativas comerciais válidas da OmniBees.
+- 2026-09-30 — O orçamento replica a matriz `getPrices()` da extensão original: até 3 ocupantes usam Superluxo, Família como Deluxe vista mar, Triplo Deluxe como Deluxe varanda, Triplo com varanda e a interna adequada; 4 usam apenas os três quádruplos; 5 usam apenas Família. Categorias sem preço continuam omitidas.
+
 - 2026-09-30 — A matriz de capacidade exata passa a ter regressão baseada em cinco consultas reais fornecidas pelo operador, incluindo cortesia infantil e período de Réveillon. A resposta HTML pode conter quartos maiores, mas eles não entram no orçamento se excederem a ocupação física solicitada.
 
 - 2026-09-27 — O motor usa `whatsmeow` e o protocolo WhatsApp Multi-Device/Noise. A solicitação de MTProto foi corrigida porque MTProto pertence ao Telegram.

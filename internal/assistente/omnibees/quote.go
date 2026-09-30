@@ -341,30 +341,59 @@ type Result struct {
 	Categories []Category
 }
 
-// Categories intersects OmniBees availability with the exact physical capacity
-// requested by the guest. Classification is semantic because OmniBees changes
-// labels (Quarto/Suíte, Super Luxo/Superluxo, Vista para o Mar/Vista Mar).
+// Categories mirrors the commercial slots used by the original browser
+// extension. For up to three occupants, OmniBees reuses some physically larger
+// room cards as commercial alternatives for the requested occupancy. Four and
+// five occupants have their own exclusive sets. Classification remains
+// semantic because OmniBees changes labels over time.
 func Categories(s Search, prices map[string]int64) []Category {
 	occupants := s.Adults + s.Children
+	allowed := commercialSlots(occupants)
 	bySource := map[string]Category{}
 	for rawName, cents := range prices {
-		category, capacity, ok := classifyRoom(rawName)
-		if !ok || capacity != occupants && !(occupants == 1 && capacity == 2) || cents <= 0 {
+		category, _, ok := classifyRoom(rawName)
+		displayName, wanted := allowed[category.SourceKey]
+		if !ok || !wanted || cents <= 0 {
 			continue
 		}
 		cents = (cents*int64(100-s.Discount) + 50) / 100
+		category.Name = displayName
 		category.TotalCents = cents
 		if current, exists := bySource[category.SourceKey]; !exists || cents < current.TotalCents {
 			bySource[category.SourceKey] = category
 		}
 	}
-	order := map[string]int{"superluxo": 0, "duploVista": 1, "duploDeluxe": 2, "duploVaranda": 3, "duplo": 4, "triploVista": 5, "triploDeluxe": 6, "triploVaranda": 7, "triplo": 8, "quadruploVista": 9, "quadruploDeluxe": 10, "quadruploVaranda": 11, "quadruplo": 12, "familia": 13}
+	order := map[string]int{"superluxo": 0, "familia": 1, "quadruploVista": 1, "triploDeluxe": 2, "quadruploDeluxe": 2, "triploVaranda": 3, "quadruploVaranda": 3, "duplo": 4, "triplo": 4}
 	result := make([]Category, 0, len(bySource))
 	for _, category := range bySource {
 		result = append(result, category)
 	}
 	sort.Slice(result, func(i, j int) bool { return order[result[i].SourceKey] < order[result[j].SourceKey] })
 	return result
+}
+
+func commercialSlots(occupants int) map[string]string {
+	if occupants >= 5 {
+		return map[string]string{"familia": roomNames["familia"]}
+	}
+	if occupants == 4 {
+		return map[string]string{
+			"quadruploVista":   "Suíte Deluxe com vista para o mar",
+			"quadruploDeluxe":  "Suíte Deluxe com varanda",
+			"quadruploVaranda": "Suíte com varanda",
+		}
+	}
+	internal := "duplo"
+	if occupants >= 3 {
+		internal = "triplo"
+	}
+	return map[string]string{
+		"superluxo":     "Suíte Superluxo com varanda e vista mar",
+		"familia":       "Suíte Deluxe com vista para o mar",
+		"triploDeluxe":  "Suíte Deluxe com varanda",
+		"triploVaranda": "Suíte com varanda",
+		internal:        "Suíte interna",
+	}
 }
 
 func classifyRoom(rawName string) (Category, int, bool) {

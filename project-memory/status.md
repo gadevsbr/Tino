@@ -1,5 +1,14 @@
 # Estado
 
+## Etapa 23 — Paridade com a extensão original OmniBees v0.11.8
+
+- Status: corrigida e validada comparando diretamente `orçamentoominibees/content.js` com o motor do Tino.
+- Causa: o Tino interpretava o nome físico do card como filtro exclusivo. A extensão usa cinco posições comerciais para até três ocupantes e reaproveita os cards Família e Triplo como Deluxe vista mar, Deluxe varanda e varanda.
+- Correção: o Tino agora replica `getPrices()` e os rótulos da extensão: até 3 ocupantes usam os cinco slots comerciais disponíveis; 4 usam somente os três slots quádruplos; 5 usam somente Família.
+- Evidência ao vivo: as cinco URLs fornecidas produziram exatamente 2, 5, 4, 3 e 1 opções, na mesma ordem e com os mesmos rótulos da extensão original.
+- Evidência automatizada: testes permanentes cobrem os slots, indisponibilidade, cortesia infantil, variações de nomes e as cinco composições fornecidas.
+- Evidência de build: `go test -count=1 ./...`, `go vet ./...`, testes Node, Vite e Wails passaram; o `Tino.exe` 0.11.8 iniciou responsivo. SHA-256: `AE3E5DD5F3F6D036E0B0BAC851C550102058E214DF65EE111CEDAC95E32B5F0D`.
+
 ## Etapa 22 — Matriz real de ocupação OmniBees v0.11.7
 
 - Status: cinco configurações fornecidas pelo operador foram consultadas ao vivo e convertidas em regressões determinísticas.
