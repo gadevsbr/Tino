@@ -8,6 +8,7 @@
 - Evidência ao vivo: as cinco URLs fornecidas produziram exatamente 2, 5, 4, 3 e 1 opções, na mesma ordem e com os mesmos rótulos da extensão original.
 - Evidência automatizada: testes permanentes cobrem os slots, indisponibilidade, cortesia infantil, variações de nomes e as cinco composições fornecidas.
 - Evidência de build: `go test -count=1 ./...`, `go vet ./...`, testes Node, Vite e Wails passaram; o `Tino.exe` 0.11.8 iniciou responsivo. SHA-256: `AE3E5DD5F3F6D036E0B0BAC851C550102058E214DF65EE111CEDAC95E32B5F0D`.
+- Evidência de release: commit funcional `9feda2f` enviado à `main`; release `v0.11.8` publicada com a interface e a CLI auxiliar.
 
 ## Etapa 22 — Matriz real de ocupação OmniBees v0.11.7
 
