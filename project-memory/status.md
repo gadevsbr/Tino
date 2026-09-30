@@ -1,5 +1,15 @@
 # Estado
 
+## Etapa 25 — Orçamento multi-quarto e triagem comercial v0.13.0
+
+- Status: implementado, testado e compilado localmente; entrega real no WhatsApp permanece um gate externo.
+- Triagem: primeira mensagem e retorno após 24 horas exibem orçamento ou outros assuntos; o handoff pausa o bot e mantém a conversa não lida para o atendente.
+- Até seis quartos: período e composição de cada quarto são coletados integralmente antes das consultas; os resultados saem separados, com a configuração em negrito.
+- Grupos: acima de seis quartos, o resumo geral é encaminhado ao número configurável do setor de grupos, com padrão `5573988240413`, sem consulta automática à OmniBees.
+- Sequência: duas mensagens configuráveis na UI são enviadas depois dos orçamentos e antes dos produtos deduplicados do catálogo associados às categorias disponíveis.
+- Evidência: testes direcionados de coleta multi-quarto, grupo, handoff não lido e configuração passaram; `go test -count=1 ./...`, `go vet ./...`, testes Node, Vite e Wails passaram. `Tino.exe` 0.13.0 iniciou responsivo. SHA-256: `91B5D014940FC2AB26BBD930D1BCD3BF42EE5C8198ECE11DC45D6DB860A08740`.
+- Limite: falta validar a ordem e a entrega das mensagens, o encaminhamento para grupos e os produtos do catálogo em uma conta WhatsApp autenticada.
+
 ## Etapa 24 — Conversas em tempo real v0.12.0
 
 - Status: implementação visual aprovada e integrada ao runtime Wails/Whatsmeow.

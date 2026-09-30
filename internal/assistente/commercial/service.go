@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"hash/fnv"
 	"strconv"
 	"strings"
@@ -26,9 +25,12 @@ const (
 )
 
 type Config struct {
-	Epoch     int64    `json:"epoch"`
-	Mode      Mode     `json:"mode"`
-	Allowlist []string `json:"allowlist"`
+	Epoch         int64    `json:"epoch"`
+	Mode          Mode     `json:"mode"`
+	Allowlist     []string `json:"allowlist"`
+	GroupPhone    string   `json:"group_phone"`
+	FinalMessage1 string   `json:"final_message_1"`
+	FinalMessage2 string   `json:"final_message_2"`
 }
 type Input struct {
 	Account, Contact, MessageID, Text string
@@ -36,14 +38,18 @@ type Input struct {
 }
 type Reply struct {
 	Text             string
+	Messages         []string
 	Handled, Handoff bool
+	GroupRequest     string
 	Categories       []omnibees.Category
 	SelectedCategory *omnibees.Category
 }
 type QuoteReply struct {
-	Text       string
-	Active     bool
-	Categories []omnibees.Category
+	Text         string
+	Messages     []string
+	Active       bool
+	Categories   []omnibees.Category
+	GroupRequest string
 }
 type QuoteFunc func(context.Context, string, string, string) (QuoteReply, error)
 
@@ -61,9 +67,11 @@ type state struct {
 	QuotedAt         time.Time           `json:"quoted_at"`
 	Categories       []omnibees.Category `json:"categories"`
 	SelectedCategory *omnibees.Category  `json:"selected_category,omitempty"`
+	AwaitingChoice   bool                `json:"awaiting_choice"`
 }
 
-const menu = "Como posso ajudar?\n1 — Fazer orçamento\n2 — Atendimento humano\nEnvie orçamento ou atendimento humano a qualquer momento."
+const defaultGroupPhone = "5573988240413"
+const menu = "Como posso ajudar?\n1 — Fazer orçamento\n2 — Tratar de outros assuntos"
 const greeting = "Olá! Bem-vindo ao Hotel Paraíso Tropical. Sou o assistente virtual do hotel."
 
 // New creates only this package's tables, without changing domain migrations.
@@ -124,6 +132,18 @@ func (s *Service) Configure(ctx context.Context, account string, config Config) 
 		}
 	}
 	config.Allowlist = entries
+	config.GroupPhone = onlyDigits(config.GroupPhone)
+	if config.GroupPhone == "" {
+		config.GroupPhone = defaultGroupPhone
+	}
+	if len(config.GroupPhone) < 10 || len(config.GroupPhone) > 15 {
+		return errors.New("telefone do setor de grupos deve conter DDI e entre 10 e 15 dígitos")
+	}
+	config.FinalMessage1 = strings.TrimSpace(config.FinalMessage1)
+	config.FinalMessage2 = strings.TrimSpace(config.FinalMessage2)
+	if len([]rune(config.FinalMessage1)) > 2000 || len([]rune(config.FinalMessage2)) > 2000 {
+		return errors.New("cada mensagem final deve ter no máximo 2000 caracteres")
+	}
 	previous, err := s.Configuration(ctx, account)
 	if err != nil {
 		return err
@@ -136,17 +156,30 @@ func (s *Service) Configure(ctx context.Context, account string, config Config) 
 	_, err = s.db.ExecContext(ctx, `INSERT INTO commercial_config(account,config) VALUES (?,?) ON CONFLICT(account) DO UPDATE SET config=excluded.config`, account, string(data))
 	return err
 }
+
+func onlyDigits(value string) string {
+	var b strings.Builder
+	for _, r := range value {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
 func (s *Service) Configuration(ctx context.Context, account string) (Config, error) {
 	var raw string
 	err := s.db.QueryRowContext(ctx, `SELECT config FROM commercial_config WHERE account=?`, account).Scan(&raw)
 	if errors.Is(err, sql.ErrNoRows) {
-		return Config{Mode: Disabled}, nil
+		return Config{Mode: Disabled, GroupPhone: defaultGroupPhone}, nil
 	}
 	if err != nil {
 		return Config{}, err
 	}
 	var config Config
 	err = json.Unmarshal([]byte(raw), &config)
+	if config.GroupPhone == "" {
+		config.GroupPhone = defaultGroupPhone
+	}
 	return config, err
 }
 func (s *Service) load(ctx context.Context, account, contact string) (state, error) {
@@ -205,6 +238,7 @@ func (s *Service) Resume(ctx context.Context, account, contact string) error {
 	st.QuoteActive = false
 	st.Categories = nil
 	st.SelectedCategory = nil
+	st.AwaitingChoice = false
 	st.QuotedAt = time.Time{}
 	return s.save(ctx, Input{Account: account, Contact: contact}, st)
 }
@@ -280,9 +314,20 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		st.QuoteActive = false
 		st.Categories = nil
 		st.SelectedCategory = nil
+		st.AwaitingChoice = true
 	}
 	st.ConfigEpoch = config.Epoch
-	if text == "atendimento humano" || text == "atendente" || text == "humano" || text == "falar com atendente" || text == "falar com um atendente" || (!st.QuoteActive && len(st.Categories) == 0 && text == "2") {
+	if idle {
+		r.Text = greeting + "\n\n" + menu
+		return finish()
+	}
+	budgetChoice := text == "orçamento" || text == "orcamento" || text == "1"
+	if st.AwaitingChoice && !budgetChoice {
+		st.AwaitingChoice = false
+		st.Paused = true
+		r.Handoff = true
+		r.Text = "Certo. Vou deixar sua conversa para um atendente humano responder."
+	} else if text == "atendimento humano" || text == "atendente" || text == "humano" || text == "falar com atendente" || text == "falar com um atendente" || text == "outros assuntos" || (!st.QuoteActive && len(st.Categories) == 0 && text == "2") {
 		if st.QuoteActive {
 			if _, err = s.quote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
 				return Reply{}, err
@@ -292,7 +337,8 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		st.QuoteActive = false
 		r.Handoff = true
 		r.Text = "Você solicitou atendimento humano. O assistente automático ficará pausado. Para voltar ao assistente, envie retomar atendimento."
-	} else if text == "orçamento" || text == "orcamento" || (!st.QuoteActive && len(st.Categories) == 0 && text == "1") {
+	} else if budgetChoice {
+		st.AwaitingChoice = false
 		q, e := s.quote(ctx, in.Account, in.Contact, "orçamento")
 		if e != nil {
 			return Reply{}, e
@@ -300,6 +346,8 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		st.QuoteActive = q.Active
 		st.Categories = q.Categories
 		r.Text = q.Text
+		r.Messages = append(r.Messages, q.Messages...)
+		r.GroupRequest = q.GroupRequest
 		r.Categories = q.Categories
 		if len(q.Categories) > 0 {
 			st.QuotedAt = in.Now
@@ -321,14 +369,17 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		st.QuoteActive = q.Active
 		st.Categories = q.Categories
 		r.Text = q.Text
+		r.Messages = append(r.Messages, q.Messages...)
+		r.GroupRequest = q.GroupRequest
 		r.Categories = q.Categories
 		if len(q.Categories) > 0 {
 			st.QuotedAt = in.Now
-			r.Text += "\n\nEscolha a categoria pelo número:\n"
-			for i, c := range q.Categories {
-				r.Text += fmt.Sprintf("%d — %s\n", i+1, c.Name)
+			if strings.TrimSpace(config.FinalMessage1) != "" {
+				r.Messages = append(r.Messages, config.FinalMessage1)
 			}
-			r.Text += "Ou envie atendimento humano para falar com a equipe."
+			if strings.TrimSpace(config.FinalMessage2) != "" {
+				r.Messages = append(r.Messages, config.FinalMessage2)
+			}
 		}
 	} else if len(st.Categories) > 0 {
 		if in.Now.Sub(st.QuotedAt) >= 24*time.Hour {
@@ -352,9 +403,6 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		}
 	} else {
 		r.Text = menu
-	}
-	if idle {
-		r.Text = greeting + "\n\n" + r.Text
 	}
 	return finish()
 }

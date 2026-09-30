@@ -130,6 +130,14 @@ func (s *Store) MarkRead(ctx context.Context, jid string) error {
 	return err
 }
 
+// MarkUnread keeps a conversation visible in the human-attendance queue.
+// It never decrements an existing counter and creates a single unread marker
+// when the chat had already been opened by an operator.
+func (s *Store) MarkUnread(ctx context.Context, jid string) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE chats SET unread=MAX(unread,1) WHERE jid=?`, jid)
+	return err
+}
+
 func (s *Store) UpdateName(ctx context.Context, jid, name string) error {
 	name = strings.TrimSpace(name)
 	if jid == "" || name == "" {

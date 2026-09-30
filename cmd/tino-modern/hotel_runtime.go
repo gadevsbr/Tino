@@ -40,7 +40,7 @@ type hotelRuntime struct {
 	backup     *backup.Manager
 }
 
-func openHotelRuntime(parent context.Context, dataDir string, settings capability.Settings, client *whatsmeow.Client) (*hotelRuntime, error) {
+func openHotelRuntime(parent context.Context, dataDir string, settings capability.Settings, client *whatsmeow.Client, markUnread func(context.Context, string) error) (*hotelRuntime, error) {
 	location, err := time.LoadLocation("America/Sao_Paulo")
 	if err != nil {
 		location = time.Local
@@ -64,6 +64,7 @@ func openHotelRuntime(parent context.Context, dataDir string, settings capabilit
 		_ = db.Close()
 		return nil, err
 	}
+	service.SetMarkUnread(markUnread)
 	ctx, cancel := context.WithCancel(parent)
 	service.StartAttached(ctx)
 	commercialService, err := commercial.New(parent, db, func(context.Context, string, string, string) (commercial.QuoteReply, error) {

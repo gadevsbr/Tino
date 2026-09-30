@@ -63,7 +63,10 @@ type Service struct {
 	uploadOverride   func(context.Context, []byte, whatsmeow.MediaType) (whatsmeow.UploadResponse, error)
 	ownsClient       bool
 	handlerID        uint32
+	markUnread       func(context.Context, string) error
 }
+
+func (s *Service) SetMarkUnread(fn func(context.Context, string) error) { s.markUnread = fn }
 
 func New(ctx context.Context, cfg config.Config, domainDB *sql.DB, application *app.App) (*Service, error) {
 	if cfg.DNSServer != "" {

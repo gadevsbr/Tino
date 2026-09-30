@@ -37,4 +37,14 @@ func TestStoreConversationHistory(t *testing.T) {
 	if err != nil || len(chats) != 1 || chats[0].Name != "Ana Souza" {
 		t.Fatalf("renamed chats=%#v err=%v", chats, err)
 	}
+	if err := s.MarkRead(context.Background(), e.Info.Chat.String()); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.MarkUnread(context.Background(), e.Info.Chat.String()); err != nil {
+		t.Fatal(err)
+	}
+	chats, err = s.Conversations(context.Background(), "")
+	if err != nil || chats[0].Unread != 1 {
+		t.Fatalf("handoff unread=%#v err=%v", chats, err)
+	}
 }

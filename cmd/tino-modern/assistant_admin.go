@@ -22,9 +22,12 @@ type RoomUpdateRequest struct {
 }
 type RoomHistoryDTO struct{ Old, OldLabel, New, NewLabel, At string }
 type CommercialConfigDTO struct {
-	Mode      string
-	Allowlist []string
-	Epoch     int64
+	Mode          string
+	Allowlist     []string
+	Epoch         int64
+	GroupPhone    string
+	FinalMessage1 string
+	FinalMessage2 string
 }
 type CatalogDTO struct {
 	Category, Title, ProductID, Owner, Description, Currency, Price string
@@ -114,7 +117,7 @@ func (a *App) GetCommercialConfig() (CommercialConfigDTO, error) {
 		return CommercialConfigDTO{}, err
 	}
 	cfg, err := r.commercial.Configuration(a.ctx, account)
-	return CommercialConfigDTO{Mode: string(cfg.Mode), Allowlist: cfg.Allowlist, Epoch: cfg.Epoch}, err
+	return CommercialConfigDTO{Mode: string(cfg.Mode), Allowlist: cfg.Allowlist, Epoch: cfg.Epoch, GroupPhone: cfg.GroupPhone, FinalMessage1: cfg.FinalMessage1, FinalMessage2: cfg.FinalMessage2}, err
 }
 
 func (a *App) SaveCommercialConfig(cfg CommercialConfigDTO) error {
@@ -138,7 +141,11 @@ func (a *App) SaveCommercialConfig(cfg CommercialConfigDTO) error {
 		}
 		allow = append(allow, n)
 	}
-	if err = r.commercial.Configure(a.ctx, account, commercial.Config{Mode: commercial.Mode(cfg.Mode), Allowlist: allow}); err != nil {
+	groupPhone := digitsOnly(cfg.GroupPhone)
+	if len(groupPhone) < 10 || len(groupPhone) > 15 {
+		return errors.New("telefone do setor de grupos precisa ter DDI e entre 10 e 15 dígitos")
+	}
+	if err = r.commercial.Configure(a.ctx, account, commercial.Config{Mode: commercial.Mode(cfg.Mode), Allowlist: allow, GroupPhone: groupPhone, FinalMessage1: cfg.FinalMessage1, FinalMessage2: cfg.FinalMessage2}); err != nil {
 		return err
 	}
 	if a.eventsReady {

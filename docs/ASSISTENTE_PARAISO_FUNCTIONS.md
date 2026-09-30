@@ -61,6 +61,10 @@ Inventário para decidir como cada capacidade deverá funcionar no Tino. A prese
 - Modos desativado, teste restrito a um número e público.
 - Menu inicial e nova saudação após 24 horas de inatividade.
 - Orçamento guiado integrado à OmniBees.
+- Triagem entre orçamento e outros assuntos; o segundo caminho pausa a automação e mantém o chat não lido para atendimento humano.
+- Até seis quartos: coleta todas as ocupações, incluindo idades das crianças, antes de consultar e enviar um orçamento destacado para cada quarto.
+- Acima de seis quartos: coleta período e ocupação geral, encaminha ao WhatsApp configurado do setor de grupos e confirma o encaminhamento ao solicitante.
+- Duas mensagens finais editáveis na UI são enviadas depois dos orçamentos e antes dos produtos de catálogo associados às categorias disponíveis.
 - Encaminhamento para atendimento humano.
 - Pausa persistente da automação por contato e retomada explícita.
 - Teste do atendimento usando o número do operador.

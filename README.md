@@ -74,6 +74,8 @@ Em **Operação financeira**, o dashboard consulta dia, sete dias, mês ou inter
 
 Em **Gestão Assistente**, o operador administra os 42 quartos, histórico e ocupação; liga o atendimento comercial nos modos desativado, teste ou público; consulta e remove vínculos do catálogo; e executa backups verificados com diagnóstico do banco e WhatsApp.
 
+O atendimento comercial começa com uma triagem na primeira mensagem ou após 24 horas sem interação. Outros assuntos pausam o bot e mantêm a conversa não lida. Orçamentos de até seis quartos são coletados quarto a quarto e consultados somente após todas as ocupações estarem completas; pedidos maiores são encaminhados ao setor de grupos. O telefone de grupos e as duas mensagens enviadas entre o orçamento e os produtos do catálogo são configurados em **Gestão Assistente > Comercial**.
+
 ## Importação de caixa por PDF
 
 Na aba **Importar caixa**, vários relatórios diários podem ser selecionados de uma vez. Antes da gravação, o Tino extrai saldo inicial, entradas, saídas e saldo final, confere a equação contábil, bloqueia datas duplicadas e mantém divergências separadas para revisão. Os originais aceitos ficam preservados em `data/operations/caixa-importados/` e são identificados por SHA-256.

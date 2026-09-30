@@ -355,7 +355,13 @@ func (a *App) restartHotelRuntime() error {
 	if err != nil {
 		return err
 	}
-	runtime, err := openHotelRuntime(a.ctx, a.cfg.DataDir, settings, a.mgr.Client)
+	runtime, err := openHotelRuntime(a.ctx, a.cfg.DataDir, settings, a.mgr.Client, func(ctx context.Context, jid string) error {
+		if err := a.chats.MarkUnread(ctx, jid); err != nil {
+			return err
+		}
+		wailsRuntime.EventsEmit(a.ctx, "chats:changed", map[string]string{"jid": jid})
+		return nil
+	})
 	if err != nil {
 		return err
 	}

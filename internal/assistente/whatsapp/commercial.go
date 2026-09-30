@@ -325,15 +325,42 @@ func (s *Service) handleGuest(ctx context.Context, account, contact, messageID, 
 		return
 	}
 	if result.Handoff {
+		if s.markUnread != nil {
+			_ = s.markUnread(ctx, chat.String())
+		}
 		// No guest body or quote details are copied into notifications/logs.
 		notice := "🔔 Hóspede solicitou atendimento humano.\nContato: " + contact + "\nO automático está pausado até retomada explícita.\nPara retomar: comercial retomar " + contact
 		for _, number := range s.auth.Numbers() {
 			s.replyText(ctx, types.NewJID(number, types.DefaultUserServer), notice)
 		}
 	}
+	if result.GroupRequest != "" {
+		destination := cfg.GroupPhone
+		if destination == "" {
+			destination = "5573988240413"
+		}
+		notice := result.GroupRequest + "\nContato solicitante: " + contact
+		if _, err := s.sendMessage(ctx, types.NewJID(destination, types.DefaultUserServer), &waE2E.Message{Conversation: proto.String(notice)}); err != nil {
+			slog.Error("group quote forwarding failed")
+			s.replyText(ctx, chat, "Não consegui encaminhar ao setor de grupos agora. Um atendente humano continuará por aqui.")
+			if s.markUnread != nil {
+				_ = s.markUnread(ctx, chat.String())
+			}
+			return
+		}
+	}
 	if result.Text != "" {
 		if _, err := s.sendMessage(ctx, chat, &waE2E.Message{Conversation: proto.String(result.Text)}); err != nil {
 			slog.Error("commercial quote reply failed")
+			return
+		}
+	}
+	for _, body := range result.Messages {
+		if strings.TrimSpace(body) == "" {
+			continue
+		}
+		if _, err := s.sendMessage(ctx, chat, &waE2E.Message{Conversation: proto.String(body)}); err != nil {
+			slog.Error("commercial sequence reply failed")
 			return
 		}
 	}

@@ -1,5 +1,9 @@
 # Decisões
 
+- 2026-09-30 — A primeira mensagem e a primeira após 24 horas sempre recebem triagem. Qualquer escolha diferente de orçamento transfere a conversa ao humano, pausa o bot persistentemente e força um marcador não lido no Tino.
+- 2026-09-30 — Orçamentos de até seis quartos coletam todas as ocupações antes de qualquer consulta à OmniBees; cada resultado é enviado com sua configuração em negrito. Depois seguem duas mensagens configuráveis e, por último, os produtos únicos associados às categorias retornadas.
+- 2026-09-30 — Pedidos acima de seis quartos não consultam a OmniBees automaticamente. O bot coleta período, total de adultos, crianças e idades, encaminha o resumo ao telefone de grupos configurado (padrão `5573988240413`) e confirma o encaminhamento ao solicitante.
+
 - 2026-09-30 — A tela de conversas segue a densidade e os padrões de interação familiares do WhatsApp Web, mantendo identidade Tino e sem usar logotipo ou arte proprietária do WhatsApp. Atualização primária ocorre por eventos Wails do Whatsmeow, com reconciliação periódica apenas como proteção contra perda de evento.
 
 - 2026-09-30 — Superseded: usar a capacidade escrita no nome físico como filtro exclusivo para 1–3 hóspedes divergia da extensão original e ocultava alternativas comerciais válidas da OmniBees.

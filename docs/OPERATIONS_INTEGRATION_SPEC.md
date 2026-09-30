@@ -26,3 +26,4 @@ Ao enviar a situação dos quartos por WhatsApp, o resumo textual que acompanha 
 - Testes automatizados e build provam integração local.
 - Comandos reais, download/upload de mídia, OCR e entrega de PDFs exigem pareamento com conta autorizada.
 - Cotação OmniBees e catálogo exigem validação dos provedores e configurações externas.
+- O fluxo comercial multi-quarto está implementado localmente; o encaminhamento real ao setor de grupos, a sequência das mensagens e os produtos do catálogo ainda exigem validação em uma conta WhatsApp autenticada.
