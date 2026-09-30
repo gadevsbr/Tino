@@ -195,3 +195,4 @@
 - Correção: classificação por capacidade e atributos tolera variações de `Quarto`/`Suíte`/`Apartamento`, mantendo a regra de capacidade exata e escolhendo o menor total entre variações equivalentes.
 - Evidência: testes cobrem Duplo Deluxe, Duplo Standard, Triplo Super Deluxe e Quádruplo com Vista para o Mar; consulta real continuou retornando a categoria dupla esperada com preço formatado.
 - Evidência de build: `go test -count=1 ./...`, `go vet ./...` e Wails 0.11.6 passaram; SHA-256 do `Tino.exe`: `24319FB96930AD76D018D97CC2C7DD3D5B8078DEABB72E44F907B9AB8AF049E7`.
+- Evidência de release: commit funcional `8a7279f` enviado à `main`; release `v0.11.6` publicada com a interface e a CLI auxiliar.
