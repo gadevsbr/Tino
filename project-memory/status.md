@@ -9,7 +9,7 @@
 - Validação: testes direcionados confirmam handoff de áudio, pausa persistente e resumo completo ao aprovador; `go test -count=1 ./...`, `go vet ./...`, testes e build do frontend passaram.
 - Build Windows v0.15.3 concluído; SHA-256 de `dist/Tino.exe`: `6A04815A305066FA0F7FC0FD49ECFDF3D2ED0C4AB4728B075B031C310C7D97AB`.
 - Gate externo: ao reabrir o executável, o WhatsApp respondeu `401 logged out from another device` e removeu a credencial local. Novo QR é necessário antes de validar a entrega real ao aprovador.
-- Release pendente.
+- Release publicada: `v0.15.3` com `Tino.exe` e `tino-cli-windows-amd64.exe`.
 
 ## Etapa 39 — Confirmação assíncrona do QR v0.15.2
 
