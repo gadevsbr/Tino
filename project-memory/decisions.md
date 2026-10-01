@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-10-01 — Superseded: após o evento `success` do QR, o Tino exigia autenticação completa em 20 segundos e exibia falha mesmo quando a credencial já estava salva e a sincronização terminava em seguida.
+- 2026-10-01 — O pareamento aguarda até 60 segundos; se o dispositivo já foi persistido, a sincronização pode continuar em segundo plano e o evento `Connected` atualiza o status, sem falso erro nem novo QR.
+
 - 2026-10-01 — Superseded: iniciar a UI carregava a sessão e o motor hoteleiro, mas deixava a sessão WhatsApp persistida desconectada até o operador clicar em conectar.
 - 2026-10-01 — O Tino reconecta automaticamente uma sessão WhatsApp persistida durante a inicialização, depois de registrar os handlers do chat e do motor hoteleiro; falhas continuam visíveis na atividade e no status.
 

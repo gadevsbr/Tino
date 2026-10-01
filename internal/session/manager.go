@@ -112,8 +112,14 @@ func (m *Manager) ConnectWithQR(ctx context.Context, showQR bool, onQR func(stri
 					}
 				}
 			case "success":
-				if !m.Client.WaitForConnection(20 * time.Second) {
-					return errors.New("o QR foi aceito, mas a sessão não concluiu a autenticação")
+				if !m.Client.WaitForConnection(60 * time.Second) {
+					// WhatsApp persists the device before the initial history sync is
+					// necessarily complete. Keep the live connection running: the
+					// Connected event will update the UI as soon as sync finishes.
+					if m.Client.Store.ID != nil {
+						return nil
+					}
+					return errors.New("o QR foi aceito, mas a credencial não foi persistida")
 				}
 				return nil
 			case "timeout":
