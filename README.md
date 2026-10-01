@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.14.4
+.\scripts\build.ps1 -Version 0.14.5
 .\dist\Tino.exe
 
 # CLI auxiliar

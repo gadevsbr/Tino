@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-09-30 — Superseded parcialmente: F2 deixa de ser o acionamento principal da nova reserva.
+- 2026-09-30 — O seletor estável `#btn-add-reserva`, confirmado pelo operador, passa a ser a ação primária. F2 permanece somente como compatibilidade de fallback.
+
 - 2026-09-30 — Superseded: após o login Bitz, o desaparecimento do botão de entrada era tratado como aplicação pronta e apenas um `F2` era enviado; o atalho podia chegar antes de o sistema instalar seus listeners.
 - 2026-09-30 — A abertura de “NOVA RESERVA” aguarda o documento completo, dá foco à página, repete `F2` e usa evento DOM como fallback. Falhas incluem URL e título seguros para diagnóstico, sem credenciais nem conteúdo do hóspede.
 

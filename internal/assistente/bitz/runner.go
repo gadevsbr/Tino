@@ -175,6 +175,11 @@ func openNewReservation(ctx context.Context, timeout time.Duration) error {
 	}
 	deadline := time.Now().Add(timeout)
 	for attempt := 0; time.Now().Before(deadline); attempt++ {
+		var clicked bool
+		_ = chromedp.Run(ctx, chromedp.Evaluate(`(()=>{const e=document.getElementById("btn-add-reserva");if(!e||e.disabled)return false;e.click();return true})()`, &clicked))
+		if clicked && hasText(ctx, "NOVA RESERVA", 1500*time.Millisecond) {
+			return nil
+		}
 		if err := chromedp.Run(ctx, chromedp.KeyEvent(kb.F2)); err != nil {
 			return err
 		}

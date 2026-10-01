@@ -1,5 +1,11 @@
 # Estado
 
+## Etapa 34 — Botão direto de nova reserva Bitz v0.14.5
+
+- O robô agora clica diretamente em `#btn-add-reserva`, ID confirmado no sistema real.
+- F2 permanece apenas como fallback caso o botão ainda não exista ou esteja desabilitado durante o carregamento.
+- Evidência: regressão específica do botão, regressão do fallback F2, `go vet ./...`, `go test -count=1 ./...`, testes React, build Vite e build Wails passaram. SHA-256 do `Tino.exe`: `6AC229B354AEF52029DC98861D738F7C8175B19B4279DD21C1D379151EC4AC4B`.
+
 ## Etapa 33 — Abertura resiliente da pré-reserva Bitz v0.14.4
 
 - Causa confirmada no job `428F96D1`: login aceito, seguido de `abrir nova reserva: tela esperada não apareceu: NOVA RESERVA`.
