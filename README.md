@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.14.1
+.\scripts\build.ps1 -Version 0.14.2
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -76,7 +76,7 @@ Em **Gestão Assistente**, o operador administra os 42 quartos, histórico e ocu
 
 O atendimento comercial começa com uma triagem na primeira mensagem ou após 24 horas sem interação. Outros assuntos pausam o bot e mantêm a conversa não lida. Orçamentos de até seis quartos são coletados quarto a quarto e consultados somente após todas as ocupações estarem completas; pedidos maiores são encaminhados ao setor de grupos. O telefone de grupos e as duas mensagens enviadas entre o orçamento e os produtos do catálogo são configurados em **Gestão Assistente > Comercial**.
 
-Em **Gestão Assistente > Pré-reserva Bitz**, o operador configura o usuário, a senha protegida pelo Windows, o CPF operacional, o WhatsApp aprovador e a mensagem final. Após a escolha de uma categoria para cada quarto, o Tino cria uma única pré-reserva idempotente, avisa o aprovador e só responde ao hóspede depois do comando `aprovar pre-reserva CODIGO`. O teste de acesso apenas autentica e não cria reserva.
+Em **Integração Bitz**, acessível diretamente pelo menu lateral, o operador configura o usuário, a senha protegida pelo Windows, o CPF operacional, o WhatsApp aprovador e a mensagem final. Após a escolha de uma categoria para cada quarto, o Tino cria uma única pré-reserva idempotente, avisa o aprovador e só responde ao hóspede depois do comando `aprovar pre-reserva CODIGO`. O teste de acesso apenas autentica e não cria reserva.
 
 ## Importação de caixa por PDF
 

@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-09-30 — Superseded: manter a ativação do Bitz apenas como subaba de Gestão Assistente tornou a integração difícil de localizar.
+- 2026-09-30 — **Integração Bitz** passa a ser uma entrada de primeiro nível no menu lateral e abre diretamente credenciais, teste, status e ativação.
+
 - 2026-09-30 — Superseded: comandos `comercial ativar`, `comercial desativar` e `comercial teste` recriavam a configuração e podiam apagar telefone de grupos e as duas mensagens definidas na UI.
 - 2026-09-30 — Comandos de modo alteram exclusivamente modo e allowlist. A tela Bitz usa a ação explícita **Salvar e ativar**; falhas técnicas continuam genéricas para o hóspede e são detalhadas somente ao WhatsApp aprovador.
 

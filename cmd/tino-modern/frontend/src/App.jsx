@@ -3,7 +3,7 @@ import {
   Activity, Archive, ArrowDown, ArrowUp, Bot, Check, ChevronRight, CircleHelp,
   Building2, CalendarRange, Download, Eye, FileText, Receipt, Share2, WalletCards,
   Database, FileLock2, FileSpreadsheet, FolderOpen, GitBranch, LoaderCircle,
-  CheckCheck, LockKeyhole, MessageCircle, Mic, MoreHorizontal, Paperclip, Plus,
+  CheckCheck, KeyRound, LockKeyhole, MessageCircle, Mic, MoreHorizontal, Paperclip, Plus,
   RefreshCw, Search, Send, Smile,
   Settings2, ShieldCheck, Sparkles, Trash2, Upload, Users, Workflow, X
 } from 'lucide-react'
@@ -16,13 +16,14 @@ import {
 } from '../wailsjs/go/main/App'
 import { EventsOn } from '../wailsjs/runtime/runtime'
 import { normalizeCapabilities } from './capabilities'
-import AssistantOps from './AssistantOps'
+import AssistantOps,{BitzSettings} from './AssistantOps'
 
 const nav = [
   ['conversations', 'Conversas', MessageCircle],
   ['contacts', 'Base e notificações', Users],
   ['operations', 'Operação financeira', WalletCards],
   ['assistant', 'Gestão Assistente', Building2],
+  ['bitz', 'Integração Bitz', KeyRound],
   ['flow', 'Flow Builder', GitBranch],
   ['capabilities', 'Central de recursos', Settings2],
   ['activity', 'Atividade', Activity],
@@ -78,6 +79,7 @@ export default function App() {
         {page === 'contacts' && <Contacts busy={busy} run={run} notify={notify}/>} 
         {page === 'operations' && <OperationsPage notify={notify}/>}
         {page === 'assistant' && <AssistantOps notify={notify}/>}
+        {page === 'bitz' && <BitzSettings notify={notify}/>}
         {page === 'flow' && <FlowPage busy={busy} run={run} notify={notify}/>} 
         {page === 'capabilities' && <Capabilities notify={notify}/>} 
         {page === 'activity' && <ActivityPage items={activities}/>} 
