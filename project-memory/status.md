@@ -6,6 +6,7 @@
 - A tela direta reúne credenciais, CPF operacional, aprovador, mensagem final, teste de acesso, status e **Salvar e ativar**.
 - Evidência: testes React e Go direcionados, build Vite e build Wails passaram; o executável abriu responsivo. SHA-256 do `Tino.exe`: `7220A352699CFDBE5AF151128E869DBDBEF38FDC36A71CFCF294AF226B1A1A4F`.
 - Limite visual: o controlador de janelas não expôs o processo Wails para captura, portanto a presença do item foi validada pelo bundle compilado e pelo processo responsivo, não por screenshot automatizado.
+- Evidência de release: commit funcional `10d4e35` enviado à `main`; release `v0.14.2` publicada com UI e CLI auxiliar.
 
 ## Etapa 30 — Preservação das mensagens e diagnóstico Bitz v0.14.1
 
