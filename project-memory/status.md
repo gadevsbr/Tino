@@ -6,6 +6,7 @@
 - Correção: `testar atendimento` roteia para uma identidade sintética exclusiva do operador e reinicia somente essa sessão; `sair atendimento` também limpa o estado de teste.
 - Proteção: a identidade sintética só é admitida quando o transporte autenticado marca explicitamente a entrada como sessão de teste no modo comercial `test`.
 - Evidência: regressão direcionada, testes dos pacotes comercial/WhatsApp, `go vet ./...`, `go test ./...`, testes React, build Vite e build Wails passaram. O `Tino.exe` abriu responsivo; SHA-256 `FD1E2608368D37709C0A8B3B0B03B7419A5B2E83CAAA42DF1A968A04ADF0C348`.
+- Evidência de release: commit funcional `c5cfdf0` enviado à `main`; release `v0.14.3` publicada com UI e CLI auxiliar.
 
 ## Etapa 31 — Acesso direto à Integração Bitz v0.14.2
 
