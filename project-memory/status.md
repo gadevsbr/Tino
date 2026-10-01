@@ -6,7 +6,7 @@
 - A espera sobe de 20 para 60 segundos e uma credencial já persistida deixa a sincronização terminar em segundo plano.
 - Validação: `go test -count=1 ./...`, `go vet ./...`, testes e build do frontend passaram; o executável v0.15.2 reiniciou com 1 dispositivo persistido, 1 conexão estabelecida e log `whatsapp connected`, sem novo QR.
 - Binário Windows: `dist/Tino.exe`, SHA-256 `2D6F970C37A101D6D735A010BA0344EFA44FB5DF78CA403F309CBE2A07B60022`.
-- Release pendente.
+- Release publicada: `v0.15.2` com `Tino.exe` e `tino-cli-windows-amd64.exe`.
 
 ## Etapa 38 — Reconexão automática do WhatsApp v0.15.1
 
