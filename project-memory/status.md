@@ -9,7 +9,7 @@
 - Validação: `go test -count=1 ./...`, `go vet ./...`, testes e build do frontend, protocolo do runtime empacotado e dois probes reais sem salvamento passaram.
 - Build Windows v0.15.4 concluído; SHA-256 de `dist/Tino.exe`: `DC622ABCD372B38C4510276B8DA4576E12F6FE724357C5B6477B2774E494846C`.
 - O executável v0.15.4 reiniciou autenticado, com dispositivo persistido e conexão estabelecida.
-- Release pendente.
+- Release publicada: `v0.15.4` com `Tino.exe` e `tino-cli-windows-amd64.exe`.
 
 ## Etapa 40 — Aviso completo ao aprovador e áudio para humano v0.15.3
 
