@@ -66,7 +66,9 @@ Inventário para decidir como cada capacidade deverá funcionar no Tino. A prese
 - Acima de seis quartos: coleta período e ocupação geral, encaminha ao WhatsApp configurado do setor de grupos e confirma o encaminhamento ao solicitante.
 - Duas mensagens finais editáveis na UI são enviadas depois dos orçamentos e antes dos produtos de catálogo associados às categorias disponíveis.
 - Após os produtos, o bot envia uma lista numerada das categorias e pede a escolha pelo número; `*atendente*` aparece destacado e `sair` encerra e limpa a sessão comercial.
-- Ao escolher uma categoria retornada pela OmniBees, o bot confirma que ela está disponível no período consultado e encaminha ao atendente somente para concluir a reserva.
+- Para até seis quartos, cada quarto recebe sua própria escolha numerada de categoria disponível.
+- Depois de todas as escolhas, a integração Bitz cria a pré-reserva com o CPF operacional configurado, seleciona uma UH disponível por quarto e avisa o WhatsApp aprovador.
+- Somente o aprovador configurado pode confirmar com `aprovar pre-reserva CODIGO`; então a mensagem final definida na UI é enviada ao hóspede.
 - Encaminhamento para atendimento humano.
 - Pausa persistente da automação por contato e retomada explícita.
 - Teste do atendimento usando o número do operador.

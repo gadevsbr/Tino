@@ -28,6 +28,7 @@ import (
 	"github.com/gadevsbr/tino/internal/assistente/app"
 	"github.com/gadevsbr/tino/internal/assistente/authorization"
 	"github.com/gadevsbr/tino/internal/assistente/backup"
+	"github.com/gadevsbr/tino/internal/assistente/bitz"
 	"github.com/gadevsbr/tino/internal/assistente/cash"
 	"github.com/gadevsbr/tino/internal/assistente/catalog"
 	"github.com/gadevsbr/tino/internal/assistente/commands"
@@ -58,6 +59,10 @@ type Service struct {
 	commercial       *commercial.Service
 	catalog          *catalog.Service
 	catalogRepo      *catalog.Repository
+	bitzStore        *bitz.Store
+	bitzJobs         *bitz.Jobs
+	bitzRunner       bitz.Runner
+	bitzMu           sync.Mutex
 	sendOverride     func(context.Context, types.JID, *waE2E.Message) (whatsmeow.SendResponse, error)
 	downloadOverride func(context.Context, whatsmeow.DownloadableMessage) ([]byte, error)
 	uploadOverride   func(context.Context, []byte, whatsmeow.MediaType) (whatsmeow.UploadResponse, error)
@@ -335,7 +340,7 @@ func (s *Service) onEvent(raw any) {
 	if text == "" && evt.Message.GetExtendedTextMessage() != nil {
 		text = evt.Message.GetExtendedTextMessage().GetText()
 	}
-	operator := evt.Info.IsFromMe || selfChat || (sender != "" && s.auth.Allowed(sender))
+	operator := evt.Info.IsFromMe || selfChat || (sender != "" && s.auth.Allowed(sender)) || (!evt.Info.IsGroup && s.bitzApprovalCommand(context.Background(), sender, text))
 	// Group conversations never enter the public guest flow. Only the account
 	// owner or an explicitly authorized operator can trigger commands there.
 	if evt.Info.IsGroup && !operator {

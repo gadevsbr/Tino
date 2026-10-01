@@ -181,6 +181,7 @@ func (a *App) finishPublicRooms(ctx context.Context, session conversation.Sessio
 	checkOut, _ := parseQuoteDate(p.CheckOut)
 	messages := make([]string, 0, len(p.RoomData))
 	categories := []omnibees.Category{}
+	plan := &commercial.QuotePlan{CheckIn: p.CheckIn, CheckOut: p.CheckOut, Rooms: make([]commercial.QuoteRoom, 0, len(p.RoomData))}
 	seen := map[string]bool{}
 	for i, room := range p.RoomData {
 		search, err := omnibees.NewSearch(checkIn, checkOut, room.Adults, room.Ages)
@@ -191,8 +192,10 @@ func (a *App) finishPublicRooms(ctx context.Context, session conversation.Sessio
 		configuration := roomConfiguration(room)
 		if err != nil {
 			messages = append(messages, fmt.Sprintf("*Quarto %d — %s*\nNão consegui consultar os valores deste quarto agora.", i+1, configuration))
+			plan.Rooms = append(plan.Rooms, commercial.QuoteRoom{Adults: room.Adults, Ages: append([]int(nil), room.Ages...)})
 			continue
 		}
+		plan.Rooms = append(plan.Rooms, commercial.QuoteRoom{Adults: room.Adults, Ages: append([]int(nil), room.Ages...), Categories: append([]omnibees.Category(nil), result.Categories...)})
 		messages = append(messages, fmt.Sprintf("*Quarto %d — %s*\n%s", i+1, configuration, result.Text))
 		for _, category := range result.Categories {
 			if !seen[category.Key] {
@@ -205,7 +208,13 @@ func (a *App) finishPublicRooms(ctx context.Context, session conversation.Sessio
 	if err := a.sessions.Save(ctx, session); err != nil {
 		return commercial.QuoteReply{}, err
 	}
-	return commercial.QuoteReply{Messages: messages, Categories: categories}, nil
+	for _, room := range plan.Rooms {
+		if len(room.Categories) == 0 {
+			plan = nil
+			break
+		}
+	}
+	return commercial.QuoteReply{Messages: messages, Categories: categories, Plan: plan}, nil
 }
 func (a *App) finishGroupQuote(ctx context.Context, session conversation.Session, p publicQuotePayload) (commercial.QuoteReply, error) {
 	session.Status = "COMPLETED"

@@ -27,3 +27,4 @@ Ao enviar a situação dos quartos por WhatsApp, o resumo textual que acompanha 
 - Comandos reais, download/upload de mídia, OCR e entrega de PDFs exigem pareamento com conta autorizada.
 - Cotação OmniBees e catálogo exigem validação dos provedores e configurações externas.
 - O fluxo comercial multi-quarto está implementado localmente; o encaminhamento real ao setor de grupos, a sequência das mensagens e os produtos do catálogo ainda exigem validação em uma conta WhatsApp autenticada.
+- A automação Bitz, a proteção local de credenciais, a idempotência e a aprovação final têm cobertura local. Login, seletores autenticados e criação de uma pré-reserva real permanecem gate externo até as credenciais serem configuradas e o teste controlado ser executado.

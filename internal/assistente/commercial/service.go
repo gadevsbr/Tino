@@ -45,6 +45,20 @@ type Reply struct {
 	SelectionPrompt  string
 	Categories       []omnibees.Category
 	SelectedCategory *omnibees.Category
+	PreReservation   *PreReservation
+}
+type QuoteRoom struct {
+	Adults     int                 `json:"adults"`
+	Ages       []int               `json:"ages"`
+	Categories []omnibees.Category `json:"categories"`
+}
+type QuotePlan struct {
+	CheckIn, CheckOut string
+	Rooms             []QuoteRoom
+}
+type PreReservation struct {
+	CheckIn, CheckOut string
+	Categories        []omnibees.Category
 }
 type QuoteReply struct {
 	Text         string
@@ -52,6 +66,7 @@ type QuoteReply struct {
 	Active       bool
 	Categories   []omnibees.Category
 	GroupRequest string
+	Plan         *QuotePlan
 }
 type QuoteFunc func(context.Context, string, string, string) (QuoteReply, error)
 
@@ -70,6 +85,8 @@ type state struct {
 	Categories       []omnibees.Category `json:"categories"`
 	SelectedCategory *omnibees.Category  `json:"selected_category,omitempty"`
 	AwaitingChoice   bool                `json:"awaiting_choice"`
+	Plan             *QuotePlan          `json:"plan,omitempty"`
+	SelectedRooms    []omnibees.Category `json:"selected_rooms,omitempty"`
 }
 
 const defaultGroupPhone = "5573988240413"
@@ -242,6 +259,8 @@ func (s *Service) Resume(ctx context.Context, account, contact string) error {
 	st.SelectedCategory = nil
 	st.AwaitingChoice = false
 	st.QuotedAt = time.Time{}
+	st.Plan = nil
+	st.SelectedRooms = nil
 	return s.save(ctx, Input{Account: account, Contact: contact}, st)
 }
 
@@ -327,6 +346,8 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		st.Categories = nil
 		st.SelectedCategory = nil
 		st.AwaitingChoice = true
+		st.Plan = nil
+		st.SelectedRooms = nil
 	}
 	st.ConfigEpoch = config.Epoch
 	if idle {
@@ -359,11 +380,15 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		}
 		st.QuoteActive = q.Active
 		st.Categories = q.Categories
+		st.Plan = q.Plan
 		r.Text = q.Text
 		r.Messages = append(r.Messages, q.Messages...)
 		r.GroupRequest = q.GroupRequest
 		r.Categories = q.Categories
-		if len(q.Categories) > 0 {
+		if q.Plan != nil && len(q.Plan.Rooms) > 0 {
+			st.QuotedAt = in.Now
+			r.SelectionPrompt = roomCategorySelectionPrompt(1, len(q.Plan.Rooms), q.Plan.Rooms[0].Categories)
+		} else if len(q.Categories) > 0 {
 			st.QuotedAt = in.Now
 			r.SelectionPrompt = categorySelectionPrompt(q.Categories)
 		}
@@ -383,6 +408,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		}
 		st.QuoteActive = q.Active
 		st.Categories = q.Categories
+		st.Plan = q.Plan
 		r.Text = q.Text
 		r.Messages = append(r.Messages, q.Messages...)
 		r.GroupRequest = q.GroupRequest
@@ -395,7 +421,41 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 			if strings.TrimSpace(config.FinalMessage2) != "" {
 				r.Messages = append(r.Messages, config.FinalMessage2)
 			}
-			r.SelectionPrompt = categorySelectionPrompt(q.Categories)
+			if q.Plan != nil && len(q.Plan.Rooms) > 0 {
+				r.SelectionPrompt = roomCategorySelectionPrompt(1, len(q.Plan.Rooms), q.Plan.Rooms[0].Categories)
+			} else {
+				r.SelectionPrompt = categorySelectionPrompt(q.Categories)
+			}
+		}
+	} else if st.Plan != nil && len(st.Plan.Rooms) > 0 {
+		if in.Now.Sub(st.QuotedAt) >= 24*time.Hour {
+			st.Categories, st.Plan, st.SelectedRooms = nil, nil, nil
+			r.Text = "Este orçamento expirou. Envie orçamento para consultar valores atualizados."
+		} else {
+			roomIndex := len(st.SelectedRooms)
+			if roomIndex >= len(st.Plan.Rooms) {
+				st.Plan, st.SelectedRooms = nil, nil
+				r.Text = menu
+			} else {
+				roomCategories := st.Plan.Rooms[roomIndex].Categories
+				for i, c := range roomCategories {
+					if text == strconv.Itoa(i+1) || text == strings.ToLower(c.Key) || text == strings.ToLower(c.Name) {
+						st.SelectedRooms = append(st.SelectedRooms, c)
+						break
+					}
+				}
+				if len(st.SelectedRooms) == roomIndex {
+					r.Text = roomCategorySelectionPrompt(roomIndex+1, len(st.Plan.Rooms), roomCategories)
+				} else if len(st.SelectedRooms) < len(st.Plan.Rooms) {
+					next := len(st.SelectedRooms)
+					r.Text = "Categoria do quarto confirmada.\n\n" + roomCategorySelectionPrompt(next+1, len(st.Plan.Rooms), st.Plan.Rooms[next].Categories)
+				} else {
+					r.PreReservation = &PreReservation{CheckIn: st.Plan.CheckIn, CheckOut: st.Plan.CheckOut, Categories: append([]omnibees.Category(nil), st.SelectedRooms...)}
+					r.Text = "Categorias confirmadas. Estou preparando sua pré-reserva e avisarei a equipe para finalizar o atendimento."
+					st.Paused = true
+					st.Plan, st.Categories, st.SelectedRooms = nil, nil, nil
+				}
+			}
 		}
 	} else if len(st.Categories) > 0 {
 		if in.Now.Sub(st.QuotedAt) >= 24*time.Hour {
@@ -421,6 +481,10 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		r.Text = menu
 	}
 	return finish()
+}
+
+func roomCategorySelectionPrompt(current, total int, categories []omnibees.Category) string {
+	return fmt.Sprintf("*Quarto %d de %d*\n%s", current, total, categorySelectionPrompt(categories))
 }
 
 func categorySelectionPrompt(categories []omnibees.Category) string {

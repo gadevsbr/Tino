@@ -1,5 +1,14 @@
 # Estado
 
+## Etapa 29 — Pré-reserva Bitz v0.14.0
+
+- Status: implementada e validada localmente; a criação real depende de credenciais e validação controlada no Bitz autenticado.
+- Escopo: configuração visual; senha DPAPI; teste de login sem gravação; escolha de categoria por quarto; Chromium local; até seis UHs; espera de 20 segundos; aviso ao aprovador; confirmação por código; mensagem final ao hóspede.
+- Segurança: senha nunca é retornada à UI; arquivo privado permanece em `data/`; execução serializada e identificador persistente impedem repetção automática.
+- Evidência atual: testes Go de DPAPI, descoberta do EdgeCore, login Chromium local sem reserva, idempotência/aprovação e seleção multi-quarto passaram; suíte completa, `go vet`, testes Node e build Vite passaram.
+- Gate: falta executar **Testar acesso** com as credenciais reais e uma pré-reserva controlada para confirmar o DOM autenticado do Bitz e o recebimento no WhatsApp aprovador.
+- Build Windows: `Tino.exe` 0.14.0 abriu responsivo; SHA-256 `3160E3655C2FC38942CA42D814F20E3E50C29F5E5820E4BA8217A24FC2E21323`.
+
 ## Etapa 28 — Confirmação objetiva da categoria selecionada v0.13.3
 
 - Status: corrigido e validado localmente após retorno do teste real.

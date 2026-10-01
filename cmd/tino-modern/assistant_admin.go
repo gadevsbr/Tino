@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gadevsbr/tino/internal/assistente/bitz"
 	"github.com/gadevsbr/tino/internal/assistente/commercial"
 	"github.com/gadevsbr/tino/internal/assistente/rooms"
 )
@@ -28,6 +29,16 @@ type CommercialConfigDTO struct {
 	GroupPhone    string
 	FinalMessage1 string
 	FinalMessage2 string
+}
+type BitzConfigDTO struct {
+	Enabled       bool
+	PasswordSet   bool
+	BaseURL       string
+	Username      string
+	Password      string
+	BotCPF        string
+	ApproverPhone string
+	ApprovedText  string
 }
 type CatalogDTO struct {
 	Category, Title, ProductID, Owner, Description, Currency, Price string
@@ -152,6 +163,48 @@ func (a *App) SaveCommercialConfig(cfg CommercialConfigDTO) error {
 		a.emitActivity("Atendimento comercial", "Modo alterado para "+cfg.Mode, "success")
 	}
 	return nil
+}
+
+func (a *App) GetBitzConfig() (BitzConfigDTO, error) {
+	r, done, err := a.operationalRuntime()
+	if err != nil {
+		return BitzConfigDTO{}, err
+	}
+	defer done()
+	cfg, err := r.bitz.Public(a.ctx)
+	return BitzConfigDTO{Enabled: cfg.Enabled, PasswordSet: cfg.PasswordSet, BaseURL: cfg.BaseURL, Username: cfg.Username, BotCPF: cfg.BotCPF, ApproverPhone: cfg.ApproverPhone, ApprovedText: cfg.ApprovedText}, err
+}
+
+func (a *App) SaveBitzConfig(cfg BitzConfigDTO) error {
+	if err := a.requireCapability("commercial"); err != nil {
+		return err
+	}
+	r, done, err := a.operationalRuntime()
+	if err != nil {
+		return err
+	}
+	defer done()
+	err = r.bitz.Save(a.ctx, bitz.PublicConfig{Enabled: cfg.Enabled, BaseURL: cfg.BaseURL, Username: cfg.Username, BotCPF: cfg.BotCPF, ApproverPhone: cfg.ApproverPhone, ApprovedText: cfg.ApprovedText}, cfg.Password)
+	if err == nil && a.eventsReady {
+		a.emitActivity("Integração Bitz", "Configuração segura atualizada", "success")
+	}
+	return err
+}
+
+func (a *App) TestBitzAccess() error {
+	if err := a.requireCapability("commercial"); err != nil {
+		return err
+	}
+	r, done, err := a.operationalRuntime()
+	if err != nil {
+		return err
+	}
+	defer done()
+	cfg, password, err := r.bitz.TestCredentials(a.ctx)
+	if err != nil {
+		return err
+	}
+	return bitz.NewBrowserRunner().TestAccess(a.ctx, cfg, password)
 }
 
 func (a *App) ListCatalog() ([]CatalogDTO, error) {

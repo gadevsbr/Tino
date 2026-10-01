@@ -10,10 +10,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gadevsbr/tino/internal/assistente/bitz"
 	"github.com/gadevsbr/tino/internal/assistente/catalog"
 	"github.com/gadevsbr/tino/internal/assistente/commercial"
 	"github.com/gadevsbr/tino/internal/assistente/config"
@@ -49,6 +51,12 @@ func (s *Service) enableCommercial(ctx context.Context) error {
 		return err
 	}
 	s.catalog = catalog.NewService(s.catalogRepo, catalogCategories)
+	s.bitzStore = bitz.NewStore(filepath.Join(s.cfg.DataDir, "bitz-config.json"))
+	s.bitzJobs, err = bitz.NewJobs(ctx, s.domainDB)
+	if err != nil {
+		return err
+	}
+	s.bitzRunner = bitz.NewBrowserRunner()
 	if err := s.ensureTransportSchema(ctx); err != nil {
 		return err
 	}
@@ -57,6 +65,25 @@ func (s *Service) enableCommercial(ctx context.Context) error {
 	// their existing behavior.
 	s.client.SetMediaHTTPClient(&http.Client{Transport: boundedMediaTransport{base: http.DefaultTransport}, Timeout: 45 * time.Second})
 	return nil
+}
+
+func (s *Service) bitzApprovalCommand(ctx context.Context, sender, text string) bool {
+	if s.bitzStore == nil || sender == "" {
+		return false
+	}
+	n := utils.Normalize(text)
+	if !strings.HasPrefix(n, "aprovar pre reserva ") && !strings.HasPrefix(n, "aprovar pre-reserva ") {
+		return false
+	}
+	cfg, err := s.bitzStore.Public(ctx)
+	return err == nil && cfg.ApproverPhone != "" && config.SamePhoneNumber(cfg.ApproverPhone, sender)
+}
+
+func approvalCode(text string) string {
+	n := utils.Normalize(text)
+	n = strings.TrimPrefix(n, "aprovar pre reserva ")
+	n = strings.TrimPrefix(n, "aprovar pre-reserva ")
+	return strings.ToUpper(strings.TrimSpace(n))
 }
 
 func (s *Service) ensureTransportSchema(ctx context.Context) error {
@@ -182,6 +209,21 @@ func (s *Service) handleCommercialOperator(ctx context.Context, account, operato
 	var err error
 	handled := true
 	switch {
+	case s.bitzApprovalCommand(ctx, operator, text):
+		var job bitz.Job
+		job, err = s.bitzJobs.Approve(ctx, approvalCode(text))
+		if err == nil {
+			var cfg bitz.PublicConfig
+			cfg, err = s.bitzStore.Public(ctx)
+			if err == nil {
+				var guest types.JID
+				guest, err = types.ParseJID(job.ChatJID)
+				if err == nil {
+					s.replyText(ctx, guest, cfg.ApprovedText)
+				}
+			}
+		}
+		reply = "Pré-reserva aprovada. A mensagem final foi enviada ao hóspede."
 	case n == "comercial status" || n == "status comercial":
 		var cfg commercial.Config
 		cfg, err = s.commercial.Configuration(ctx, account)
@@ -375,6 +417,48 @@ func (s *Service) handleGuest(ctx context.Context, account, contact, messageID, 
 			slog.Error("commercial category prompt failed")
 		}
 	}
+	if result.PreReservation != nil {
+		s.startPreReservation(account, contact, messageID, chat, *result.PreReservation)
+	}
+}
+
+func (s *Service) startPreReservation(account, contact, messageID string, chat types.JID, request commercial.PreReservation) {
+	jobID := transportMessageKey("bitz", account, contact, messageID)
+	job, claimed, err := s.bitzJobs.Claim(context.Background(), jobID, account, contact, chat.ToNonAD().String())
+	if err != nil || !claimed {
+		if err != nil {
+			slog.Error("claim Bitz pre-reservation")
+		}
+		return
+	}
+	categories := make([]string, len(request.Categories))
+	for i, category := range request.Categories {
+		categories[i] = category.Name
+	}
+	go func() {
+		s.bitzMu.Lock()
+		defer s.bitzMu.Unlock()
+		ctx := context.Background()
+		cfg, password, runErr := s.bitzStore.Credentials(ctx)
+		if runErr == nil {
+			runErr = s.bitzRunner.Create(ctx, cfg, password, bitz.ReservationRequest{ID: job.ID, CheckIn: request.CheckIn, CheckOut: request.CheckOut, Categories: categories})
+		}
+		if runErr != nil {
+			_ = s.bitzJobs.Fail(ctx, job.ID, runErr)
+			s.replyText(ctx, chat, "Não consegui concluir a pré-reserva automaticamente. Deixei a conversa para nossa equipe continuar.")
+			if s.markUnread != nil {
+				_ = s.markUnread(ctx, chat.String())
+			}
+			slog.Error("Bitz pre-reservation failed")
+			return
+		}
+		if err := s.bitzJobs.AwaitingApproval(ctx, job.ID); err != nil {
+			slog.Error("persist Bitz approval state")
+			return
+		}
+		notice := fmt.Sprintf("✅ Pré-reserva %s criada no Bitz.\nHóspede: %s\nQuartos: %d\nPeríodo: %s a %s\nFinalize o atendimento e confirme com:\naprovar pre-reserva %s", job.Code, contact, len(categories), request.CheckIn, request.CheckOut, job.Code)
+		s.replyText(ctx, types.NewJID(cfg.ApproverPhone, types.DefaultUserServer), notice)
+	}()
 }
 
 // Claim before sending: a crash or an ambiguous network failure must never

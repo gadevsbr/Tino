@@ -173,3 +173,30 @@ func TestExitClosesQuoteAndNextMessageStartsFreshTriage(t *testing.T) {
 		t.Fatal(r)
 	}
 }
+
+func TestMultiRoomCategoriesAreSelectedPerRoomBeforePreReservation(t *testing.T) {
+	first := []omnibees.Category{{Key: "triplo", Name: "Quarto Triplo"}}
+	second := []omnibees.Category{{Key: "quadruplo", Name: "Quarto Quádruplo"}}
+	s := fixture(t, func(_ context.Context, _, _, text string) (QuoteReply, error) {
+		if text == "orçamento" {
+			return QuoteReply{Text: "quantos quartos", Active: true}, nil
+		}
+		return QuoteReply{Categories: append(first, second...), Plan: &QuotePlan{CheckIn: "10/10/2026", CheckOut: "12/10/2026", Rooms: []QuoteRoom{{Categories: first}, {Categories: second}}}}, nil
+	})
+	configure(t, s, Config{Mode: Public})
+	now := time.Now()
+	handle(t, s, "m1", "oi", now)
+	handle(t, s, "m2", "1", now.Add(time.Minute))
+	r := handle(t, s, "m3", "fim", now.Add(2*time.Minute))
+	if !strings.Contains(r.SelectionPrompt, "Quarto 1 de 2") || !strings.Contains(r.SelectionPrompt, "Quarto Triplo") {
+		t.Fatal(r)
+	}
+	r = handle(t, s, "m4", "1", now.Add(3*time.Minute))
+	if r.PreReservation != nil || !strings.Contains(r.Text, "Quarto 2 de 2") || !strings.Contains(r.Text, "Quarto Quádruplo") {
+		t.Fatal(r)
+	}
+	r = handle(t, s, "m5", "1", now.Add(4*time.Minute))
+	if r.PreReservation == nil || len(r.PreReservation.Categories) != 2 || r.PreReservation.Categories[1].Key != "quadruplo" {
+		t.Fatal(r)
+	}
+}

@@ -1,5 +1,10 @@
 # Decisões
 
+- 2026-09-30 — Superseded: uma única categoria escolhida sobre a união das opções de todos os quartos podia associar uma acomodação incompatível a outro quarto.
+- 2026-09-30 — Cada quarto conserva suas categorias OmniBees e exige uma escolha própria. Somente depois de todas as escolhas nasce uma pré-reserva Bitz idempotente.
+- 2026-09-30 — A automação Bitz usa Chromium local controlado pelo Go. A senha é cifrada pelo DPAPI e nunca retorna à UI; o teste de acesso não executa F2 nem grava reserva.
+- 2026-09-30 — A criação é serializada e persistida por identificador único. A mensagem final ao hóspede exige confirmação do WhatsApp aprovador configurado por código de uso único.
+
 - 2026-09-30 — Uma categoria apresentada no orçamento é descrita como disponível para o período consultado. Após a escolha, o atendente conclui a reserva; o texto não volta a colocar a disponibilidade em dúvida.
 
 - 2026-09-30 — Ao concluir a cotação, os produtos do catálogo são seguidos por uma lista numerada das categorias e instrução explícita para responder pelo número. `*atendente*` é destacado em negrito e `sair` tem prioridade sobre a seleção, cancela qualquer cotação ativa, limpa o estado e faz a próxima mensagem começar uma nova triagem.

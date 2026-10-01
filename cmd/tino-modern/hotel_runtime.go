@@ -10,6 +10,7 @@ import (
 	"github.com/gadevsbr/tino/internal/assistente/advances"
 	assistapp "github.com/gadevsbr/tino/internal/assistente/app"
 	"github.com/gadevsbr/tino/internal/assistente/backup"
+	"github.com/gadevsbr/tino/internal/assistente/bitz"
 	"github.com/gadevsbr/tino/internal/assistente/cash"
 	"github.com/gadevsbr/tino/internal/assistente/catalog"
 	"github.com/gadevsbr/tino/internal/assistente/commercial"
@@ -38,6 +39,7 @@ type hotelRuntime struct {
 	commercial *commercial.Service
 	catalog    *catalog.Repository
 	backup     *backup.Manager
+	bitz       *bitz.Store
 }
 
 func openHotelRuntime(parent context.Context, dataDir string, settings capability.Settings, client *whatsmeow.Client, markUnread func(context.Context, string) error) (*hotelRuntime, error) {
@@ -83,7 +85,7 @@ func openHotelRuntime(parent context.Context, dataDir string, settings capabilit
 		_ = db.Close()
 		return nil, err
 	}
-	return &hotelRuntime{db: db, service: service, cancel: cancel, dataDir: operationsDir, zone: location, rooms: roomRepo, cash: cashRepo, advances: advanceRepo, extratos: extratos.NewRepository(db), reports: reports.New(location), commercial: commercialService, catalog: catalogRepo, backup: backup.New(db, operationsDir, cfg.BackupRetentionDays, location)}, nil
+	return &hotelRuntime{db: db, service: service, cancel: cancel, dataDir: operationsDir, zone: location, rooms: roomRepo, cash: cashRepo, advances: advanceRepo, extratos: extratos.NewRepository(db), reports: reports.New(location), commercial: commercialService, catalog: catalogRepo, backup: backup.New(db, operationsDir, cfg.BackupRetentionDays, location), bitz: bitz.NewStore(filepath.Join(operationsDir, "bitz-config.json"))}, nil
 }
 
 func (r *hotelRuntime) Close() {
