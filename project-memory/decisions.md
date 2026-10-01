@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-09-30 — Superseded: comandos `comercial ativar`, `comercial desativar` e `comercial teste` recriavam a configuração e podiam apagar telefone de grupos e as duas mensagens definidas na UI.
+- 2026-09-30 — Comandos de modo alteram exclusivamente modo e allowlist. A tela Bitz usa a ação explícita **Salvar e ativar**; falhas técnicas continuam genéricas para o hóspede e são detalhadas somente ao WhatsApp aprovador.
+
 - 2026-09-30 — Superseded: uma única categoria escolhida sobre a união das opções de todos os quartos podia associar uma acomodação incompatível a outro quarto.
 - 2026-09-30 — Cada quarto conserva suas categorias OmniBees e exige uma escolha própria. Somente depois de todas as escolhas nasce uma pré-reserva Bitz idempotente.
 - 2026-09-30 — A automação Bitz usa Chromium local controlado pelo Go. A senha é cifrada pelo DPAPI e nunca retorna à UI; o teste de acesso não executa F2 nem grava reserva.

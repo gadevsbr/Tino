@@ -43,7 +43,7 @@ func configure(t *testing.T, s *Service, c Config) {
 
 func TestGreetingChoiceHandoffAnd24HourReset(t *testing.T) {
 	s := fixture(t, func(context.Context, string, string, string) (QuoteReply, error) { return QuoteReply{}, nil })
-	configure(t, s, Config{Mode: Public})
+	configure(t, s, Config{Mode: Public, FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois"})
 	now := time.Now()
 	r := handle(t, s, "1", "oi", now)
 	if !strings.Contains(r.Text, greeting) || !strings.Contains(r.Text, "Tratar de outros assuntos") {
@@ -183,11 +183,14 @@ func TestMultiRoomCategoriesAreSelectedPerRoomBeforePreReservation(t *testing.T)
 		}
 		return QuoteReply{Categories: append(first, second...), Plan: &QuotePlan{CheckIn: "10/10/2026", CheckOut: "12/10/2026", Rooms: []QuoteRoom{{Categories: first}, {Categories: second}}}}, nil
 	})
-	configure(t, s, Config{Mode: Public})
+	configure(t, s, Config{Mode: Public, FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois"})
 	now := time.Now()
 	handle(t, s, "m1", "oi", now)
 	handle(t, s, "m2", "1", now.Add(time.Minute))
 	r := handle(t, s, "m3", "fim", now.Add(2*time.Minute))
+	if len(r.Messages) != 2 || r.Messages[0] != "mensagem um" || r.Messages[1] != "mensagem dois" {
+		t.Fatal(r.Messages)
+	}
 	if !strings.Contains(r.SelectionPrompt, "Quarto 1 de 2") || !strings.Contains(r.SelectionPrompt, "Quarto Triplo") {
 		t.Fatal(r)
 	}

@@ -1,5 +1,13 @@
 # Estado
 
+## Etapa 30 — Preservação das mensagens e diagnóstico Bitz v0.14.1
+
+- Causa confirmada no banco: um comando de modo comercial gravou `final_message_1` e `final_message_2` vazias; a tentativa Bitz falhou com `integração Bitz desativada`.
+- Correção: comandos de modo preservam todos os campos definidos na UI; regressão multi-quarto exige as duas mensagens antes da escolha; falha detalhada vai ao aprovador.
+- UI: status Ativa/Inativa permanece visível e o botão principal agora diz **Salvar e ativar**, com ação separada para desativar.
+- Evidência: regressões direcionadas, `go test -count=1 ./...`, `go vet ./...`, testes Node, build Vite e build Wails passaram. SHA-256 do `Tino.exe`: `3C86516067E20DE4B70B57D75ADFD5C476E12AF8C7B27D10FCAEA3B66CCB83A3`.
+- Gate operacional: a configuração local continua intencionalmente inativa até o operador clicar **Salvar e ativar**; nenhuma credencial foi impressa ou alterada durante o diagnóstico.
+
 ## Etapa 29 — Pré-reserva Bitz v0.14.0
 
 - Status: implementada e validada localmente; a criação real depende de credenciais e validação controlada no Bitz autenticado.

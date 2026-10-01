@@ -229,17 +229,19 @@ func (s *Service) handleCommercialOperator(ctx context.Context, account, operato
 		cfg, err = s.commercial.Configuration(ctx, account)
 		reply = fmt.Sprintf("Atendimento comercial: %s.\nPara configurar esta conta: comercial teste <telefone com DDI>, comercial ativar ou comercial desativar.\nCatálogo: configurar catalogo / status catalogo.\nRetomar hóspede: comercial retomar <telefone com DDI>.", cfg.Mode)
 	case n == "comercial ativar" || n == "comercial desativar" || strings.HasPrefix(n, "comercial teste "):
-		cfg := commercial.Config{Mode: commercial.Disabled}
-		if n == "comercial ativar" {
-			cfg.Mode = commercial.Public
+		cfg, configErr := s.commercial.Configuration(ctx, account)
+		if configErr != nil {
+			err = configErr
+			break
 		}
+		cfg = commercialModeConfig(cfg, n)
 		if strings.HasPrefix(n, "comercial teste ") {
 			phone, valid := phoneArgument(strings.TrimPrefix(n, "comercial teste "))
 			if !valid {
 				s.replyText(ctx, chat, "Use comercial teste <telefone com DDI, somente números>.")
 				return true
 			}
-			cfg.Mode, cfg.Allowlist = commercial.Test, []string{phone}
+			cfg.Allowlist = []string{phone}
 		}
 		err = s.commercial.Configure(ctx, account, cfg)
 		if err == nil {
@@ -335,6 +337,19 @@ func (s *Service) handleCommercialOperator(ctx context.Context, account, operato
 		return true
 	}
 	return false
+}
+
+func commercialModeConfig(current commercial.Config, normalizedCommand string) commercial.Config {
+	current.Allowlist = nil
+	switch {
+	case normalizedCommand == "comercial ativar":
+		current.Mode = commercial.Public
+	case strings.HasPrefix(normalizedCommand, "comercial teste "):
+		current.Mode = commercial.Test
+	default:
+		current.Mode = commercial.Disabled
+	}
+	return current
 }
 
 func resumeArgument(raw string) (string, bool) {
@@ -439,13 +454,21 @@ func (s *Service) startPreReservation(account, contact, messageID string, chat t
 		s.bitzMu.Lock()
 		defer s.bitzMu.Unlock()
 		ctx := context.Background()
+		publicCfg, publicErr := s.bitzStore.Public(ctx)
 		cfg, password, runErr := s.bitzStore.Credentials(ctx)
+		if publicErr != nil && runErr == nil {
+			runErr = publicErr
+		}
 		if runErr == nil {
 			runErr = s.bitzRunner.Create(ctx, cfg, password, bitz.ReservationRequest{ID: job.ID, CheckIn: request.CheckIn, CheckOut: request.CheckOut, Categories: categories})
 		}
 		if runErr != nil {
 			_ = s.bitzJobs.Fail(ctx, job.ID, runErr)
 			s.replyText(ctx, chat, "Não consegui concluir a pré-reserva automaticamente. Deixei a conversa para nossa equipe continuar.")
+			if publicCfg.ApproverPhone != "" {
+				notice := fmt.Sprintf("⚠️ Falha na pré-reserva %s.\nHóspede: %s\nMotivo: %s\nA conversa foi marcada para atendimento humano.", job.Code, contact, operatorSafeBitzError(runErr))
+				s.replyText(ctx, types.NewJID(publicCfg.ApproverPhone, types.DefaultUserServer), notice)
+			}
 			if s.markUnread != nil {
 				_ = s.markUnread(ctx, chat.String())
 			}
@@ -459,6 +482,17 @@ func (s *Service) startPreReservation(account, contact, messageID string, chat t
 		notice := fmt.Sprintf("✅ Pré-reserva %s criada no Bitz.\nHóspede: %s\nQuartos: %d\nPeríodo: %s a %s\nFinalize o atendimento e confirme com:\naprovar pre-reserva %s", job.Code, contact, len(categories), request.CheckIn, request.CheckOut, job.Code)
 		s.replyText(ctx, types.NewJID(cfg.ApproverPhone, types.DefaultUserServer), notice)
 	}()
+}
+
+func operatorSafeBitzError(err error) string {
+	if err == nil {
+		return "erro desconhecido"
+	}
+	message := err.Error()
+	if len(message) > 300 {
+		message = message[:300]
+	}
+	return message
 }
 
 // Claim before sending: a crash or an ambiguous network failure must never
