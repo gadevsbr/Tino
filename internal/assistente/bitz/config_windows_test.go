@@ -4,9 +4,12 @@ package bitz
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -149,5 +152,83 @@ func TestKnownReservationSelectorsAndRoomTable(t *testing.T) {
 	}
 	if result != "yes|yes" {
 		t.Fatalf("selection result: %q", result)
+	}
+}
+
+func TestBrowserRunnerCompletesReservationWizard(t *testing.T) {
+	saved := make(chan string, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/saved" {
+			body, _ := io.ReadAll(r.Body)
+			saved <- string(body)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		_, _ = w.Write([]byte(`<!doctype html><html><body>
+		<input id="username"><input id="password"><button id="loginButton" onclick="home()">Entrar</button>
+		<script>
+		let data={};
+		function home(){document.body.innerHTML='<button id="btn-add-reserva" onclick="identity()">Nova reserva</button>'}
+		function identity(){document.body.innerHTML='<h1>NOVA RESERVA</h1><input id="reserva_cpf"><button title="Pesquisar por CPF" onclick="data.cpf=document.getElementById(\'reserva_cpf\').value">Pesquisar</button><button id="btn-avancar" onclick="dates()">Avançar</button>'}
+		function dates(){document.body.innerHTML='<input id="reserva_data_reserva"><input id="reserva_data_saida"><button>Pré Reserva</button><button>Aberto</button><button id="btn-avancar" onclick="data.checkin=document.getElementById(\'reserva_data_reserva\').value;data.checkout=document.getElementById(\'reserva_data_saida\').value;rooms()">Avançar</button>'}
+		function rooms(){document.body.innerHTML='<button id="btn-add-quarto-reserva" onclick="picker()">Adicionar UH</button><button id="btn-avancar" onclick="review()">Avançar</button>'}
+		function picker(){document.body.innerHTML='<h1>SELECIONAR UH DISPONÍVEL</h1><table><tbody id="table-quartos-disponiveis-reserva"><tr><td><i onclick="data.room=\'217\'"></i></td><td>217</td><td>QUARTO DUPLO SUPERLUXO COM VARANDA E VISTA MAR</td></tr></tbody></table><button id="btn-salvar-p" onclick="rooms()">Salvar</button>'}
+		function review(){document.body.innerHTML='<button id="btn-avancar" onclick="finish()">Avançar</button>'}
+		function finish(){document.body.innerHTML='<button id="btn-salvar-p" onclick="fetch(\'/saved\',{method:\'POST\',body:JSON.stringify(data)})">Salvar</button>'}
+		</script></body></html>`))
+	}))
+	defer server.Close()
+	runner := &BrowserRunner{completionWait: 250 * time.Millisecond}
+	err := runner.Create(context.Background(), Config{BaseURL: server.URL, Username: "bot", BotCPF: "52998224725"}, "secret", ReservationRequest{
+		ID: "test", CheckIn: "01/10/2026", CheckOut: "05/10/2026",
+		Categories: []RoomCategory{{Key: "superluxo", SourceKey: "superluxo", Name: "Suíte Deluxe com vista para o mar"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case body := <-saved:
+		for _, want := range []string{`"cpf":"52998224725"`, `"checkin":"01/10/2026"`, `"checkout":"05/10/2026"`, `"room":"217"`} {
+			if !strings.Contains(body, want) {
+				t.Fatalf("payload %s missing %s", body, want)
+			}
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("final save was not reached")
+	}
+}
+
+func TestLiveBitzCreateReservation(t *testing.T) {
+	if os.Getenv("TINO_BITZ_LIVE_CREATE") != "CONFIRMAR_PRE_RESERVA_REAL" {
+		t.Skip("set TINO_BITZ_LIVE_CREATE=CONFIRMAR_PRE_RESERVA_REAL to create a real pre-reservation")
+	}
+	checkIn, checkOut := os.Getenv("TINO_BITZ_CHECKIN"), os.Getenv("TINO_BITZ_CHECKOUT")
+	if checkIn == "" || checkOut == "" {
+		t.Fatal("TINO_BITZ_CHECKIN and TINO_BITZ_CHECKOUT are required")
+	}
+	store := NewStore(filepath.Join("..", "..", "..", "data", "operations", "bitz-config.json"))
+	cfg, password, err := store.Credentials(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	sources := strings.Split(strings.TrimSpace(os.Getenv("TINO_BITZ_SOURCES")), ",")
+	if len(sources) == 1 && strings.TrimSpace(sources[0]) == "" {
+		sources = []string{"superluxo"}
+	}
+	categories := make([]RoomCategory, 0, len(sources))
+	for _, source := range sources {
+		source = strings.TrimSpace(source)
+		category := RoomCategory{Key: source, SourceKey: source, Name: source}
+		if source == "" || physicalCategory(category) == normalize(source) {
+			t.Fatalf("unsupported TINO_BITZ_SOURCES entry: %q", source)
+		}
+		categories = append(categories, category)
+	}
+	err = NewBrowserRunner().Create(context.Background(), cfg, password, ReservationRequest{
+		ID: "live-test", CheckIn: checkIn, CheckOut: checkOut,
+		Categories: categories,
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }

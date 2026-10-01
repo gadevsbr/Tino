@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-09-30 — O fluxo Bitz tem um teste E2E padrão contra servidor simulado, cobrindo navegador, login, CPF, pesquisa, datas, categoria física, UH, avanços e salvamento sem tocar no Bitz real.
+- 2026-09-30 — O teste real fica opt-in e exige a frase `CONFIRMAR_PRE_RESERVA_REAL`, datas e de uma a seis origens físicas; ele usa as credenciais protegidas já salvas e cria uma pré-reserva real.
+
 - 2026-09-30 — Superseded: a matriz herdada oferecia a UH física Família como “Deluxe com vista para o mar” também para até três ocupantes.
 - 2026-09-30 — `QUARTO FAMILIA DELUXE COM VISTA MAR` é exclusivo da categoria Família e de ocupação de cinco pessoas. Para até três ocupantes, “Deluxe com vista para o mar” usa a origem física Superluxo.
 

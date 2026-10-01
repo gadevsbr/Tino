@@ -1,5 +1,12 @@
 # Estado
 
+## Etapa 36 — Teste automatizado completo do Bitz v0.14.7
+
+- `TestBrowserRunnerCompletesReservationWizard` executa o mesmo encadeamento do chatbot em navegador real contra um Bitz simulado e confirma CPF, período, UH física e salvamento final.
+- `scripts/test-bitz-live.ps1` permite testar diretamente no Bitz real sem percorrer o WhatsApp; exige confirmação explícita porque cria uma pré-reserva real.
+- O teste real aceita de uma a seis origens: `superluxo`, `familia`, `quadruploVista`, `triploDeluxe`, `quadruploDeluxe`, `triploVaranda`, `quadruploVaranda`, `duplo` e `triplo`.
+- Evidência: o E2E simulado passou; o teste real permaneceu corretamente ignorado sem confirmação. Parser PowerShell, `go vet ./...`, `go test -count=1 ./...`, testes React, build Vite e build Wails passaram. SHA-256 do `Tino.exe`: `6A3A4D4CAE0CB929B4FB781BF397AC732905842D8FCC9D9DCED2FAB4013C0706`.
+
 ## Etapa 35 — Seletores reais e tabela de UHs Bitz v0.14.6
 
 - Campos de CPF e datas, pesquisa, avanços, adição de UH e salvamento usam os IDs reais fornecidos pelo operador.

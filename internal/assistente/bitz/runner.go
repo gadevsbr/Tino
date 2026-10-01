@@ -27,9 +27,9 @@ type Runner interface {
 	Create(context.Context, Config, string, ReservationRequest) error
 }
 
-type BrowserRunner struct{}
+type BrowserRunner struct{ completionWait time.Duration }
 
-func NewBrowserRunner() *BrowserRunner { return &BrowserRunner{} }
+func NewBrowserRunner() *BrowserRunner { return &BrowserRunner{completionWait: 20 * time.Second} }
 
 func browserPath() (string, error) {
 	candidates := []string{
@@ -142,8 +142,12 @@ func (r *BrowserRunner) Create(parent context.Context, cfg Config, password stri
 	if err = clickByID(ctx, "btn-salvar-p"); err != nil {
 		return err
 	}
+	wait := r.completionWait
+	if wait <= 0 {
+		wait = 20 * time.Second
+	}
 	select {
-	case <-time.After(20 * time.Second):
+	case <-time.After(wait):
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
