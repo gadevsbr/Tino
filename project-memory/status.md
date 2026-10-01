@@ -1,5 +1,14 @@
 # Estado
 
+## Etapa 37 — Migração Bitz para Scrapling v0.15.0
+
+- Investigação real com Scrapling chegou à revisão final com uma UH, sem salvar. Confirmados: tela intermediária de canal, datas revertidas por `fill`, IDs duplicados e botão de salvar UH distinto do salvamento final.
+- Driver novo implementado com checagem do estado aceito pelo Bitz, modo probe sem gravação e confirmação pelo ID/código retornado no salvamento. O salvamento nunca é repetido automaticamente.
+- Evidência real sem gravação: fluxo completo até a tela final passou para `triploDeluxe`, 05/10/2026–09/10/2026.
+- Evidência real com gravação: o Bitz confirmou a pré-reserva de teste código `3169`, UH `201`, no mesmo período. A equipe deve finalizar ou cancelar esse registro de teste.
+- O Bitz retornou HTTP 429 durante tentativas rápidas de investigação; retentativas agressivas permanecem proibidas.
+- Evidência local: `go test -count=1 ./...`, `go vet ./...`, testes e build React, runtime Scrapling empacotado, compilação com tag `bitzpackaged` e abertura do `Tino.exe` passaram. SHA-256: `2EF4E378333EDD7B02731DC6F166436DA67072F63ED6A14F55C574092298E11D`.
+
 ## Etapa 36 — Teste automatizado completo do Bitz v0.14.7
 
 - `TestBrowserRunnerCompletesReservationWizard` executa o mesmo encadeamento do chatbot em navegador real contra um Bitz simulado e confirma CPF, período, UH física e salvamento final.

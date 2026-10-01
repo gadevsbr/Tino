@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.14.7
+.\scripts\build.ps1 -Version 0.15.0
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -78,7 +78,7 @@ O atendimento comercial começa com uma triagem na primeira mensagem ou após 24
 
 Em **Integração Bitz**, acessível diretamente pelo menu lateral, o operador configura o usuário, a senha protegida pelo Windows, o CPF operacional, o WhatsApp aprovador e a mensagem final. Após a escolha de uma categoria para cada quarto, o Tino cria uma única pré-reserva idempotente, avisa o aprovador e só responde ao hóspede depois do comando `aprovar pre-reserva CODIGO`. O teste de acesso apenas autentica e não cria reserva.
 
-O fluxo completo possui teste automatizado com um Bitz simulado. Para uma validação real sem repetir o chatbot, use `scripts/test-bitz-live.ps1` informando datas, categorias físicas e a confirmação explícita; esse teste cria uma pré-reserva real.
+O fluxo real usa Scrapling empacotado no `Tino.exe`. Para validar todas as telas sem salvar, use `scripts/test-bitz.ps1` com datas e categorias físicas. `scripts/test-bitz-live.ps1` exige confirmação explícita porque cria uma pré-reserva real.
 
 ## Importação de caixa por PDF
 

@@ -48,7 +48,7 @@ func TestBrowserRunnerLoginDoesNotOpenReservation(t *testing.T) {
 		_, _ = w.Write([]byte(`<html><body><input id="username"><input id="password"><button id="loginButton" onclick="this.remove()">Entrar</button></body></html>`))
 	}))
 	defer server.Close()
-	if err := NewBrowserRunner().TestAccess(context.Background(), Config{BaseURL: server.URL, Username: "bot"}, "secret"); err != nil {
+	if err := (&BrowserRunner{}).TestAccess(context.Background(), Config{BaseURL: server.URL, Username: "bot"}, "secret"); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -224,11 +224,49 @@ func TestLiveBitzCreateReservation(t *testing.T) {
 		}
 		categories = append(categories, category)
 	}
-	err = NewBrowserRunner().Create(context.Background(), cfg, password, ReservationRequest{
+	result, err := NewBrowserRunner().run(context.Background(), "create", cfg, password, ReservationRequest{
 		ID: "live-test", CheckIn: checkIn, CheckOut: checkOut,
 		Categories: categories,
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+	t.Logf("pre-reservation confirmed by Bitz: reference=%s rooms=%v", result.Reference, result.Rooms)
+}
+
+func TestLiveBitzProbe(t *testing.T) {
+	if os.Getenv("TINO_BITZ_LIVE_PROBE") != "1" {
+		t.Skip("set TINO_BITZ_LIVE_PROBE=1 to verify the real wizard without saving")
+	}
+	checkIn, checkOut := os.Getenv("TINO_BITZ_CHECKIN"), os.Getenv("TINO_BITZ_CHECKOUT")
+	if checkIn == "" || checkOut == "" {
+		t.Fatal("TINO_BITZ_CHECKIN and TINO_BITZ_CHECKOUT are required")
+	}
+	store := NewStore(filepath.Join("..", "..", "..", "data", "operations", "bitz-config.json"))
+	cfg, password, err := store.Credentials(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	sources := strings.Split(strings.TrimSpace(os.Getenv("TINO_BITZ_SOURCES")), ",")
+	if len(sources) == 1 && strings.TrimSpace(sources[0]) == "" {
+		sources = []string{"triploDeluxe"}
+	}
+	categories := make([]RoomCategory, 0, len(sources))
+	for _, source := range sources {
+		source = strings.TrimSpace(source)
+		category := RoomCategory{Key: source, SourceKey: source, Name: source}
+		if source == "" || physicalCategory(category) == normalize(source) {
+			t.Fatalf("unsupported source: %q", source)
+		}
+		categories = append(categories, category)
+	}
+	result, err := NewBrowserRunner().Probe(context.Background(), cfg, password, ReservationRequest{
+		ID: "live-probe", CheckIn: checkIn, CheckOut: checkOut, Categories: categories,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Code != "verified_without_save" || len(result.Rooms) != len(categories) {
+		t.Fatalf("unexpected result: %+v", result)
 	}
 }

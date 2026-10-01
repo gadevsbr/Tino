@@ -1,5 +1,9 @@
 # Decisões
 
+- 2026-09-30 — Superseded: o E2E chromedp anterior reproduzia um wizard incompleto, ignorava a etapa de canal de venda e usava o salvamento final para adicionar UH. Seus resultados não provam o fluxo real.
+- 2026-09-30 — Scrapling 0.4.15 passa a controlar o navegador na integração Bitz. Investigação autenticada confirmou digitação das datas (fill simples era revertido), IDs duplicados que exigem escopo de modal e `#modal-quarto-reserva #btn-salvar-quarto-reserva` para adicionar UHs.
+- 2026-09-30 — Sucesso exige resposta positiva do salvamento com ID/código e estado confirmado, seguida da espera de 20 segundos. Nunca repetir automaticamente o salvamento. Credenciais passam por stdin, sem argumentos, arquivos temporários ou logs.
+
 - 2026-09-30 — O fluxo Bitz tem um teste E2E padrão contra servidor simulado, cobrindo navegador, login, CPF, pesquisa, datas, categoria física, UH, avanços e salvamento sem tocar no Bitz real.
 - 2026-09-30 — O teste real fica opt-in e exige a frase `CONFIRMAR_PRE_RESERVA_REAL`, datas e de uma a seis origens físicas; ele usa as credenciais protegidas já salvas e cria uma pré-reserva real.
 

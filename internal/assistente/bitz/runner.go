@@ -29,7 +29,9 @@ type Runner interface {
 
 type BrowserRunner struct{ completionWait time.Duration }
 
-func NewBrowserRunner() *BrowserRunner { return &BrowserRunner{completionWait: 20 * time.Second} }
+// NewBrowserRunner keeps the public factory used by the UI and chatbot.
+// The old chromedp driver is retained only for historical fixture tests.
+func NewBrowserRunner() *ScraplingRunner { return &ScraplingRunner{} }
 
 func browserPath() (string, error) {
 	candidates := []string{

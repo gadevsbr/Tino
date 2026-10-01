@@ -13,6 +13,9 @@ data/
 imports/
 exports/
 tmp/
+__pycache__/
+*.pyc
+internal/assistente/bitz/runtime/
 
 # Build output
 dist/
