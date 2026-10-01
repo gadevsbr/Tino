@@ -1,5 +1,16 @@
 # Estado
 
+## Etapa 41 — Recuperação segura de timeout no login Bitz v0.15.4
+
+- A falha `13A457F3` ocorreu na etapa `login` com `browser_or_timeout`; nenhuma nova pré-reserva foi criada por essa tentativa.
+- O teste real sem salvamento passou em seguida por login, CPF, datas, canal de venda, UH e revisão em 24 segundos, confirmando credenciais e seletores atuais.
+- O Scrapling passa a tolerar até 45 segundos por controle e faz uma única nova tentativa com navegador limpo somente se ainda estiver no login; etapas de reserva e salvamento nunca são repetidas.
+- Runtime empacotado reconstruído; teste de protocolo e novo probe real com o runtime empacotado passaram, sem salvar reserva.
+- Validação: `go test -count=1 ./...`, `go vet ./...`, testes e build do frontend, protocolo do runtime empacotado e dois probes reais sem salvamento passaram.
+- Build Windows v0.15.4 concluído; SHA-256 de `dist/Tino.exe`: `DC622ABCD372B38C4510276B8DA4576E12F6FE724357C5B6477B2774E494846C`.
+- O executável v0.15.4 reiniciou autenticado, com dispositivo persistido e conexão estabelecida.
+- Release pendente.
+
 ## Etapa 40 — Aviso completo ao aprovador e áudio para humano v0.15.3
 
 - Aviso de pré-reserva passa a incluir WhatsApp do hóspede, período, categoria, adultos e crianças/idades de cada quarto.

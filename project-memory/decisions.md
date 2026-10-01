@@ -1,5 +1,7 @@
 # Decisões
 
+- 2026-10-01 — Uma falha transitória pode repetir o navegador somente se a execução ainda estiver na etapa de login, antes de informar dados da reserva. Qualquer falha após o login continua sem repetição automática para impedir pré-reservas duplicadas.
+
 - 2026-10-01 — O aviso de pré-reserva ao aprovador resolve primeiro o destino canônico no WhatsApp e inclui telefone do hóspede, período e resumo por quarto; falha de entrega mantém a conversa não lida e gera diagnóstico sem expor o conteúdo do hóspede em log.
 - 2026-10-01 — Mensagens de áudio de hóspedes fazem transferência imediata ao humano, pausam a automação e mantêm o chat não lido. A linguagem comercial usa frases curtas, instruções explícitas e vocabulário simples para atender públicos com diferentes níveis de familiaridade digital.
 

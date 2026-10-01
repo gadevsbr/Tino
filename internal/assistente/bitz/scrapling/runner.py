@@ -40,11 +40,15 @@ class Flow:
 
     def perform(self, page):
         r = self.request
-        page.set_default_timeout(30000)
-        page.locator('#username').fill(r['username'])
-        page.locator('#password').fill(r['password'])
-        page.locator('#loginButton').click()
-        page.locator('#btn-add-reserva').wait_for(state='visible')
+        page.set_default_timeout(45000)
+        try:
+            page.locator('#username').wait_for(state='visible')
+            page.locator('#username').fill(r['username'])
+            page.locator('#password').fill(r['password'])
+            page.locator('#loginButton').click()
+            page.locator('#btn-add-reserva').wait_for(state='visible')
+        except Exception as exc:
+            raise FlowError('login_not_completed') from exc
         if r['mode'] == 'login':
             self.result = {'ok': True, 'stage': 'login', 'code': 'authenticated'}
             return
@@ -173,14 +177,23 @@ def execute(request):
                 raise ValueError()
         except (KeyError, ValueError, TypeError):
             return {'ok': False, 'stage': 'input', 'code': 'invalid_reservation'}
-    flow = Flow(request)
-    try:
-        DynamicFetcher.fetch(request['url'].rstrip('/') + '/login', page_action=flow.run,
-                             executable_path=request['browser'], headless=True,
-                             google_search=False, retries=1, timeout=30000)
-    except Exception:
-        return {'ok': False, 'stage': flow.stage, 'code': 'browser_or_timeout'}
-    # Scrapling logs/swallow page_action exceptions: never infer success from HTTP 200.
+    # A fresh retry is safe only while still at login: no reservation data has
+    # been entered and no save action can have occurred. Never replay later stages.
+    for attempt in range(2):
+        flow = Flow(request)
+        try:
+            DynamicFetcher.fetch(request['url'].rstrip('/') + '/login', page_action=flow.run,
+                                 executable_path=request['browser'], headless=True,
+                                 google_search=False, retries=1, timeout=60000)
+        except Exception:
+            flow.result = {'ok': False, 'stage': flow.stage, 'code': 'browser_or_timeout'}
+        # Scrapling logs/swallow page_action exceptions: never infer success from HTTP 200.
+        if flow.result.get('ok'):
+            return flow.result
+        safe_login_retry = (flow.stage == 'login' and
+                            flow.result.get('code') in ('browser_or_timeout', 'login_not_completed'))
+        if not safe_login_retry or attempt > 0:
+            return flow.result
     return flow.result
 
 
