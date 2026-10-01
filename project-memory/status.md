@@ -8,6 +8,7 @@
 - Evidência atual: testes Go de DPAPI, descoberta do EdgeCore, login Chromium local sem reserva, idempotência/aprovação e seleção multi-quarto passaram; suíte completa, `go vet`, testes Node e build Vite passaram.
 - Gate: falta executar **Testar acesso** com as credenciais reais e uma pré-reserva controlada para confirmar o DOM autenticado do Bitz e o recebimento no WhatsApp aprovador.
 - Build Windows: `Tino.exe` 0.14.0 abriu responsivo; SHA-256 `3160E3655C2FC38942CA42D814F20E3E50C29F5E5820E4BA8217A24FC2E21323`.
+- Evidência de release: commit funcional `1db033f` enviado à `main`; release `v0.14.0` publicada com UI e CLI auxiliar.
 
 ## Etapa 28 — Confirmação objetiva da categoria selecionada v0.13.3
 
