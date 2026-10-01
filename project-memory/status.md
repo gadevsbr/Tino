@@ -1,5 +1,16 @@
 # Estado
 
+## Etapa 40 — Aviso completo ao aprovador e áudio para humano v0.15.3
+
+- Aviso de pré-reserva passa a incluir WhatsApp do hóspede, período, categoria, adultos e crianças/idades de cada quarto.
+- Destino do aprovador é validado e resolvido pelo WhatsApp antes do envio; falha deixa o chat do hóspede não lido.
+- Áudio de hóspede pausa imediatamente o bot, responde com acolhimento simples e encaminha a conversa não lida para a equipe.
+- Saudação, menu e transferências foram reescritos com instruções diretas e linguagem acessível.
+- Validação: testes direcionados confirmam handoff de áudio, pausa persistente e resumo completo ao aprovador; `go test -count=1 ./...`, `go vet ./...`, testes e build do frontend passaram.
+- Build Windows v0.15.3 concluído; SHA-256 de `dist/Tino.exe`: `6A04815A305066FA0F7FC0FD49ECFDF3D2ED0C4AB4728B075B031C310C7D97AB`.
+- Gate externo: ao reabrir o executável, o WhatsApp respondeu `401 logged out from another device` e removeu a credencial local. Novo QR é necessário antes de validar a entrega real ao aprovador.
+- Release pendente.
+
 ## Etapa 39 — Confirmação assíncrona do QR v0.15.2
 
 - O QR foi aceito e persistiu um dispositivo `smba`; depois do falso timeout, o processo estabeleceu websocket com o WhatsApp e sincronizou mensagens.

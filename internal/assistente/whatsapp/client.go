@@ -373,7 +373,7 @@ func (s *Service) onEvent(raw any) {
 			return
 		}
 		if !operator {
-			s.handleGuest(ctx, account, contact, string(evt.Info.ID), text, evt.Info.Chat)
+			s.handleGuest(ctx, account, contact, string(evt.Info.ID), text, evt.Info.Chat, evt.Message.GetAudioMessage() != nil)
 			return
 		}
 		if s.handleCommercialOperator(ctx, account, sender, string(evt.Info.ID), text, product, evt.Info.Chat) {

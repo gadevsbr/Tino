@@ -68,7 +68,9 @@ Inventário para decidir como cada capacidade deverá funcionar no Tino. A prese
 - Após os produtos, o bot envia uma lista numerada das categorias e pede a escolha pelo número; `*atendente*` aparece destacado e `sair` encerra e limpa a sessão comercial.
 - Para até seis quartos, cada quarto recebe sua própria escolha numerada de categoria disponível.
 - Depois de todas as escolhas, a integração Bitz cria a pré-reserva com o CPF operacional configurado, seleciona uma UH disponível por quarto e avisa o WhatsApp aprovador.
+- O aviso ao aprovador usa o destino canônico consultado no WhatsApp e inclui número do hóspede, período, categoria, adultos e idades das crianças de cada quarto.
 - Somente o aprovador configurado pode confirmar com `aprovar pre-reserva CODIGO`; então a mensagem final definida na UI é enviada ao hóspede.
+- Áudios de hóspedes não são interpretados: pausam o bot, deixam a conversa não lida e encaminham diretamente para atendimento humano.
 - Encaminhamento para atendimento humano.
 - Pausa persistente da automação por contato e retomada explícita.
 - Teste do atendimento usando o número do operador.

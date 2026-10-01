@@ -36,6 +36,7 @@ type Config struct {
 type Input struct {
 	Account, Contact, MessageID, Text string
 	Now                               time.Time
+	Audio                             bool
 	// TestSession is set only by the authenticated operator transport. It lets
 	// an isolated synthetic contact exercise test mode without reusing the
 	// configured guest's conversation state.
@@ -63,6 +64,7 @@ type QuotePlan struct {
 type PreReservation struct {
 	CheckIn, CheckOut string
 	Categories        []omnibees.Category
+	Rooms             []QuoteRoom
 }
 type QuoteReply struct {
 	Text         string
@@ -94,8 +96,8 @@ type state struct {
 }
 
 const defaultGroupPhone = "5573988240413"
-const menu = "Como posso ajudar?\n1 — Fazer orçamento\n2 — Tratar de outros assuntos"
-const greeting = "Olá! Bem-vindo ao Hotel Paraíso Tropical. Sou o assistente virtual do hotel."
+const menu = "Como posso ajudar hoje?\n1 — Fazer um orçamento\n2 — Falar com um atendente sobre outro assunto\n\nResponda com 1 ou 2."
+const greeting = "Olá! Que bom receber sua mensagem. Sou o assistente virtual do Hotel Paraíso Tropical."
 
 // New creates only this package's tables, without changing domain migrations.
 // Construct one service per running transport and reuse it for all messages.
@@ -341,6 +343,23 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		}
 		return r, nil
 	}
+	if in.Audio {
+		if st.QuoteActive {
+			if _, err = s.quote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
+				return Reply{}, err
+			}
+		}
+		st.Paused = true
+		st.QuoteActive = false
+		st.AwaitingChoice = false
+		st.Categories = nil
+		st.SelectedCategory = nil
+		st.Plan = nil
+		st.SelectedRooms = nil
+		r.Handoff = true
+		r.Text = "Recebi seu áudio. Para que sua mensagem seja atendida com atenção, encaminhei a conversa diretamente para nossa equipe. Um atendente responderá por aqui assim que possível."
+		return finish()
+	}
 	if text == "sair" {
 		if st.QuoteActive {
 			if _, err = s.quote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
@@ -386,7 +405,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		st.AwaitingChoice = false
 		st.Paused = true
 		r.Handoff = true
-		r.Text = "Certo. Vou deixar sua conversa para um atendente humano responder."
+		r.Text = "Certo. Encaminhei sua conversa para nossa equipe. Um atendente responderá por aqui assim que possível."
 	} else if text == "atendimento humano" || text == "atendente" || text == "humano" || text == "falar com atendente" || text == "falar com um atendente" || text == "outros assuntos" || (!st.QuoteActive && len(st.Categories) == 0 && text == "2") {
 		if st.QuoteActive {
 			if _, err = s.quote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
@@ -396,7 +415,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		st.Paused = true
 		st.QuoteActive = false
 		r.Handoff = true
-		r.Text = "Você solicitou atendimento humano. O assistente automático ficará pausado. Para voltar ao assistente, envie retomar atendimento."
+		r.Text = "Tudo certo. Encaminhei sua conversa para nossa equipe e pausei o atendimento automático. Um atendente responderá por aqui assim que possível."
 	} else if explicitBudget || (menuBudget && !st.QuoteActive && len(st.Categories) == 0) {
 		st.AwaitingChoice = false
 		q, e := s.quote(ctx, in.Account, in.Contact, "orçamento")
@@ -475,8 +494,8 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 					next := len(st.SelectedRooms)
 					r.Text = "Categoria do quarto confirmada.\n\n" + roomCategorySelectionPrompt(next+1, len(st.Plan.Rooms), st.Plan.Rooms[next].Categories)
 				} else {
-					r.PreReservation = &PreReservation{CheckIn: st.Plan.CheckIn, CheckOut: st.Plan.CheckOut, Categories: append([]omnibees.Category(nil), st.SelectedRooms...)}
-					r.Text = "Categorias confirmadas. Estou preparando sua pré-reserva e avisarei a equipe para finalizar o atendimento."
+					r.PreReservation = &PreReservation{CheckIn: st.Plan.CheckIn, CheckOut: st.Plan.CheckOut, Categories: append([]omnibees.Category(nil), st.SelectedRooms...), Rooms: append([]QuoteRoom(nil), st.Plan.Rooms...)}
+					r.Text = "Tudo certo com as categorias. Agora vou criar sua pré-reserva e avisar nossa equipe para concluir o atendimento."
 					st.Paused = true
 					st.Plan, st.Categories, st.SelectedRooms = nil, nil, nil
 				}

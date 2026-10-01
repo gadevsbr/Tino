@@ -339,7 +339,7 @@ func (s *Service) handleCommercialOperator(ctx context.Context, account, operato
 		return true
 	}
 	if testing > 0 {
-		s.handleGuestAs(ctx, account, commercialTestContact(operator), operator, messageID, text, chat, true)
+		s.handleGuestAs(ctx, account, commercialTestContact(operator), operator, messageID, text, chat, true, false)
 		return true
 	}
 	return false
@@ -366,15 +366,15 @@ func resumeArgument(raw string) (string, bool) {
 	return j.ToNonAD().String(), err == nil && j.Server == types.HiddenUserServer && j.User != ""
 }
 
-func (s *Service) handleGuest(ctx context.Context, account, contact, messageID, text string, chat types.JID) {
-	s.handleGuestAs(ctx, account, contact, contact, messageID, text, chat, false)
+func (s *Service) handleGuest(ctx context.Context, account, contact, messageID, text string, chat types.JID, audio bool) {
+	s.handleGuestAs(ctx, account, contact, contact, messageID, text, chat, false, audio)
 }
 
 func commercialTestContact(operator string) string {
 	return "operator-test:" + operator
 }
 
-func (s *Service) handleGuestAs(ctx context.Context, account, stateContact, displayContact, messageID, text string, chat types.JID, testSession bool) {
+func (s *Service) handleGuestAs(ctx context.Context, account, stateContact, displayContact, messageID, text string, chat types.JID, testSession, audio bool) {
 	if s.commercial == nil {
 		return
 	}
@@ -390,7 +390,7 @@ func (s *Service) handleGuestAs(ctx context.Context, account, stateContact, disp
 	if !testSession && !admitted(cfg, stateContact) {
 		return
 	}
-	result, err := s.commercial.Handle(ctx, commercial.Input{Account: account, Contact: stateContact, MessageID: messageID, Text: text, Now: time.Now(), TestSession: testSession})
+	result, err := s.commercial.Handle(ctx, commercial.Input{Account: account, Contact: stateContact, MessageID: messageID, Text: text, Now: time.Now(), TestSession: testSession, Audio: audio})
 	if err != nil {
 		slog.Error("commercial guest handling failed")
 		return
@@ -484,7 +484,9 @@ func (s *Service) startPreReservation(account, contact, messageID string, chat t
 			s.replyText(ctx, chat, "Não consegui concluir a pré-reserva automaticamente. Deixei a conversa para nossa equipe continuar.")
 			if publicCfg.ApproverPhone != "" {
 				notice := fmt.Sprintf("⚠️ Falha na pré-reserva %s.\nHóspede: %s\nMotivo: %s\nA conversa foi marcada para atendimento humano.", job.Code, contact, operatorSafeBitzError(runErr))
-				s.replyText(ctx, types.NewJID(publicCfg.ApproverPhone, types.DefaultUserServer), notice)
+				if err := s.sendTextToPhone(ctx, publicCfg.ApproverPhone, notice); err != nil {
+					slog.Error("Bitz failure notice delivery failed", "error", err)
+				}
 			}
 			if s.markUnread != nil {
 				_ = s.markUnread(ctx, chat.String())
@@ -496,9 +498,73 @@ func (s *Service) startPreReservation(account, contact, messageID string, chat t
 			slog.Error("persist Bitz approval state")
 			return
 		}
-		notice := fmt.Sprintf("✅ Pré-reserva %s criada no Bitz.\nHóspede: %s\nQuartos: %d\nPeríodo: %s a %s\nFinalize o atendimento e confirme com:\naprovar pre-reserva %s", job.Code, contact, len(categories), request.CheckIn, request.CheckOut, job.Code)
-		s.replyText(ctx, types.NewJID(cfg.ApproverPhone, types.DefaultUserServer), notice)
+		notice := preReservationNotice(job.Code, contact, request)
+		if err := s.sendTextToPhone(ctx, cfg.ApproverPhone, notice); err != nil {
+			slog.Error("Bitz approval notice delivery failed", "error", err)
+			if s.markUnread != nil {
+				_ = s.markUnread(ctx, chat.String())
+			}
+		}
 	}()
+}
+
+func preReservationNotice(code, contact string, request commercial.PreReservation) string {
+	guest := strings.TrimSpace(contact)
+	if _, ok := phoneArgument(guest); ok {
+		guest = "+" + guest
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "✅ *Pré-reserva criada no Bitz*\n\nCódigo: *%s*\nWhatsApp do hóspede: *%s*\nPeríodo: *%s a %s*\n", code, guest, request.CheckIn, request.CheckOut)
+	if len(request.Rooms) > 0 {
+		b.WriteString("\n*Resumo da hospedagem*\n")
+		for i, room := range request.Rooms {
+			category := "Categoria não informada"
+			if i < len(request.Categories) && strings.TrimSpace(request.Categories[i].Name) != "" {
+				category = request.Categories[i].Name
+			}
+			fmt.Fprintf(&b, "\n*Quarto %d — %s*\n%d adulto(s)", i+1, category, room.Adults)
+			if len(room.Ages) == 0 {
+				b.WriteString("\nSem crianças")
+			} else {
+				fmt.Fprintf(&b, "\n%d criança(s): %s", len(room.Ages), formatChildAges(room.Ages))
+			}
+			b.WriteByte('\n')
+		}
+	} else {
+		fmt.Fprintf(&b, "\nQuartos: *%d*\n", len(request.Categories))
+	}
+	fmt.Fprintf(&b, "\nFinalize o atendimento e, quando estiver tudo certo, responda:\n*aprovar pre-reserva %s*", code)
+	return b.String()
+}
+
+func formatChildAges(ages []int) string {
+	parts := make([]string, len(ages))
+	for i, age := range ages {
+		unit := "anos"
+		if age == 1 {
+			unit = "ano"
+		}
+		parts[i] = fmt.Sprintf("%d %s", age, unit)
+	}
+	return strings.Join(parts, ", ")
+}
+
+func (s *Service) sendTextToPhone(ctx context.Context, phone, body string) error {
+	phone, ok := phoneArgument(phone)
+	if !ok {
+		return errors.New("telefone de destino inválido")
+	}
+	lookupCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	result, err := s.client.IsOnWhatsApp(lookupCtx, []string{"+" + phone})
+	if err != nil {
+		return fmt.Errorf("consultar destino no WhatsApp: %w", err)
+	}
+	if len(result) != 1 || !result[0].IsIn || result[0].JID.IsEmpty() {
+		return errors.New("telefone de destino não está registrado no WhatsApp")
+	}
+	_, err = s.sendMessage(ctx, result[0].JID, &waE2E.Message{Conversation: proto.String(body)})
+	return err
 }
 
 func operatorSafeBitzError(err error) string {

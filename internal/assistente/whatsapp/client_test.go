@@ -3,7 +3,9 @@ package whatsapp
 import (
 	"context"
 	"database/sql"
+	"github.com/gadevsbr/tino/internal/assistente/commercial"
 	"github.com/gadevsbr/tino/internal/assistente/config"
+	"github.com/gadevsbr/tino/internal/assistente/omnibees"
 	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
@@ -111,5 +113,18 @@ func TestCashReportRangeDefaultsToCurrentMonth(t *testing.T) {
 	from, until = cashReportRange("2026-09-18", "", now)
 	if from != "2026-09-18" || until != "2026-09-18" {
 		t.Fatalf("explicit range=%s..%s", from, until)
+	}
+}
+
+func TestPreReservationNoticeIncludesGuestAndRoomSummary(t *testing.T) {
+	notice := preReservationNotice("ABC123", "5573999999999", commercial.PreReservation{
+		CheckIn: "10/10/2026", CheckOut: "12/10/2026",
+		Categories: []omnibees.Category{{Name: "Suíte Deluxe"}, {Name: "Suíte Interna"}},
+		Rooms:      []commercial.QuoteRoom{{Adults: 2, Ages: []int{1, 7}}, {Adults: 1}},
+	})
+	for _, expected := range []string{"*+5573999999999*", "*Quarto 1 — Suíte Deluxe*", "2 adulto(s)", "2 criança(s): 1 ano, 7 anos", "*Quarto 2 — Suíte Interna*", "*aprovar pre-reserva ABC123*"} {
+		if !strings.Contains(notice, expected) {
+			t.Fatalf("notice missing %q:\n%s", expected, notice)
+		}
 	}
 }

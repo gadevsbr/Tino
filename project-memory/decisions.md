@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-10-01 — O aviso de pré-reserva ao aprovador resolve primeiro o destino canônico no WhatsApp e inclui telefone do hóspede, período e resumo por quarto; falha de entrega mantém a conversa não lida e gera diagnóstico sem expor o conteúdo do hóspede em log.
+- 2026-10-01 — Mensagens de áudio de hóspedes fazem transferência imediata ao humano, pausam a automação e mantêm o chat não lido. A linguagem comercial usa frases curtas, instruções explícitas e vocabulário simples para atender públicos com diferentes níveis de familiaridade digital.
+
 - 2026-10-01 — Superseded: após o evento `success` do QR, o Tino exigia autenticação completa em 20 segundos e exibia falha mesmo quando a credencial já estava salva e a sincronização terminava em seguida.
 - 2026-10-01 — O pareamento aguarda até 60 segundos; se o dispositivo já foi persistido, a sincronização pode continuar em segundo plano e o evento `Connected` atualiza o status, sem falso erro nem novo QR.
 

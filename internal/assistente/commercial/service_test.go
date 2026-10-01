@@ -46,11 +46,11 @@ func TestGreetingChoiceHandoffAnd24HourReset(t *testing.T) {
 	configure(t, s, Config{Mode: Public, FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois"})
 	now := time.Now()
 	r := handle(t, s, "1", "oi", now)
-	if !strings.Contains(r.Text, greeting) || !strings.Contains(r.Text, "Tratar de outros assuntos") {
+	if !strings.Contains(r.Text, greeting) || !strings.Contains(r.Text, "Falar com um atendente sobre outro assunto") || !strings.Contains(r.Text, "Responda com 1 ou 2") {
 		t.Fatal(r)
 	}
 	r = handle(t, s, "2", "quero falar sobre um evento", now.Add(time.Minute))
-	if !r.Handoff || !strings.Contains(r.Text, "atendente humano") {
+	if !r.Handoff || !strings.Contains(r.Text, "atendente") {
 		t.Fatal(r)
 	}
 	if err := s.Resume(context.Background(), "a", "guest"); err != nil {
@@ -197,7 +197,7 @@ func TestMultiRoomCategoriesAreSelectedPerRoomBeforePreReservation(t *testing.T)
 		if text == "orçamento" {
 			return QuoteReply{Text: "quantos quartos", Active: true}, nil
 		}
-		return QuoteReply{Categories: append(first, second...), Plan: &QuotePlan{CheckIn: "10/10/2026", CheckOut: "12/10/2026", Rooms: []QuoteRoom{{Categories: first}, {Categories: second}}}}, nil
+		return QuoteReply{Categories: append(first, second...), Plan: &QuotePlan{CheckIn: "10/10/2026", CheckOut: "12/10/2026", Rooms: []QuoteRoom{{Adults: 2, Ages: []int{3}, Categories: first}, {Adults: 3, Categories: second}}}}, nil
 	})
 	configure(t, s, Config{Mode: Public, FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois"})
 	now := time.Now()
@@ -215,7 +215,21 @@ func TestMultiRoomCategoriesAreSelectedPerRoomBeforePreReservation(t *testing.T)
 		t.Fatal(r)
 	}
 	r = handle(t, s, "m5", "1", now.Add(4*time.Minute))
-	if r.PreReservation == nil || len(r.PreReservation.Categories) != 2 || r.PreReservation.Categories[1].Key != "quadruplo" {
+	if r.PreReservation == nil || len(r.PreReservation.Categories) != 2 || r.PreReservation.Categories[1].Key != "quadruplo" || len(r.PreReservation.Rooms) != 2 || r.PreReservation.Rooms[0].Adults != 2 || len(r.PreReservation.Rooms[0].Ages) != 1 {
 		t.Fatal(r)
+	}
+}
+
+func TestAudioImmediatelyHandsOffAndPausesAutomation(t *testing.T) {
+	s := fixture(t, func(context.Context, string, string, string) (QuoteReply, error) { return QuoteReply{}, nil })
+	configure(t, s, Config{Mode: Public})
+	now := time.Now()
+	r, err := s.Handle(context.Background(), Input{Account: "a", Contact: "guest", MessageID: "audio-1", Audio: true, Now: now})
+	if err != nil || !r.Handled || !r.Handoff || !strings.Contains(r.Text, "Recebi seu áudio") {
+		t.Fatalf("reply=%#v err=%v", r, err)
+	}
+	r, err = s.Handle(context.Background(), Input{Account: "a", Contact: "guest", MessageID: "text-after-audio", Text: "oi", Now: now.Add(time.Minute)})
+	if err != nil || !r.Handled || r.Text != "" {
+		t.Fatalf("paused reply=%#v err=%v", r, err)
 	}
 }
