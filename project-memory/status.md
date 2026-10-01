@@ -8,6 +8,7 @@
 - Evidência real com gravação: o Bitz confirmou a pré-reserva de teste código `3169`, UH `201`, no mesmo período. A equipe deve finalizar ou cancelar esse registro de teste.
 - O Bitz retornou HTTP 429 durante tentativas rápidas de investigação; retentativas agressivas permanecem proibidas.
 - Evidência local: `go test -count=1 ./...`, `go vet ./...`, testes e build React, runtime Scrapling empacotado, compilação com tag `bitzpackaged` e abertura do `Tino.exe` passaram. SHA-256: `2EF4E378333EDD7B02731DC6F166436DA67072F63ED6A14F55C574092298E11D`.
+- Evidência de release: commit funcional `4c0993a` enviado à `main`; release `v0.15.0` publicada com a UI e a CLI auxiliar.
 
 ## Etapa 36 — Teste automatizado completo do Bitz v0.14.7
 
