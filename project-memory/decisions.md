@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-10-01 — Superseded: iniciar a UI carregava a sessão e o motor hoteleiro, mas deixava a sessão WhatsApp persistida desconectada até o operador clicar em conectar.
+- 2026-10-01 — O Tino reconecta automaticamente uma sessão WhatsApp persistida durante a inicialização, depois de registrar os handlers do chat e do motor hoteleiro; falhas continuam visíveis na atividade e no status.
+
 - 2026-09-30 — Superseded: o E2E chromedp anterior reproduzia um wizard incompleto, ignorava a etapa de canal de venda e usava o salvamento final para adicionar UH. Seus resultados não provam o fluxo real.
 - 2026-09-30 — Scrapling 0.4.15 passa a controlar o navegador na integração Bitz. Investigação autenticada confirmou digitação das datas (fill simples era revertido), IDs duplicados que exigem escopo de modal e `#modal-quarto-reserva #btn-salvar-quarto-reserva` para adicionar UHs.
 - 2026-09-30 — Sucesso exige resposta positiva do salvamento com ID/código e estado confirmado, seguida da espera de 20 segundos. Nunca repetir automaticamente o salvamento. Credenciais passam por stdin, sem argumentos, arquivos temporários ou logs.

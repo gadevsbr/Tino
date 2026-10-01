@@ -1,5 +1,13 @@
 # Estado
 
+## Etapa 38 — Reconexão automática do WhatsApp v0.15.1
+
+- Causa da ausência de novos jobs Bitz confirmada: o `Tino.exe` v0.15.0 estava aberto sem conexão de rede e não havia mensagem processada desde 01/10/2026 02:09 UTC.
+- A inicialização agora reconecta automaticamente a sessão persistida após instalar os handlers do chat e da operação hoteleira.
+- A reconexão foi exercitada com a sessão existente: o WhatsApp respondeu `LoggedOut`, e o whatsmeow removeu corretamente a credencial inválida. `whatsmeow_device` ficou com zero registros; um novo QR precisa ser escaneado antes de validar mensagens.
+- Testes Go direcionados, `go vet ./...`, testes/build React e build Wails passaram. SHA-256 do `Tino.exe`: `118F479F2E3B7FDD2C23F8C89621013513F93E01B61F4598CBC7B3B6FAEA2D4E`.
+- Release pendente; validação WhatsApp/Bitz ponta a ponta bloqueada até novo pareamento.
+
 ## Etapa 37 — Migração Bitz para Scrapling v0.15.0
 
 - Investigação real com Scrapling chegou à revisão final com uma UH, sem salvar. Confirmados: tela intermediária de canal, datas revertidas por `fill`, IDs duplicados e botão de salvar UH distinto do salvamento final.

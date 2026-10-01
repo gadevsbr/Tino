@@ -83,6 +83,20 @@ func (a *App) startup(ctx context.Context) {
 		a.emitActivity("Operação hoteleira", "Motor operacional carregado no WhatsApp do Tino", "success")
 	}
 	a.emitStatus()
+	if a.mgr.Client.Store.ID != nil && !a.mgr.Client.IsLoggedIn() {
+		go a.connectPersistedSession()
+	}
+}
+
+func (a *App) connectPersistedSession() {
+	a.emitActivity("Conexão", "Reconectando a sessão salva do WhatsApp", "info")
+	if err := a.mgr.Connect(a.ctx, false); err != nil {
+		a.emitActivity("Conexão", err.Error(), "error")
+		a.emitStatus()
+		return
+	}
+	a.emitActivity("Conexão", "Sessão salva reconectada automaticamente", "success")
+	a.emitStatus()
 }
 
 func (a *App) shutdown(context.Context) {
