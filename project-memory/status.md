@@ -6,6 +6,7 @@
 - Correção: o robô aguarda carregamento completo, garante foco, repete o atalho F2 e possui fallback por evento de teclado da própria página.
 - Diagnóstico: em nova falha, o erro inclui URL e título da página, sem senha, CPF ou dados do hóspede.
 - Evidência: regressão local do atalho, `go vet ./...`, `go test -count=1 ./...`, testes React, build Vite e build Wails passaram. Validação controlada no Bitz real também passou em 8,04 s, limitada a login e abertura de “NOVA RESERVA”; nenhum campo foi preenchido e nenhuma reserva foi salva. SHA-256 do `Tino.exe`: `AE846B8C76980E3E3F92F4E35843EFB22DEB8187F6075F5E654B8E4B701D4275`.
+- Evidência de release: commit funcional `051e33f` enviado à `main`; release `v0.14.4` publicada com UI e CLI auxiliar.
 
 ## Etapa 32 — Sessão comercial de operador isolada v0.14.3
 
