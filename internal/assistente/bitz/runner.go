@@ -94,7 +94,7 @@ func (r *BrowserRunner) Create(parent context.Context, cfg Config, password stri
 	if err = login(ctx, cfg, password); err != nil {
 		return err
 	}
-	if err = chromedp.Run(ctx, chromedp.KeyEvent(kb.F2), waitText("NOVA RESERVA", 20*time.Second)); err != nil {
+	if err = openNewReservation(ctx, 30*time.Second); err != nil {
 		return fmt.Errorf("abrir nova reserva: %w", err)
 	}
 	if err = setByLabel(ctx, "CPF/CNPJ", cfg.BotCPF); err != nil {
@@ -160,6 +160,56 @@ func login(ctx context.Context, cfg Config, password string) error {
 		return fmt.Errorf("login Bitz recusado ou indisponível: %w", err)
 	}
 	return nil
+}
+
+func openNewReservation(ctx context.Context, timeout time.Duration) error {
+	// The login button disappears before Bitz finishes installing its global
+	// keyboard shortcuts. Wait for a complete document and retry F2 instead of
+	// treating that early DOM transition as an application-ready signal.
+	if err := chromedp.Run(ctx,
+		chromedp.WaitReady("body", chromedp.ByQuery),
+		chromedp.Poll(`document.readyState === "complete"`, nil, chromedp.WithPollingInterval(100*time.Millisecond)),
+		chromedp.Evaluate(`window.focus(); document.body && document.body.focus()`, nil),
+	); err != nil {
+		return err
+	}
+	deadline := time.Now().Add(timeout)
+	for attempt := 0; time.Now().Before(deadline); attempt++ {
+		if err := chromedp.Run(ctx, chromedp.KeyEvent(kb.F2)); err != nil {
+			return err
+		}
+		if hasText(ctx, "NOVA RESERVA", 1500*time.Millisecond) {
+			return nil
+		}
+		// Some Bitz builds listen to DOM keyboard events rather than the browser's
+		// native input dispatch. Use that path only after native F2 did not open it.
+		if attempt == 0 {
+			_ = chromedp.Run(ctx, chromedp.Evaluate(`(()=>{const o={key:"F2",code:"F2",keyCode:113,which:113,bubbles:true,cancelable:true};for(const t of [document,window]){t.dispatchEvent(new KeyboardEvent("keydown",o));t.dispatchEvent(new KeyboardEvent("keyup",o))}})()`, nil))
+			if hasText(ctx, "NOVA RESERVA", 1500*time.Millisecond) {
+				return nil
+			}
+		}
+	}
+	var location, title string
+	_ = chromedp.Run(ctx, chromedp.Location(&location), chromedp.Title(&title))
+	return fmt.Errorf("tela esperada não apareceu: NOVA RESERVA (página=%q, título=%q)", location, title)
+}
+
+func hasText(ctx context.Context, value string, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		var ok bool
+		_ = chromedp.Run(ctx, chromedp.Evaluate(`document.body && document.body.innerText.includes(`+jsString(value)+`)`, &ok))
+		if ok {
+			return true
+		}
+		select {
+		case <-time.After(100 * time.Millisecond):
+		case <-ctx.Done():
+			return false
+		}
+	}
+	return false
 }
 
 func waitText(text string, timeout time.Duration) chromedp.Action {

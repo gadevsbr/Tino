@@ -8,6 +8,9 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/chromedp/chromedp"
 )
 
 func TestStoreProtectsPasswordAndNeverReturnsItPublicly(t *testing.T) {
@@ -43,6 +46,30 @@ func TestBrowserRunnerLoginDoesNotOpenReservation(t *testing.T) {
 	}))
 	defer server.Close()
 	if err := NewBrowserRunner().TestAccess(context.Background(), Config{BaseURL: server.URL, Username: "bot"}, "secret"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestOpenNewReservationWaitsForShortcutAndRetriesF2(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`<html><body tabindex="-1"><script>
+		setTimeout(() => document.addEventListener('keydown', e => {
+			if (e.key === 'F2') document.body.insertAdjacentHTML('beforeend', '<div>NOVA RESERVA</div>')
+		}), 700)
+		</script></body></html>`))
+	}))
+	defer server.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	ctx, closeBrowser, err := browserContext(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeBrowser()
+	if err = chromedp.Run(ctx, chromedp.Navigate(server.URL)); err != nil {
+		t.Fatal(err)
+	}
+	if err = openNewReservation(ctx, 5*time.Second); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-09-30 — Superseded: após o login Bitz, o desaparecimento do botão de entrada era tratado como aplicação pronta e apenas um `F2` era enviado; o atalho podia chegar antes de o sistema instalar seus listeners.
+- 2026-09-30 — A abertura de “NOVA RESERVA” aguarda o documento completo, dá foco à página, repete `F2` e usa evento DOM como fallback. Falhas incluem URL e título seguros para diagnóstico, sem credenciais nem conteúdo do hóspede.
+
 - 2026-09-30 — Superseded: o comando `testar atendimento` afirmava abrir sessão separada, mas reutilizava o estado comercial do telefone admitido; se esse contato estivesse pausado, `oi` era consumido sem resposta.
 - 2026-09-30 — O teste do operador usa uma identidade sintética isolada por conta e operador. Iniciar ou sair do teste reinicia somente esse estado, sem retomar, cancelar ou alterar a conversa real do hóspede.
 
