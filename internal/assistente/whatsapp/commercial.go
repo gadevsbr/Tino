@@ -463,9 +463,9 @@ func (s *Service) startPreReservation(account, contact, messageID string, chat t
 		}
 		return
 	}
-	categories := make([]string, len(request.Categories))
+	categories := make([]bitz.RoomCategory, len(request.Categories))
 	for i, category := range request.Categories {
-		categories[i] = category.Name
+		categories[i] = bitz.RoomCategory{Key: category.Key, SourceKey: category.SourceKey, Name: category.Name}
 	}
 	go func() {
 		s.bitzMu.Lock()

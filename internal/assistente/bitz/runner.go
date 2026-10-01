@@ -17,8 +17,10 @@ import (
 type ReservationRequest struct {
 	ID                string
 	CheckIn, CheckOut string
-	Categories        []string
+	Categories        []RoomCategory
 }
+
+type RoomCategory struct{ Key, SourceKey, Name string }
 
 type Runner interface {
 	TestAccess(context.Context, Config, string) error
@@ -97,44 +99,47 @@ func (r *BrowserRunner) Create(parent context.Context, cfg Config, password stri
 	if err = openNewReservation(ctx, 30*time.Second); err != nil {
 		return fmt.Errorf("abrir nova reserva: %w", err)
 	}
-	if err = setByLabel(ctx, "CPF/CNPJ", cfg.BotCPF); err != nil {
+	if err = setByID(ctx, "reserva_cpf", cfg.BotCPF); err != nil {
 		return fmt.Errorf("informar CPF operacional: %w", err)
 	}
-	if err = clickText(ctx, "Avançar"); err != nil {
+	if err = clickSelector(ctx, `[title="Pesquisar por CPF"]`); err != nil {
+		return fmt.Errorf("pesquisar CPF operacional: %w", err)
+	}
+	if err = clickByID(ctx, "btn-avancar"); err != nil {
 		return err
 	}
-	if err = waitTextRun(ctx, "Check-In", 15*time.Second); err != nil {
+	if err = waitSelector(ctx, "#reserva_data_reserva", 15*time.Second); err != nil {
 		return err
 	}
-	if err = setByLabel(ctx, "Check-In", req.CheckIn); err != nil {
+	if err = setByID(ctx, "reserva_data_reserva", req.CheckIn); err != nil {
 		return err
 	}
-	if err = setByLabel(ctx, "Check-Out", req.CheckOut); err != nil {
+	if err = setByID(ctx, "reserva_data_saida", req.CheckOut); err != nil {
 		return err
 	}
 	_ = clickText(ctx, "Pré Reserva")
 	_ = clickText(ctx, "Aberto")
-	if err = clickText(ctx, "Avançar"); err != nil {
+	if err = clickByID(ctx, "btn-avancar"); err != nil {
 		return err
 	}
-	if err = waitTextRun(ctx, "Adicionar UH", 15*time.Second); err != nil {
+	if err = waitSelector(ctx, "#btn-add-quarto-reserva", 15*time.Second); err != nil {
 		return err
 	}
 	for _, category := range req.Categories {
-		if err = clickText(ctx, "Adicionar UH"); err != nil {
+		if err = clickByID(ctx, "btn-add-quarto-reserva"); err != nil {
 			return err
 		}
 		if err = selectAvailableCategory(ctx, category); err != nil {
-			return fmt.Errorf("categoria %q: %w", category, err)
+			return fmt.Errorf("categoria %q: %w", category.Name, err)
 		}
 	}
-	if err = clickText(ctx, "Avançar"); err != nil {
+	if err = clickByID(ctx, "btn-avancar"); err != nil {
 		return err
 	}
-	if err = clickText(ctx, "Avançar"); err != nil {
+	if err = clickByID(ctx, "btn-avancar"); err != nil {
 		return err
 	}
-	if err = clickText(ctx, "Salvar"); err != nil {
+	if err = clickByID(ctx, "btn-salvar-p"); err != nil {
 		return err
 	}
 	select {
@@ -237,6 +242,42 @@ func waitTextRun(ctx context.Context, value string, timeout time.Duration) error
 	return fmt.Errorf("tela esperada não apareceu: %s", value)
 }
 func jsString(value string) string { return fmt.Sprintf("%q", value) }
+func waitSelector(ctx context.Context, selector string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		var ok bool
+		_ = chromedp.Run(ctx, chromedp.Evaluate(`!!document.querySelector(`+jsString(selector)+`)`, &ok))
+		if ok {
+			return nil
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return fmt.Errorf("controle não apareceu: %s", selector)
+}
+func clickSelector(ctx context.Context, selector string) error {
+	var ok bool
+	script := `(()=>{const e=document.querySelector(` + jsString(selector) + `);if(!e||e.disabled)return false;e.click();return true})()`
+	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &ok)); err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("controle não encontrado: %s", selector)
+	}
+	time.Sleep(350 * time.Millisecond)
+	return nil
+}
+func clickByID(ctx context.Context, id string) error { return clickSelector(ctx, "#"+id) }
+func setByID(ctx context.Context, id, value string) error {
+	var ok bool
+	script := `(()=>{const e=document.getElementById(` + jsString(id) + `);if(!e)return false;e.focus();const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(e,` + jsString(value) + `);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));e.dispatchEvent(new Event('blur',{bubbles:true}));return true})()`
+	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &ok)); err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("campo não encontrado: #%s", id)
+	}
+	return nil
+}
 func clickText(ctx context.Context, value string) error {
 	var ok bool
 	script := `(()=>{const n=` + jsString(normalize(value)) + `;const els=[...document.querySelectorAll('button,a,label,span')];const e=els.find(x=>{const t=(x.innerText||x.textContent||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();return t===n});if(!e)return false;e.click();return true})()`
@@ -260,12 +301,13 @@ func setByLabel(ctx context.Context, label, value string) error {
 	}
 	return nil
 }
-func selectAvailableCategory(ctx context.Context, category string) error {
+func selectAvailableCategory(ctx context.Context, category RoomCategory) error {
 	if err := waitTextRun(ctx, "SELECIONAR UH DISPONÍVEL", 15*time.Second); err != nil {
 		return err
 	}
 	var ok bool
-	script := `(()=>{const n=` + jsString(normalize(category)) + `;const rows=[...document.querySelectorAll('tr')];const row=rows.find(r=>(r.innerText||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(n));if(!row)return false;const box=row.querySelector('input[type=checkbox]');if(!box||box.disabled)return false;if(!box.checked)box.click();const buttons=[...document.querySelectorAll('button,a')];const save=buttons.find(x=>(x.innerText||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase()==='salvar');if(!save)return false;save.click();return true})()`
+	physical := physicalCategory(category)
+	script := `(()=>{const n=` + jsString(physical) + `;const rows=[...document.querySelectorAll('#table-quartos-disponiveis-reserva tr')];const row=rows.find(r=>{const cell=r.children[2];const t=(cell?.innerText||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();return t===n});if(!row)return false;const pick=row.querySelector('input[type=checkbox]')||row.querySelector('td:first-child i')||row.children[0];if(!pick)return false;pick.click();const save=document.getElementById('btn-salvar-p');if(!save||save.disabled)return false;save.click();return true})()`
 	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &ok)); err != nil {
 		return err
 	}
@@ -274,6 +316,26 @@ func selectAvailableCategory(ctx context.Context, category string) error {
 	}
 	time.Sleep(500 * time.Millisecond)
 	return nil
+}
+func physicalCategory(category RoomCategory) string {
+	bySource := map[string]string{
+		"superluxo":        "quarto duplo superluxo com varanda e vista mar",
+		"familia":          "quarto familia deluxe com vista mar",
+		"quadruploVista":   "quarto quadruplo deluxe com varanda e vista mar",
+		"triploDeluxe":     "quarto triplo deluxe com varanda",
+		"quadruploDeluxe":  "quarto quadruplo deluxe com varanda",
+		"triploVaranda":    "quarto triplo com varanda",
+		"quadruploVaranda": "quarto quadruplo com varanda",
+		"duplo":            "quarto duplo",
+		"triplo":           "quarto triplo",
+	}
+	if value := bySource[category.SourceKey]; value != "" {
+		return value
+	}
+	if value := bySource[category.Key]; value != "" {
+		return value
+	}
+	return normalize(strings.TrimPrefix(category.Name, "Suíte "))
 }
 func normalize(value string) string {
 	return strings.ToLower(strings.TrimSpace(strings.NewReplacer("á", "a", "à", "a", "ã", "a", "â", "a", "é", "e", "ê", "e", "í", "i", "ó", "o", "ô", "o", "õ", "o", "ú", "u", "ç", "c").Replace(value)))

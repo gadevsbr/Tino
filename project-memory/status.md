@@ -1,10 +1,19 @@
 # Estado
 
+## Etapa 35 — Seletores reais e tabela de UHs Bitz v0.14.6
+
+- Campos de CPF e datas, pesquisa, avanços, adição de UH e salvamento usam os IDs reais fornecidos pelo operador.
+- O HTML real confirmou que a tabela usa `#table-quartos-disponiveis-reserva` e marca a linha pelo ícone da primeira célula, não por `input[type=checkbox]`.
+- O transporte agora preserva `key`, `source_key` e nome da categoria OmniBees até o Bitz; isso diferencia corretamente família, superluxo, triplo, quádruplo e variações deluxe/varanda/interna.
+- Evidência: testes DOM reproduzem os seletores e a estrutura da tabela fornecida; regressões direcionadas, `go vet ./...`, `go test -count=1 ./...`, testes React, build Vite e build Wails passaram. SHA-256 do `Tino.exe`: `3891E3C098A11EE5C3388108A21D0EBEAF877EB148D502DDEC401791835F154A`.
+- Correção de capacidade: a UH Família foi removida das alternativas de até três ocupantes e permanece exclusiva para cinco pessoas; a opção vista-mar nessa faixa usa a UH Superluxo.
+
 ## Etapa 34 — Botão direto de nova reserva Bitz v0.14.5
 
 - O robô agora clica diretamente em `#btn-add-reserva`, ID confirmado no sistema real.
 - F2 permanece apenas como fallback caso o botão ainda não exista ou esteja desabilitado durante o carregamento.
 - Evidência: regressão específica do botão, regressão do fallback F2, `go vet ./...`, `go test -count=1 ./...`, testes React, build Vite e build Wails passaram. SHA-256 do `Tino.exe`: `6AC229B354AEF52029DC98861D738F7C8175B19B4279DD21C1D379151EC4AC4B`.
+- Evidência de release: commit funcional `16b93ff` enviado à `main`; release `v0.14.5` publicada com UI e CLI auxiliar.
 
 ## Etapa 33 — Abertura resiliente da pré-reserva Bitz v0.14.4
 

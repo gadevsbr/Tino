@@ -388,8 +388,7 @@ func commercialSlots(occupants int) map[string]string {
 		internal = "triplo"
 	}
 	return map[string]string{
-		"superluxo":     "Suíte Superluxo com varanda e vista mar",
-		"familia":       "Suíte Deluxe com vista para o mar",
+		"superluxo":     "Suíte Deluxe com vista para o mar",
 		"triploDeluxe":  "Suíte Deluxe com varanda",
 		"triploVaranda": "Suíte com varanda",
 		internal:        "Suíte interna",

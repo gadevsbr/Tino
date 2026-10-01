@@ -1,5 +1,11 @@
 # Decisões
 
+- 2026-09-30 — Superseded: a matriz herdada oferecia a UH física Família como “Deluxe com vista para o mar” também para até três ocupantes.
+- 2026-09-30 — `QUARTO FAMILIA DELUXE COM VISTA MAR` é exclusivo da categoria Família e de ocupação de cinco pessoas. Para até três ocupantes, “Deluxe com vista para o mar” usa a origem física Superluxo.
+
+- 2026-09-30 — Superseded: campos e botões do assistente Bitz eram localizados principalmente por textos/labels, e a tabela de UHs procurava um checkbox inexistente.
+- 2026-09-30 — O fluxo usa os IDs reais `reserva_cpf`, `btn-avancar`, `reserva_data_reserva`, `reserva_data_saida`, `btn-add-quarto-reserva`, `table-quartos-disponiveis-reserva` e `btn-salvar-p`. A UH é marcada pelo ícone da primeira célula e a categoria física deriva do `source_key` original da OmniBees.
+
 - 2026-09-30 — Superseded parcialmente: F2 deixa de ser o acionamento principal da nova reserva.
 - 2026-09-30 — O seletor estável `#btn-add-reserva`, confirmado pelo operador, passa a ser a ação primária. F2 permanece somente como compatibilidade de fallback.
 

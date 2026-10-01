@@ -93,3 +93,61 @@ func TestOpenNewReservationPrefersKnownButtonID(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestPhysicalCategoryUsesOmniBeesSourceSlot(t *testing.T) {
+	tests := []struct{ source, want string }{
+		{"familia", "quarto familia deluxe com vista mar"},
+		{"triploDeluxe", "quarto triplo deluxe com varanda"},
+		{"quadruploVista", "quarto quadruplo deluxe com varanda e vista mar"},
+		{"duplo", "quarto duplo"},
+	}
+	for _, test := range tests {
+		if got := physicalCategory(RoomCategory{SourceKey: test.source}); got != test.want {
+			t.Fatalf("source %s: got %q want %q", test.source, got, test.want)
+		}
+	}
+}
+
+func TestKnownReservationSelectorsAndRoomTable(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`<html><body><h1>SELECIONAR UH DISPONÍVEL</h1>
+		<input id="reserva_cpf"><button title="Pesquisar por CPF"></button><button id="btn-avancar"></button>
+		<input id="reserva_data_reserva"><input id="reserva_data_saida"><button id="btn-add-quarto-reserva"></button>
+		<table><tbody id="table-quartos-disponiveis-reserva"><tr><td><i class="fa fa-square-o" onclick="this.dataset.picked='yes'"></i></td><td>203</td><td>QUARTO TRIPLO DELUXE COM VARANDA</td></tr></tbody></table>
+		<button id="btn-salvar-p" onclick="this.dataset.saved='yes'"></button>
+		</body></html>`))
+	}))
+	defer server.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	ctx, closeBrowser, err := browserContext(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeBrowser()
+	if err = chromedp.Run(ctx, chromedp.Navigate(server.URL)); err != nil {
+		t.Fatal(err)
+	}
+	if err = setByID(ctx, "reserva_cpf", "52998224725"); err != nil {
+		t.Fatal(err)
+	}
+	if err = setByID(ctx, "reserva_data_reserva", "01/10/2026"); err != nil {
+		t.Fatal(err)
+	}
+	if err = setByID(ctx, "reserva_data_saida", "05/10/2026"); err != nil {
+		t.Fatal(err)
+	}
+	if err = clickSelector(ctx, `[title="Pesquisar por CPF"]`); err != nil {
+		t.Fatal(err)
+	}
+	if err = selectAvailableCategory(ctx, RoomCategory{SourceKey: "triploDeluxe", Name: "Suíte Deluxe com varanda"}); err != nil {
+		t.Fatal(err)
+	}
+	var result string
+	if err = chromedp.Run(ctx, chromedp.Evaluate(`document.querySelector('td:first-child i').dataset.picked+'|'+document.getElementById('btn-salvar-p').dataset.saved`, &result)); err != nil {
+		t.Fatal(err)
+	}
+	if result != "yes|yes" {
+		t.Fatalf("selection result: %q", result)
+	}
+}
