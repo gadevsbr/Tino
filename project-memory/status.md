@@ -1,5 +1,12 @@
 # Estado
 
+## Etapa 32 — Sessão comercial de operador isolada v0.14.3
+
+- Causa confirmada no banco: o telefone admitido tinha `paused:true`, e o teste do operador reutilizava esse mesmo estado apesar da mensagem dizer “sessão separada”.
+- Correção: `testar atendimento` roteia para uma identidade sintética exclusiva do operador e reinicia somente essa sessão; `sair atendimento` também limpa o estado de teste.
+- Proteção: a identidade sintética só é admitida quando o transporte autenticado marca explicitamente a entrada como sessão de teste no modo comercial `test`.
+- Evidência: regressão direcionada, testes dos pacotes comercial/WhatsApp, `go vet ./...`, `go test ./...`, testes React, build Vite e build Wails passaram. O `Tino.exe` abriu responsivo; SHA-256 `FD1E2608368D37709C0A8B3B0B03B7419A5B2E83CAAA42DF1A968A04ADF0C348`.
+
 ## Etapa 31 — Acesso direto à Integração Bitz v0.14.2
 
 - Correção de encontrabilidade: nova entrada **Integração Bitz** no menu lateral.

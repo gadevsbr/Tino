@@ -36,6 +36,10 @@ type Config struct {
 type Input struct {
 	Account, Contact, MessageID, Text string
 	Now                               time.Time
+	// TestSession is set only by the authenticated operator transport. It lets
+	// an isolated synthetic contact exercise test mode without reusing the
+	// configured guest's conversation state.
+	TestSession bool
 }
 type Reply struct {
 	Text             string
@@ -264,6 +268,27 @@ func (s *Service) Resume(ctx context.Context, account, contact string) error {
 	return s.save(ctx, Input{Account: account, Contact: contact}, st)
 }
 
+// Reset removes an isolated conversation state so its next message starts at
+// the greeting. Transport uses this when an operator starts or exits a test.
+func (s *Service) Reset(ctx context.Context, account, contact string) error {
+	if err := validIdentity(account, contact); err != nil {
+		return err
+	}
+	unlock := s.lock(account, contact)
+	defer unlock()
+	st, err := s.load(ctx, account, contact)
+	if err != nil {
+		return err
+	}
+	if st.QuoteActive {
+		if _, err = s.quote(ctx, account, contact, "cancelar"); err != nil {
+			return err
+		}
+	}
+	_, err = s.db.ExecContext(ctx, `DELETE FROM commercial_contacts WHERE account=? AND contact=?`, account, contact)
+	return err
+}
+
 func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 	if err := validIdentity(in.Account, in.Contact); err != nil {
 		return Reply{}, err
@@ -280,8 +305,8 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 	if err != nil {
 		return Reply{}, err
 	}
-	allowed := config.Mode == Public
-	if config.Mode == Test {
+	allowed := config.Mode == Public || (config.Mode == Test && in.TestSession)
+	if config.Mode == Test && !in.TestSession {
 		for _, contact := range config.Allowlist {
 			if contact == in.Contact {
 				allowed = true

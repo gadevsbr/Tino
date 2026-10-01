@@ -62,6 +62,22 @@ func TestGreetingChoiceHandoffAnd24HourReset(t *testing.T) {
 	}
 }
 
+func TestOperatorTestSessionUsesIsolatedSyntheticContact(t *testing.T) {
+	s := fixture(t, func(context.Context, string, string, string) (QuoteReply, error) { return QuoteReply{}, nil })
+	configure(t, s, Config{Mode: Test, Allowlist: []string{"5573999999999"}})
+	now := time.Now()
+
+	guest, err := s.Handle(context.Background(), Input{Account: "a", Contact: "operator-test:557398396028", MessageID: "guest", Text: "oi", Now: now})
+	if err != nil || guest.Handled {
+		t.Fatalf("synthetic contact escaped test-mode authorization: reply=%+v err=%v", guest, err)
+	}
+
+	testReply, err := s.Handle(context.Background(), Input{Account: "a", Contact: "operator-test:557398396028", MessageID: "test", Text: "oi", Now: now, TestSession: true})
+	if err != nil || !testReply.Handled || !strings.Contains(testReply.Text, greeting) {
+		t.Fatalf("isolated operator test did not start: reply=%+v err=%v", testReply, err)
+	}
+}
+
 func TestBudgetSequenceAddsTwoConfiguredMessages(t *testing.T) {
 	categories := []omnibees.Category{{Key: "interna", Name: "Interna"}}
 	calls := 0

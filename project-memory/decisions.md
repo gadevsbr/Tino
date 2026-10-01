@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-09-30 — Superseded: o comando `testar atendimento` afirmava abrir sessão separada, mas reutilizava o estado comercial do telefone admitido; se esse contato estivesse pausado, `oi` era consumido sem resposta.
+- 2026-09-30 — O teste do operador usa uma identidade sintética isolada por conta e operador. Iniciar ou sair do teste reinicia somente esse estado, sem retomar, cancelar ou alterar a conversa real do hóspede.
+
 - 2026-09-30 — Superseded: manter a ativação do Bitz apenas como subaba de Gestão Assistente tornou a integração difícil de localizar.
 - 2026-09-30 — **Integração Bitz** passa a ser uma entrada de primeiro nível no menu lateral e abre diretamente credenciais, teste, status e ativação.
 

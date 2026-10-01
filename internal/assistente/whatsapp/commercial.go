@@ -262,6 +262,9 @@ func (s *Service) handleCommercialOperator(ctx context.Context, account, operato
 		reply = "Atendimento automático retomado para esse contato."
 	case n == "sair atendimento":
 		_, err = s.domainDB.ExecContext(ctx, `DELETE FROM whatsapp_commercial_tests WHERE account=? AND operator=?`, account, operator)
+		if err == nil {
+			err = s.commercial.Reset(ctx, account, commercialTestContact(operator))
+		}
 		reply = "Teste encerrado. Comandos operacionais disponíveis."
 	case n == "testar atendimento":
 		var cfg commercial.Config
@@ -272,6 +275,9 @@ func (s *Service) handleCommercialOperator(ctx context.Context, account, operato
 		}
 		if err == nil {
 			_, err = s.domainDB.ExecContext(ctx, `INSERT OR IGNORE INTO whatsapp_commercial_tests(account,operator) VALUES (?,?)`, account, operator)
+		}
+		if err == nil {
+			err = s.commercial.Reset(ctx, account, commercialTestContact(operator))
 		}
 		reply = "Teste comercial iniciado em sessão separada. Envie oi para começar; sair atendimento volta aos comandos operacionais."
 	case strings.HasPrefix(n, "testar produto "):
@@ -333,7 +339,7 @@ func (s *Service) handleCommercialOperator(ctx context.Context, account, operato
 		return true
 	}
 	if testing > 0 {
-		s.handleGuest(ctx, account, operator, messageID, text, chat)
+		s.handleGuestAs(ctx, account, commercialTestContact(operator), operator, messageID, text, chat, true)
 		return true
 	}
 	return false
@@ -361,6 +367,14 @@ func resumeArgument(raw string) (string, bool) {
 }
 
 func (s *Service) handleGuest(ctx context.Context, account, contact, messageID, text string, chat types.JID) {
+	s.handleGuestAs(ctx, account, contact, contact, messageID, text, chat, false)
+}
+
+func commercialTestContact(operator string) string {
+	return "operator-test:" + operator
+}
+
+func (s *Service) handleGuestAs(ctx context.Context, account, stateContact, displayContact, messageID, text string, chat types.JID, testSession bool) {
 	if s.commercial == nil {
 		return
 	}
@@ -369,11 +383,14 @@ func (s *Service) handleGuest(ctx context.Context, account, contact, messageID, 
 		slog.Error("commercial configuration unavailable")
 		return
 	}
-	contact = commercialContact(cfg, contact)
-	if !admitted(cfg, contact) {
+	if !testSession {
+		stateContact = commercialContact(cfg, stateContact)
+		displayContact = stateContact
+	}
+	if !testSession && !admitted(cfg, stateContact) {
 		return
 	}
-	result, err := s.commercial.Handle(ctx, commercial.Input{Account: account, Contact: contact, MessageID: messageID, Text: text, Now: time.Now()})
+	result, err := s.commercial.Handle(ctx, commercial.Input{Account: account, Contact: stateContact, MessageID: messageID, Text: text, Now: time.Now(), TestSession: testSession})
 	if err != nil {
 		slog.Error("commercial guest handling failed")
 		return
@@ -386,7 +403,7 @@ func (s *Service) handleGuest(ctx context.Context, account, contact, messageID, 
 			_ = s.markUnread(ctx, chat.String())
 		}
 		// No guest body or quote details are copied into notifications/logs.
-		notice := "🔔 Hóspede solicitou atendimento humano.\nContato: " + contact + "\nO automático está pausado até retomada explícita.\nPara retomar: comercial retomar " + contact
+		notice := "🔔 Hóspede solicitou atendimento humano.\nContato: " + displayContact + "\nO automático está pausado até retomada explícita.\nPara retomar: comercial retomar " + displayContact
 		for _, number := range s.auth.Numbers() {
 			s.replyText(ctx, types.NewJID(number, types.DefaultUserServer), notice)
 		}
@@ -396,7 +413,7 @@ func (s *Service) handleGuest(ctx context.Context, account, contact, messageID, 
 		if destination == "" {
 			destination = "5573988240413"
 		}
-		notice := result.GroupRequest + "\nContato solicitante: " + contact
+		notice := result.GroupRequest + "\nContato solicitante: " + displayContact
 		if _, err := s.sendMessage(ctx, types.NewJID(destination, types.DefaultUserServer), &waE2E.Message{Conversation: proto.String(notice)}); err != nil {
 			slog.Error("group quote forwarding failed")
 			s.replyText(ctx, chat, "Não consegui encaminhar ao setor de grupos agora. Um atendente humano continuará por aqui.")
@@ -422,7 +439,7 @@ func (s *Service) handleGuest(ctx context.Context, account, contact, messageID, 
 		}
 	}
 	if len(result.Categories) > 0 {
-		if err := s.sendQuoteProducts(ctx, account, contact, messageID, chat, result.Categories); err != nil {
+		if err := s.sendQuoteProducts(ctx, account, stateContact, messageID, chat, result.Categories); err != nil {
 			slog.Error("commercial catalog delivery incomplete")
 			s.replyText(ctx, chat, "Não consegui enviar todos os produtos do catálogo. O orçamento acima continua disponível; a equipe pode ajudar com as fotos.")
 		}
@@ -433,7 +450,7 @@ func (s *Service) handleGuest(ctx context.Context, account, contact, messageID, 
 		}
 	}
 	if result.PreReservation != nil {
-		s.startPreReservation(account, contact, messageID, chat, *result.PreReservation)
+		s.startPreReservation(account, displayContact, messageID, chat, *result.PreReservation)
 	}
 }
 
