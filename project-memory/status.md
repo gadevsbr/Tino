@@ -7,6 +7,7 @@
 - UI: status Ativa/Inativa permanece visível e o botão principal agora diz **Salvar e ativar**, com ação separada para desativar.
 - Evidência: regressões direcionadas, `go test -count=1 ./...`, `go vet ./...`, testes Node, build Vite e build Wails passaram. SHA-256 do `Tino.exe`: `3C86516067E20DE4B70B57D75ADFD5C476E12AF8C7B27D10FCAEA3B66CCB83A3`.
 - Gate operacional: a configuração local continua intencionalmente inativa até o operador clicar **Salvar e ativar**; nenhuma credencial foi impressa ou alterada durante o diagnóstico.
+- Evidência de release: commit funcional `c2dbb90` enviado à `main`; release `v0.14.1` publicada com UI e CLI auxiliar.
 
 ## Etapa 29 — Pré-reserva Bitz v0.14.0
 
