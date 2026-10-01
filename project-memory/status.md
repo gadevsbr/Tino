@@ -7,6 +7,7 @@
 - O transporte agora preserva `key`, `source_key` e nome da categoria OmniBees até o Bitz; isso diferencia corretamente família, superluxo, triplo, quádruplo e variações deluxe/varanda/interna.
 - Evidência: testes DOM reproduzem os seletores e a estrutura da tabela fornecida; regressões direcionadas, `go vet ./...`, `go test -count=1 ./...`, testes React, build Vite e build Wails passaram. SHA-256 do `Tino.exe`: `3891E3C098A11EE5C3388108A21D0EBEAF877EB148D502DDEC401791835F154A`.
 - Correção de capacidade: a UH Família foi removida das alternativas de até três ocupantes e permanece exclusiva para cinco pessoas; a opção vista-mar nessa faixa usa a UH Superluxo.
+- Evidência de release: commit funcional `551565e` enviado à `main`; release `v0.14.6` publicada com UI e CLI auxiliar.
 
 ## Etapa 34 — Botão direto de nova reserva Bitz v0.14.5
 
