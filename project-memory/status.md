@@ -1,5 +1,12 @@
 # Estado
 
+## Etapa 44 - Manual operacional de reservas v0.15.6
+
+- PDF de 12 páginas documenta triagem, coleta, regra de grupos, consulta OmniBees, mensagens comerciais, catálogo, seleção numerada, pré-reserva Bitz, categoria física, bloqueio de `INTERDITADO`, aprovação humana, fila, idempotência e exceções.
+- Conteúdo derivado da documentação, decisões, implementação e testes atuais; distingue evidência local dos gates externos de WhatsApp, OmniBees e Bitz.
+- Validação: todas as páginas foram renderizadas e inspecionadas; não há páginas vazias, cortes ou sobreposições. SHA-256: `77E8CD02F1F6B4C8BCA8CA17196BA3A6AC238955B4906E8AECFA59ACB7166E82`.
+- Artefato: `output/pdf/manual-fluxo-reservas-tinobot.pdf`, anexado à release `v0.15.6`.
+
 ## Etapa 43 — Categoria física e bloqueio de UH v0.15.6
 
 - Cadastro dos 42 quartos recebe categoria física Bitz com lista fechada e validação backend; a UI permite editar e exibe a categoria no card.
