@@ -9,7 +9,7 @@
 - `go test -count=1 ./...`, `go vet ./...`, testes e build do frontend passaram. `go test -race` não pôde ser executado porque o ambiente está com CGO desativado.
 - Build Windows v0.15.5 concluído; SHA-256 de `dist/Tino.exe`: `33FC05425953A55EA356A765FB7FA438E38B63F62BC6797D7BBEF6DAB218ED00`.
 - Gate externo: ao reiniciar, o WhatsApp respondeu novamente `401 logged out from another device` e removeu a credencial; um novo QR é necessário para validar o atraso e a fila em conversa real.
-- Release pendente.
+- Release publicada: `v0.15.5` com `Tino.exe` e `tino-cli-windows-amd64.exe`.
 
 ## Etapa 41 — Recuperação segura de timeout no login Bitz v0.15.4
 
