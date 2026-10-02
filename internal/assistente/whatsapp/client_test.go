@@ -3,16 +3,21 @@ package whatsapp
 import (
 	"context"
 	"database/sql"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/gadevsbr/tino/internal/assistente/bitz"
 	"github.com/gadevsbr/tino/internal/assistente/commercial"
 	"github.com/gadevsbr/tino/internal/assistente/config"
+	opdb "github.com/gadevsbr/tino/internal/assistente/database"
 	"github.com/gadevsbr/tino/internal/assistente/omnibees"
+	"github.com/gadevsbr/tino/internal/assistente/rooms"
 	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/proto"
-	"strings"
-	"testing"
-	"time"
 )
 
 func TestCashReceiptImageRequiresCaptionKeyword(t *testing.T) {
@@ -146,5 +151,35 @@ func TestGuestReplyDelayWaitsConfiguredDuration(t *testing.T) {
 	}
 	if elapsed := time.Since(started); elapsed < 20*time.Millisecond {
 		t.Fatalf("delay too short: %s", elapsed)
+	}
+}
+
+func TestRoomAllocationPolicyExcludesInterdictedAndChecksCapacity(t *testing.T) {
+	ctx := context.Background()
+	db, err := opdb.Open(ctx, filepath.Join(t.TempDir(), "hotel.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	repo := rooms.NewRepository(db)
+	for _, number := range []int{201, 202} {
+		if err := repo.SetBitzCategory(ctx, number, "triploDeluxe"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, _, err := repo.UpdateStatus(ctx, 201, rooms.Maintenance, "test", "test", "block-201"); err != nil {
+		t.Fatal(err)
+	}
+	s := &Service{rooms: repo}
+	one := []bitz.RoomCategory{{SourceKey: "triploDeluxe"}}
+	if err := s.applyRoomAllocationPolicy(ctx, one); err != nil {
+		t.Fatal(err)
+	}
+	if len(one[0].AllowedRooms) != 1 || one[0].AllowedRooms[0] != 202 {
+		t.Fatalf("allowed=%v", one[0].AllowedRooms)
+	}
+	two := []bitz.RoomCategory{{SourceKey: "triploDeluxe"}, {SourceKey: "triploDeluxe"}}
+	if err := s.applyRoomAllocationPolicy(ctx, two); err == nil || !strings.Contains(err.Error(), "somente 1 UH") {
+		t.Fatalf("capacity err=%v", err)
 	}
 }

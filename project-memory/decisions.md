@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-10-01 — O Bitz continua autoridade da disponibilidade por período; a categoria configurada no Tino e o status `INTERDITADO` formam uma restrição operacional adicional. UHs da mesma categoria são alternativas determinísticas e uma UH não pode ser reutilizada na mesma pré-reserva.
+- 2026-10-01 — Categoria sem nenhum quarto configurado mantém temporariamente o matching textual anterior para migração gradual. Assim que existir ao menos uma UH mapeada naquela categoria, o Tino exige capacidade local não interditada e não troca silenciosamente de categoria.
+
 - 2026-10-01 — Aplicados ao atendimento os padrões de Customer Service e Workflow Architecture do pacote Agency Agents: linguagem simples, presença de digitação e atraso fixo de 3 segundos, sem atrasos aleatórios ou imitação enganosa.
 - 2026-10-01 — O transporte usa fila FIFO assíncrona por conta e contato; hóspedes distintos executam em paralelo, operadores permanecem serializados por conta e pânico em uma tarefa não bloqueia as seguintes. A reivindicação SQLite anterior ao processamento mantém idempotência persistente.
 

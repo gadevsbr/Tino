@@ -13,13 +13,14 @@ import (
 )
 
 type RoomDTO struct {
-	Number, Floor, Guests     int
-	Status, StatusLabel, Note string
-	UpdatedAt                 string
+	Number, Floor, Guests           int
+	Status, StatusLabel, Note       string
+	BitzCategory, BitzCategoryLabel string
+	UpdatedAt                       string
 }
 type RoomUpdateRequest struct {
-	Number, Guests int
-	Status, Note   string
+	Number, Guests             int
+	Status, Note, BitzCategory string
 }
 type RoomHistoryDTO struct{ Old, OldLabel, New, NewLabel, At string }
 type CommercialConfigDTO struct {
@@ -92,6 +93,9 @@ func (a *App) UpdateRoom(req RoomUpdateRequest) error {
 		return err
 	}
 	if err = r.rooms.SetObservation(a.ctx, req.Number, strings.TrimSpace(req.Note)); err != nil {
+		return err
+	}
+	if err = r.rooms.SetBitzCategory(a.ctx, req.Number, req.BitzCategory); err != nil {
 		return err
 	}
 	if a.eventsReady {
@@ -305,7 +309,7 @@ func (a *App) accountJID() (string, error) {
 	return a.mgr.Client.Store.ID.ToNonAD().String(), nil
 }
 func roomDTO(x rooms.Room) RoomDTO {
-	return RoomDTO{Number: x.Number, Floor: x.Floor, Guests: x.GuestCount, Status: string(x.Status), StatusLabel: x.Status.Label(), Note: x.Observation, UpdatedAt: x.UpdatedAt.Format(time.RFC3339)}
+	return RoomDTO{Number: x.Number, Floor: x.Floor, Guests: x.GuestCount, Status: string(x.Status), StatusLabel: x.Status.Label(), Note: x.Observation, BitzCategory: x.BitzCategory, BitzCategoryLabel: rooms.BitzCategoryLabel(x.BitzCategory), UpdatedAt: x.UpdatedAt.Format(time.RFC3339)}
 }
 func filepathBase(path string) string {
 	parts := strings.FieldsFunc(path, func(r rune) bool { return r == '/' || r == '\\' })

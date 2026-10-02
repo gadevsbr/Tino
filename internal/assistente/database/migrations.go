@@ -101,6 +101,8 @@ CREATE TABLE extrato_week_files (
  UNIQUE(week_id,sha256)
 );
 CREATE INDEX idx_extrato_week_files_week ON extrato_week_files(week_id,id);`,
+	`ALTER TABLE rooms ADD COLUMN bitz_category TEXT NOT NULL DEFAULT '';
+CREATE INDEX idx_rooms_bitz_category_status ON rooms(bitz_category,operational_status,number);`,
 }
 
 func Migrate(ctx context.Context, db *sql.DB) error {

@@ -3,14 +3,15 @@ package rooms
 import "time"
 
 type Room struct {
-	ID          int64
-	Number      int
-	Floor       int
-	Status      Status
-	Observation string
-	GuestCount  int
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID           int64
+	Number       int
+	Floor        int
+	Status       Status
+	Observation  string
+	BitzCategory string
+	GuestCount   int
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 var OfficialNumbers = func() []int {

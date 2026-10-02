@@ -95,7 +95,9 @@ class Flow:
         rows = picker.locator('#table-quartos-disponiveis-reserva tr')
         rows.first.wait_for(state='visible')
         selected = []
-        for category in r['categories']:
+        allowed_by_category = r.get('allowed_rooms') or [[] for _ in r['categories']]
+        for category_index, category in enumerate(r['categories']):
+            allowed = {str(number) for number in allowed_by_category[category_index]}
             page.wait_for_function('''needle=>[...document.querySelectorAll('#modal-quarto-reserva.in #table-quartos-disponiveis-reserva tr')]
                 .some(row=>{const cell=row.children[2];const text=(cell?.innerText||'').normalize('NFD')
                 .replace(/[\\u0300-\\u036f]/g,'').toLowerCase().trim().replace(/\\s+/g,' ');return text===needle})''',
@@ -106,7 +108,7 @@ class Flow:
                 if cells.count() < 3:
                     continue
                 number = re.match(r'\s*(\d+)', cells.nth(1).inner_text())
-                if not number or number[1] in selected:
+                if not number or number[1] in selected or (allowed and number[1] not in allowed):
                     continue
                 if normalized(cells.nth(2).inner_text()) == normalized(category):
                     chosen = (row, number[1])

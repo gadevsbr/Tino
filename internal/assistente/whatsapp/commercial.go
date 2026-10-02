@@ -501,6 +501,9 @@ func (s *Service) startPreReservation(account, contact, messageID string, chat t
 			runErr = publicErr
 		}
 		if runErr == nil {
+			runErr = s.applyRoomAllocationPolicy(ctx, categories)
+		}
+		if runErr == nil {
 			runErr = s.bitzRunner.Create(ctx, cfg, password, bitz.ReservationRequest{ID: job.ID, CheckIn: request.CheckIn, CheckOut: request.CheckOut, Categories: categories})
 		}
 		if runErr != nil {
@@ -530,6 +533,47 @@ func (s *Service) startPreReservation(account, contact, messageID string, chat t
 			}
 		}
 	}()
+}
+
+func (s *Service) applyRoomAllocationPolicy(ctx context.Context, categories []bitz.RoomCategory) error {
+	type pool struct {
+		configured, eligible []int
+		demand               int
+	}
+	pools := make(map[string]*pool)
+	for _, category := range categories {
+		key := category.SourceKey
+		if key == "" {
+			key = category.Key
+		}
+		p := pools[key]
+		if p == nil {
+			configured, eligible, err := s.rooms.BitzAllocationCandidates(ctx, key)
+			if err != nil {
+				return err
+			}
+			p = &pool{configured: configured, eligible: eligible}
+			pools[key] = p
+		}
+		p.demand++
+	}
+	for key, p := range pools {
+		// No configured mapping keeps backward compatibility while the hotel
+		// classifies its inventory in the UI. Once mapped, the local block applies.
+		if len(p.configured) > 0 && len(p.eligible) < p.demand {
+			return fmt.Errorf("categoria %s: %d quarto(s) solicitado(s), mas somente %d UH(s) não interditada(s)", key, p.demand, len(p.eligible))
+		}
+	}
+	for i := range categories {
+		key := categories[i].SourceKey
+		if key == "" {
+			key = categories[i].Key
+		}
+		if p := pools[key]; p != nil && len(p.configured) > 0 {
+			categories[i].AllowedRooms = append([]int(nil), p.eligible...)
+		}
+	}
+	return nil
 }
 
 func preReservationNotice(code, contact string, request commercial.PreReservation) string {

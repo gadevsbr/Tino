@@ -1,5 +1,16 @@
 # Estado
 
+## Etapa 43 — Categoria física e bloqueio de UH v0.15.6
+
+- Cadastro dos 42 quartos recebe categoria física Bitz com lista fechada e validação backend; a UI permite editar e exibe a categoria no card.
+- Pré-reserva monta por categoria a lista de números permitidos, remove `INTERDITADO`, confere capacidade para pedidos repetidos e passa a lista ao Scrapling.
+- Scrapling escolhe somente uma UH simultaneamente disponível no Bitz e permitida pelo Tino, sem repetir número entre quartos.
+- Categorias ainda não mapeadas usam o comportamento anterior para permitir configuração gradual; categorias já mapeadas falham com aviso humano quando não houver capacidade operacional.
+- Evidência: testes direcionados de migração, validação, filtro de interditado, capacidade e seletor de UH passaram; o runtime Scrapling empacotado iniciou e respondeu pelo protocolo JSON; `go test -count=1 ./...`, `go vet ./...`, testes Node e build Vite passaram.
+- Build Windows v0.15.6 concluído e iniciado responsivo; SHA-256 de `dist/Tino.exe`: `263E0DAD6912F3AAB13EF8CBBEBB5A6BA3773B12B090B6A167737186AF391384`.
+- Migração confirmada no banco operacional real: coluna `bitz_category` presente, 42 quartos preservados e nenhum mapeamento inventado automaticamente; a classificação deve ser feita conscientemente na UI.
+- Release pendente.
+
 ## Etapa 42 — Atendimento humanizado, fila e idempotência v0.15.5
 
 - Respostas comerciais aguardam 3 segundos com presença `digitando...`, mantendo textos simples e acolhedores.

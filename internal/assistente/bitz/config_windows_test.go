@@ -116,7 +116,10 @@ func TestKnownReservationSelectorsAndRoomTable(t *testing.T) {
 		_, _ = w.Write([]byte(`<html><body><h1>SELECIONAR UH DISPONÍVEL</h1>
 		<input id="reserva_cpf"><button title="Pesquisar por CPF"></button><button id="btn-avancar"></button>
 		<input id="reserva_data_reserva"><input id="reserva_data_saida"><button id="btn-add-quarto-reserva"></button>
-		<table><tbody id="table-quartos-disponiveis-reserva"><tr><td><i class="fa fa-square-o" onclick="this.dataset.picked='yes'"></i></td><td>203</td><td>QUARTO TRIPLO DELUXE COM VARANDA</td></tr></tbody></table>
+		<table><tbody id="table-quartos-disponiveis-reserva">
+		<tr><td><i class="fa fa-square-o" onclick="this.dataset.picked='yes'"></i></td><td>202</td><td>QUARTO TRIPLO DELUXE COM VARANDA</td></tr>
+		<tr><td><i class="fa fa-square-o" onclick="this.dataset.picked='yes'"></i></td><td>203</td><td>QUARTO TRIPLO DELUXE COM VARANDA</td></tr>
+		</tbody></table>
 		<button id="btn-salvar-p" onclick="this.dataset.saved='yes'"></button>
 		</body></html>`))
 	}))
@@ -143,14 +146,14 @@ func TestKnownReservationSelectorsAndRoomTable(t *testing.T) {
 	if err = clickSelector(ctx, `[title="Pesquisar por CPF"]`); err != nil {
 		t.Fatal(err)
 	}
-	if err = selectAvailableCategory(ctx, RoomCategory{SourceKey: "triploDeluxe", Name: "Suíte Deluxe com varanda"}); err != nil {
+	if err = selectAvailableCategory(ctx, RoomCategory{SourceKey: "triploDeluxe", Name: "Suíte Deluxe com varanda", AllowedRooms: []int{203}}); err != nil {
 		t.Fatal(err)
 	}
 	var result string
-	if err = chromedp.Run(ctx, chromedp.Evaluate(`document.querySelector('td:first-child i').dataset.picked+'|'+document.getElementById('btn-salvar-p').dataset.saved`, &result)); err != nil {
+	if err = chromedp.Run(ctx, chromedp.Evaluate(`([...document.querySelectorAll('tr')].find(r=>r.children[1]?.innerText==='203').querySelector('i').dataset.picked||'')+'|'+(document.querySelector('tr').querySelector('i').dataset.picked||'')+'|'+document.getElementById('btn-salvar-p').dataset.saved`, &result)); err != nil {
 		t.Fatal(err)
 	}
-	if result != "yes|yes" {
+	if result != "yes||yes" {
 		t.Fatalf("selection result: %q", result)
 	}
 }

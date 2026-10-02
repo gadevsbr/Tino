@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -29,7 +30,7 @@ func (r *Repository) Get(ctx context.Context, number int) (Room, error) {
 	var room Room
 	var status string
 	var created, updated string
-	err := r.db.QueryRowContext(ctx, `SELECT id,number,floor,operational_status,observation,guest_count,created_at,updated_at FROM rooms WHERE number=?`, number).Scan(&room.ID, &room.Number, &room.Floor, &status, &room.Observation, &room.GuestCount, &created, &updated)
+	err := r.db.QueryRowContext(ctx, `SELECT id,number,floor,operational_status,observation,bitz_category,guest_count,created_at,updated_at FROM rooms WHERE number=?`, number).Scan(&room.ID, &room.Number, &room.Floor, &status, &room.Observation, &room.BitzCategory, &room.GuestCount, &created, &updated)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Room{}, ErrNotFound
 	}
@@ -145,7 +146,7 @@ func (r *Repository) Count(ctx context.Context) (int, error) {
 }
 
 func (r *Repository) ListAll(ctx context.Context) ([]Room, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT id,number,floor,operational_status,observation,guest_count,created_at,updated_at FROM rooms ORDER BY number`)
+	rows, err := r.db.QueryContext(ctx, `SELECT id,number,floor,operational_status,observation,bitz_category,guest_count,created_at,updated_at FROM rooms ORDER BY number`)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +155,7 @@ func (r *Repository) ListAll(ctx context.Context) ([]Room, error) {
 	for rows.Next() {
 		var room Room
 		var status, created, updated string
-		if err := rows.Scan(&room.ID, &room.Number, &room.Floor, &status, &room.Observation, &room.GuestCount, &created, &updated); err != nil {
+		if err := rows.Scan(&room.ID, &room.Number, &room.Floor, &status, &room.Observation, &room.BitzCategory, &room.GuestCount, &created, &updated); err != nil {
 			return nil, err
 		}
 		room.Status = Status(status)
@@ -166,7 +167,7 @@ func (r *Repository) ListAll(ctx context.Context) ([]Room, error) {
 }
 
 func (r *Repository) ListByStatus(ctx context.Context, status Status) ([]Room, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT id,number,floor,operational_status,observation,guest_count,created_at,updated_at FROM rooms WHERE operational_status=? ORDER BY number`, status)
+	rows, err := r.db.QueryContext(ctx, `SELECT id,number,floor,operational_status,observation,bitz_category,guest_count,created_at,updated_at FROM rooms WHERE operational_status=? ORDER BY number`, status)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +176,7 @@ func (r *Repository) ListByStatus(ctx context.Context, status Status) ([]Room, e
 	for rows.Next() {
 		var room Room
 		var raw, created, updated string
-		if err := rows.Scan(&room.ID, &room.Number, &room.Floor, &raw, &room.Observation, &room.GuestCount, &created, &updated); err != nil {
+		if err := rows.Scan(&room.ID, &room.Number, &room.Floor, &raw, &room.Observation, &room.BitzCategory, &room.GuestCount, &created, &updated); err != nil {
 			return nil, err
 		}
 		room.Status = Status(raw)
@@ -232,6 +233,48 @@ func (r *Repository) SetObservation(ctx context.Context, number int, text string
 		return ErrNotFound
 	}
 	return nil
+}
+
+func (r *Repository) SetBitzCategory(ctx context.Context, number int, category string) error {
+	category = strings.TrimSpace(category)
+	if !ValidBitzCategory(category) {
+		return fmt.Errorf("invalid Bitz category %q", category)
+	}
+	result, err := r.db.ExecContext(ctx, `UPDATE rooms SET bitz_category=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE number=?`, category, number)
+	if err != nil {
+		return err
+	}
+	affected, _ := result.RowsAffected()
+	if affected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// BitzAllocationCandidates returns all configured rooms and the subset that
+// may be allocated. Bitz still decides date availability; INTERDITADO is an
+// additional local operational block.
+func (r *Repository) BitzAllocationCandidates(ctx context.Context, category string) (configured, eligible []int, err error) {
+	if !ValidBitzCategory(category) || strings.TrimSpace(category) == "" {
+		return nil, nil, fmt.Errorf("invalid Bitz category %q", category)
+	}
+	rows, err := r.db.QueryContext(ctx, `SELECT number,operational_status FROM rooms WHERE bitz_category=? ORDER BY number`, category)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var number int
+		var status Status
+		if err := rows.Scan(&number, &status); err != nil {
+			return nil, nil, err
+		}
+		configured = append(configured, number)
+		if status != Maintenance {
+			eligible = append(eligible, number)
+		}
+	}
+	return configured, eligible, rows.Err()
 }
 
 type HistoryEntry struct {

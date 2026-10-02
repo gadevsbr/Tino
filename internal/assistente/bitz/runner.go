@@ -2,6 +2,7 @@ package bitz
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -20,7 +21,10 @@ type ReservationRequest struct {
 	Categories        []RoomCategory
 }
 
-type RoomCategory struct{ Key, SourceKey, Name string }
+type RoomCategory struct {
+	Key, SourceKey, Name string
+	AllowedRooms         []int
+}
 
 type Runner interface {
 	TestAccess(context.Context, Config, string) error
@@ -313,7 +317,12 @@ func selectAvailableCategory(ctx context.Context, category RoomCategory) error {
 	}
 	var ok bool
 	physical := physicalCategory(category)
-	script := `(()=>{const n=` + jsString(physical) + `;const rows=[...document.querySelectorAll('#table-quartos-disponiveis-reserva tr')];const row=rows.find(r=>{const cell=r.children[2];const t=(cell?.innerText||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();return t===n});if(!row)return false;const pick=row.querySelector('input[type=checkbox]')||row.querySelector('td:first-child i')||row.children[0];if(!pick)return false;pick.click();const save=document.getElementById('btn-salvar-p');if(!save||save.disabled)return false;save.click();return true})()`
+	allowedRooms := category.AllowedRooms
+	if allowedRooms == nil {
+		allowedRooms = []int{}
+	}
+	allowed, _ := json.Marshal(allowedRooms)
+	script := `(()=>{const n=` + jsString(physical) + `;const allowed=new Set(` + string(allowed) + `.map(String));const rows=[...document.querySelectorAll('#table-quartos-disponiveis-reserva tr')];const row=rows.find(r=>{const cell=r.children[2];const number=(r.children[1]?.innerText||'').match(/\d+/)?.[0]||'';const t=(cell?.innerText||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();return t===n&&(!allowed.size||allowed.has(number))});if(!row)return false;const pick=row.querySelector('input[type=checkbox]')||row.querySelector('td:first-child i')||row.children[0];if(!pick)return false;pick.click();const save=document.getElementById('btn-salvar-p');if(!save||save.disabled)return false;save.click();return true})()`
 	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &ok)); err != nil {
 		return err
 	}

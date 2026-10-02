@@ -53,13 +53,16 @@ func (r *ScraplingRunner) run(parent context.Context, mode string, cfg Config, p
 		return result, err
 	}
 	categories := make([]string, len(req.Categories))
+	allowedRooms := make([][]int, len(req.Categories))
 	for i, category := range req.Categories {
 		categories[i] = physicalCategory(category)
+		allowedRooms[i] = append([]int(nil), category.AllowedRooms...)
 	}
 	input, err := json.Marshal(map[string]any{
 		"mode": mode, "url": cfg.BaseURL, "username": cfg.Username,
 		"password": password, "cpf": cfg.BotCPF, "browser": browser,
 		"checkin": req.CheckIn, "checkout": req.CheckOut, "categories": categories,
+		"allowed_rooms": allowedRooms,
 	})
 	if err != nil {
 		return result, err

@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.15.5
+.\scripts\build.ps1 -Version 0.15.6
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -73,6 +73,8 @@ O núcleo operacional do Assistente já está anexado à mesma sessão WhatsApp 
 Em **Operação financeira**, o dashboard consulta dia, sete dias, mês ou intervalo personalizado. A mesma área salva e compartilha PDFs de quartos, caixa e vales, apresenta os comprovantes originais e lista semanas de extratos e vales por funcionário.
 
 Em **Gestão Assistente**, o operador administra os 42 quartos, histórico e ocupação; liga o atendimento comercial nos modos desativado, teste ou público; consulta e remove vínculos do catálogo; e executa backups verificados com diagnóstico do banco e WhatsApp.
+
+Cada quarto pode receber uma categoria física do Bitz na tela de quartos. Durante a pré-reserva, o Tino cruza a categoria configurada com as UHs que o Bitz apresenta para o período, exclui quartos `INTERDITADO` e evita reutilizar a mesma UH. Categorias ainda não configuradas mantêm o comportamento anterior até o inventário ser classificado na UI.
 
 O atendimento comercial começa com uma triagem na primeira mensagem ou após 24 horas sem interação. Outros assuntos pausam o bot e mantêm a conversa não lida. Orçamentos de até seis quartos são coletados quarto a quarto e consultados somente após todas as ocupações estarem completas; pedidos maiores são encaminhados ao setor de grupos. O telefone de grupos e as duas mensagens enviadas entre o orçamento e os produtos do catálogo são configurados em **Gestão Assistente > Comercial**.
 
