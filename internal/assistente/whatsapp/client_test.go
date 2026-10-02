@@ -128,3 +128,23 @@ func TestPreReservationNoticeIncludesGuestAndRoomSummary(t *testing.T) {
 		}
 	}
 }
+
+func TestTransportQueueSeparatesGuestsAndSerializesOperators(t *testing.T) {
+	if a, b := transportQueueKey("hotel", "guest-a", false), transportQueueKey("hotel", "guest-b", false); a == b {
+		t.Fatalf("different guests share queue key %q", a)
+	}
+	if a, b := transportQueueKey("hotel", "operator-a", true), transportQueueKey("hotel", "operator-b", true); a != b {
+		t.Fatalf("operators must share account queue: %q != %q", a, b)
+	}
+}
+
+func TestGuestReplyDelayWaitsConfiguredDuration(t *testing.T) {
+	s := &Service{guestReplyDelay: 25 * time.Millisecond}
+	started := time.Now()
+	if !s.waitGuestReply(context.Background(), types.NewJID("5511999999999", types.DefaultUserServer)) {
+		t.Fatal("delay cancelled unexpectedly")
+	}
+	if elapsed := time.Since(started); elapsed < 20*time.Millisecond {
+		t.Fatalf("delay too short: %s", elapsed)
+	}
+}

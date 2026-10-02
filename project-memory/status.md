@@ -1,5 +1,16 @@
 # Estado
 
+## Etapa 42 — Atendimento humanizado, fila e idempotência v0.15.5
+
+- Respostas comerciais aguardam 3 segundos com presença `digitando...`, mantendo textos simples e acolhedores.
+- Nova fila FIFO assíncrona preserva ordem por conversa e permite processar contatos diferentes em paralelo; operadores continuam serializados por conta.
+- A reivindicação persistente por conta, contato e ID da mensagem ocorre antes do fluxo, bloqueando reentregas duplicadas inclusive após reinício.
+- Testes direcionados cobrem ordem FIFO, paralelismo entre contatos, recuperação após pânico, chaves de isolamento, atraso configurado e idempotência SQLite.
+- `go test -count=1 ./...`, `go vet ./...`, testes e build do frontend passaram. `go test -race` não pôde ser executado porque o ambiente está com CGO desativado.
+- Build Windows v0.15.5 concluído; SHA-256 de `dist/Tino.exe`: `33FC05425953A55EA356A765FB7FA438E38B63F62BC6797D7BBEF6DAB218ED00`.
+- Gate externo: ao reiniciar, o WhatsApp respondeu novamente `401 logged out from another device` e removeu a credencial; um novo QR é necessário para validar o atraso e a fila em conversa real.
+- Release pendente.
+
 ## Etapa 41 — Recuperação segura de timeout no login Bitz v0.15.4
 
 - A falha `13A457F3` ocorreu na etapa `login` com `browser_or_timeout`; nenhuma nova pré-reserva foi criada por essa tentativa.

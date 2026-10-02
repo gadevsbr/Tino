@@ -423,6 +423,9 @@ func (s *Service) handleGuestAs(ctx context.Context, account, stateContact, disp
 			return
 		}
 	}
+	if !s.waitGuestReply(ctx, chat) {
+		return
+	}
 	if result.Text != "" {
 		if _, err := s.sendMessage(ctx, chat, &waE2E.Message{Conversation: proto.String(result.Text)}); err != nil {
 			slog.Error("commercial quote reply failed")
@@ -451,6 +454,27 @@ func (s *Service) handleGuestAs(ctx context.Context, account, stateContact, disp
 	}
 	if result.PreReservation != nil {
 		s.startPreReservation(account, displayContact, messageID, chat, *result.PreReservation)
+	}
+}
+
+func (s *Service) waitGuestReply(ctx context.Context, chat types.JID) bool {
+	delay := s.guestReplyDelay
+	if delay <= 0 {
+		return true
+	}
+	if s.client != nil && s.client.IsLoggedIn() {
+		_ = s.client.SendChatPresence(ctx, chat, types.ChatPresenceComposing, types.ChatPresenceMediaText)
+		defer func() {
+			_ = s.client.SendChatPresence(context.Background(), chat, types.ChatPresencePaused, types.ChatPresenceMediaText)
+		}()
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return true
+	case <-ctx.Done():
+		return false
 	}
 }
 

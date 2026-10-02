@@ -71,6 +71,8 @@ Inventário para decidir como cada capacidade deverá funcionar no Tino. A prese
 - O aviso ao aprovador usa o destino canônico consultado no WhatsApp e inclui número do hóspede, período, categoria, adultos e idades das crianças de cada quarto.
 - Somente o aprovador configurado pode confirmar com `aprovar pre-reserva CODIGO`; então a mensagem final definida na UI é enviada ao hóspede.
 - Áudios de hóspedes não são interpretados: pausam o bot, deixam a conversa não lida e encaminham diretamente para atendimento humano.
+- Respostas automáticas comerciais usam `digitando...` e espera fixa de 3 segundos; mensagens do mesmo contato seguem uma fila FIFO, enquanto contatos diferentes são processados em paralelo.
+- A idempotência é persistente: a mesma mensagem do WhatsApp não altera o estado nem dispara resposta, orçamento ou pré-reserva duas vezes.
 - Encaminhamento para atendimento humano.
 - Pausa persistente da automação por contato e retomada explícita.
 - Teste do atendimento usando o número do operador.

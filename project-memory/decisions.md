@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-10-01 — Aplicados ao atendimento os padrões de Customer Service e Workflow Architecture do pacote Agency Agents: linguagem simples, presença de digitação e atraso fixo de 3 segundos, sem atrasos aleatórios ou imitação enganosa.
+- 2026-10-01 — O transporte usa fila FIFO assíncrona por conta e contato; hóspedes distintos executam em paralelo, operadores permanecem serializados por conta e pânico em uma tarefa não bloqueia as seguintes. A reivindicação SQLite anterior ao processamento mantém idempotência persistente.
+
 - 2026-10-01 — Uma falha transitória pode repetir o navegador somente se a execução ainda estiver na etapa de login, antes de informar dados da reserva. Qualquer falha após o login continua sem repetição automática para impedir pré-reservas duplicadas.
 
 - 2026-10-01 — O aviso de pré-reserva ao aprovador resolve primeiro o destino canônico no WhatsApp e inclui telefone do hóspede, período e resumo por quarto; falha de entrega mantém a conversa não lida e gera diagnóstico sem expor o conteúdo do hóspede em log.

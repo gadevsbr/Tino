@@ -69,6 +69,7 @@ type Service struct {
 	ownsClient       bool
 	handlerID        uint32
 	markUnread       func(context.Context, string) error
+	guestReplyDelay  time.Duration
 }
 
 func (s *Service) SetMarkUnread(fn func(context.Context, string) error) { s.markUnread = fn }
@@ -106,7 +107,7 @@ func New(ctx context.Context, cfg config.Config, domainDB *sql.DB, application *
 		container.Close()
 		return nil, fmt.Errorf("load dynamic authorization: %w", err)
 	}
-	s := &Service{client: whatsmeow.NewClient(device, nil), store: container, domainDB: domainDB, app: application, auth: auth, queue: queue.New(), cfg: cfg, reports: reports.New(cfg.Timezone), rooms: rooms.NewRepository(domainDB, cfg.Timezone), cash: cash.NewRepository(domainDB, cfg.Timezone), advances: advances.NewRepository(domainDB, cfg.Timezone), backup: backup.New(domainDB, cfg.DataDir, cfg.BackupRetentionDays, cfg.Timezone), started: time.Now(), ownsClient: true}
+	s := &Service{client: whatsmeow.NewClient(device, nil), store: container, domainDB: domainDB, app: application, auth: auth, queue: queue.New(), cfg: cfg, reports: reports.New(cfg.Timezone), rooms: rooms.NewRepository(domainDB, cfg.Timezone), cash: cash.NewRepository(domainDB, cfg.Timezone), advances: advances.NewRepository(domainDB, cfg.Timezone), backup: backup.New(domainDB, cfg.DataDir, cfg.BackupRetentionDays, cfg.Timezone), started: time.Now(), ownsClient: true, guestReplyDelay: 3 * time.Second}
 	if err := s.enableCommercial(ctx); err != nil {
 		container.Close()
 		return nil, fmt.Errorf("initialize commercial transport: %w", err)
@@ -130,7 +131,7 @@ func NewWithClient(ctx context.Context, cfg config.Config, domainDB *sql.DB, app
 	if err != nil {
 		return nil, fmt.Errorf("load dynamic authorization: %w", err)
 	}
-	s := &Service{client: client, domainDB: domainDB, app: application, auth: auth, queue: queue.New(), cfg: cfg, reports: reports.New(cfg.Timezone), rooms: rooms.NewRepository(domainDB, cfg.Timezone), cash: cash.NewRepository(domainDB, cfg.Timezone), advances: advances.NewRepository(domainDB, cfg.Timezone), backup: backup.New(domainDB, cfg.DataDir, cfg.BackupRetentionDays, cfg.Timezone), started: time.Now()}
+	s := &Service{client: client, domainDB: domainDB, app: application, auth: auth, queue: queue.New(), cfg: cfg, reports: reports.New(cfg.Timezone), rooms: rooms.NewRepository(domainDB, cfg.Timezone), cash: cash.NewRepository(domainDB, cfg.Timezone), advances: advances.NewRepository(domainDB, cfg.Timezone), backup: backup.New(domainDB, cfg.DataDir, cfg.BackupRetentionDays, cfg.Timezone), started: time.Now(), guestReplyDelay: 3 * time.Second}
 	if err := s.enableCommercial(ctx); err != nil {
 		return nil, fmt.Errorf("initialize commercial transport: %w", err)
 	}
@@ -360,9 +361,10 @@ func (s *Service) onEvent(raw any) {
 	if contact == "" {
 		contact = evt.Info.Sender.ToNonAD().String()
 	}
-	// Serialize configuration, resume and guest replies for this account as well
-	// as individual operator sessions, so disabling cannot race an in-flight quote.
-	s.queue.Do("transport:"+account, func() {
+	// Each guest has an independent FIFO. Operator actions remain serialized per
+	// account, so a busy conversation never blocks unrelated guests.
+	queueKey := transportQueueKey(account, contact, operator)
+	s.queue.Enqueue(queueKey, func() {
 		ctx := context.Background()
 		claimed, err := database.ClaimMessage(ctx, s.domainDB, transportMessageKey(account, contact, string(evt.Info.ID)), contact)
 		if err != nil {
@@ -501,6 +503,13 @@ func (s *Service) onEvent(raw any) {
 		}
 		s.notifyOperators(ctx, sender, string(evt.Info.ID), text, reply)
 	})
+}
+
+func transportQueueKey(account, contact string, operator bool) string {
+	if operator {
+		return "transport:" + account + ":operator"
+	}
+	return "transport:" + account + ":guest:" + contact
 }
 
 func isCashReceiptImage(message *waE2E.ImageMessage) bool {
