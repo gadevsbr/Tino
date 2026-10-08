@@ -8,7 +8,8 @@
 - Evidência: regressão reproduziu timeout de `menu` com teste pausado antes da correção; depois passou para operador, titular por LID e grupo. Testes de classificação e `go vet` passaram.
 - Build v0.15.11, suíte Go completa, go vet e testes Node passaram. SHA-256 Tino.exe: `A419AC271B1C939DA015AF069B22E7895A61211F73E3A4D8C9DFBA1ACCCE9D75`.
 - Executável local substituído e reaberto; logs confirmam `Successfully authenticated` e `whatsapp connected` com a mesma sessão. Novo Menu de 00:14:47 BRT recebido e reivindicado; marca de teste permanece ausente.
-- Pendente: release e confirmação do usuário de que a resposta apareceu no celular.
+- Release v0.15.11 publicada: https://github.com/gadevsbr/Tino/releases/tag/v0.15.11, commit funcional `7c42c31`, com UI e CLI.
+- Pendente: confirmação do usuário de que a resposta apareceu no celular.
 
 
 ## Etapa 47 — Recuperação do bot e IA nativa v0.15.10
