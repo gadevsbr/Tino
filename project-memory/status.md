@@ -7,7 +7,9 @@
 - Ajustes após teste: schema de números, linguagem sem parentesco presumido e bloqueio de pedir datas novamente ao preparar pré-reserva.
 - Validação: suíte Go completa, go vet, testes Node do frontend/Worker e build Wails/CLI passaram. Jornada com IA real repetida após os ajustes passou até a escolha Deluxe por nome; não criou reserva real.
 - Executável v0.15.12 instalado e iniciado com a mesma sessão. SHA-256 Tino.exe: `A53624E86B4CD2D66BE71A64E5E831DAB5E6C7722661F25EB73ED1A02FD70956`.
-- Pendente: publicação da release e teste do novo fluxo no WhatsApp real pelo usuário; não afirmar validação real do canal com base no teste sintético.
+- Logs confirmam `Successfully authenticated` e `whatsapp connected`; processo responsivo. Testes adicionais de inferência real confirmaram amanhã e rejeição de “varanda” ambígua entre duas suítes.
+- Release v0.15.12 publicada: https://github.com/gadevsbr/Tino/releases/tag/v0.15.12, commit funcional `809904b`, com UI e CLI; hashes dos assets conferidos.
+- Pendente: teste do novo fluxo no WhatsApp real pelo usuário; não afirmar validação real do canal com base no teste sintético. Reiniciar simulação com `testar atendimento` preserva pausas de hóspedes reais.
 
 ## Etapa 48 — Comandos interceptados pelo teste comercial v0.15.11
 
