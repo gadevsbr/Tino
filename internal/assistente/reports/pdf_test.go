@@ -3,6 +3,7 @@ package reports
 import (
 	"bytes"
 	"github.com/gadevsbr/tino/internal/assistente/rooms"
+	"strings"
 	"testing"
 	"time"
 )
@@ -28,6 +29,27 @@ func TestPDFHasOneLandscapePageAnd42Rooms(t *testing.T) {
 	}
 	if got := roomFormatting(list[0]); got != "ENTRADA | 3 pessoa(s)" {
 		t.Fatalf("guest formatting=%q", got)
+	}
+}
+
+func TestSummaryListsEntryCheckoutAndTurnoverRoomNumbers(t *testing.T) {
+	list := []rooms.Room{
+		{Number: 101, Status: rooms.Entry},
+		{Number: 102, Status: rooms.CheckoutToday},
+		{Number: 103, Status: rooms.CheckoutEntry},
+		{Number: 104, Status: rooms.AvailableClean},
+	}
+	got := Summary(list, time.Now(), time.UTC)
+	for _, want := range []string{"QUARTOS DE ENTRADA (1)\n101", "QUARTOS DE SAÍDA (1)\n102", "QUARTOS DE SAÍDA E ENTRADA (1)\n103"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("missing %q: %s", want, got)
+		}
+	}
+	got = Summary(nil, time.Now(), time.UTC)
+	for _, want := range []string{"QUARTOS DE ENTRADA (0)\nNenhum quarto.", "QUARTOS DE SAÍDA (0)\nNenhum quarto.", "QUARTOS DE SAÍDA E ENTRADA (0)\nNenhum quarto."} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("missing %q: %s", want, got)
+		}
 	}
 }
 

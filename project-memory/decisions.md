@@ -1,5 +1,7 @@
 # Decisões
 
+- 2026-10-08 — O resumo textual de quartos passa a listar também números de entrada, saída e saída e entrada. As três situações ficam separadas conforme o status registrado, sem presumir que quartos rosas tenham status amarelo ou magenta.
+
 - 2026-10-08 — O usuário confirmou fluxo completo, Bitz e aprovação no WhatsApp, mas pediu linguagem natural. IA passa a interpretar etapas e redigir perguntas; disponibilidade, valores, ocupação, escolha válida e aprovação permanecem no motor. Pausas humanas não são liberadas pela IA.
 - 2026-10-08 — Llama 3.1 FP8 não suporta JSON schema na chamada real (erro 5025); `/conversation` usa Llama 3.3 70B FP8 Fast com schema por etapa. `/reply` mantém 3.1. Fallback local preserva operação em falhas.
 - 2026-10-08 — Perfis AI Engineer e Reality Checker de msitarzewski/agency-agents consultados: testes reais de inferência separados de reservas/WhatsApp e linguagem sem parentesco, gênero ou serviços presumidos.

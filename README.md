@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.15.12
+.\scripts\build.ps1 -Version 0.15.13
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -109,5 +109,7 @@ Na aba **Importar caixa**, vários relatórios diários podem ser selecionados d
 O dashboard abre no mês corrente e, após uma importação, passa automaticamente ao intervalo importado. Em períodos com vários dias, o saldo inicial é o do primeiro dia e o saldo consolidado é o fechamento do último dia, sem somar saldos de abertura repetidamente.
 
 ## Evidência de entrega
+
+O comando `relatorio em pdf` envia uma mensagem com os números dos quartos sujos, desforrados, de entrada, de saída e de saída e entrada, seguida dos PDFs de quartos e caixa. Cada situação permanece separada conforme o status registrado.
 
 Build e testes locais validam apenas código/artefato. Pareamento QR, estabilidade prolongada, entrega real, políticas do provedor e comportamento em uma máquina Windows diferente exigem validação externa separada.

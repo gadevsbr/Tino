@@ -1,5 +1,12 @@
 # Estado
 
+## Etapa 50 — Números de entrada e saída na mensagem do relatório v0.15.13
+
+- Pedido: incluir números dos quartos na mensagem que acompanha `relatorio em pdf`.
+- Implementação: listas separadas de entrada (amarelo), saída (magenta) e saída e entrada (rosa); listas de sujos/desforrados preservadas. Situações vazias indicam “Nenhum quarto”.
+- Evidência: testes de relatórios e transporte WhatsApp passaram, incluindo três status e listas vazias; go vet dos pacotes passou. Build Wails/CLI v0.15.13 concluído e instalado.
+- Pendente: release e recebimento real da mensagem pelo usuário. Nenhum envio real feito para validação.
+
 ## Etapa 49 — IA no fluxo comercial v0.15.12
 
 - Implementação: interpretação de frases por etapa, perguntas naturais, suíte por nome, teste nativo e contador de chamadas. Preços, categorias, aprovação e pausa humana permanecem validados localmente. Placeholders literais “mensagem 1/2” não são enviados.
