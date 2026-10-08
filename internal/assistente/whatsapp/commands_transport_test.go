@@ -36,6 +36,7 @@ func TestPhoneCommandsThroughAttachedTransport(t *testing.T) {
 	defer mgr.Close()
 	owner := types.NewJID("5511999999999", types.DefaultUserServer)
 	mgr.Client.Store.ID = &owner
+	mgr.Client.Store.LID = types.NewADJID("123456789012345", types.LIDDomain, 61)
 	phone := types.NewJID("5511888888888", types.DefaultUserServer)
 	cfg := config.Config{Authorized: map[string]struct{}{phone.User: {}}, Timezone: time.UTC, DataDir: dir}
 	application := assistapp.New(rooms.NewRepository(db, time.UTC), conversation.NewRepository(db))
@@ -49,8 +50,25 @@ func TestPhoneCommandsThroughAttachedTransport(t *testing.T) {
 		replies <- message.GetConversation()
 		return whatsmeow.SendResponse{ID: "reply"}, nil
 	}
-	for i, source := range []types.MessageSource{{Chat: phone, Sender: phone}, {Chat: owner, Sender: owner, IsFromMe: true}, {Chat: types.NewJID("120363000000001", types.GroupServer), Sender: phone, IsGroup: true}} {
+	for i, source := range []types.MessageSource{{Chat: phone, Sender: phone}, {Chat: mgr.Client.Store.LID.ToNonAD(), Sender: mgr.Client.Store.LID.ToNonAD(), IsFromMe: true}, {Chat: types.NewJID("120363000000001", types.GroupServer), Sender: phone, IsGroup: true}} {
 		for _, command := range []string{"menu", "status"} {
+			operator := phone.User
+			if source.IsFromMe {
+				operator = owner.User
+			}
+			account := service.accountJID()
+			if err := service.commercial.Configure(ctx, account, commercial.Config{Mode: commercial.Test, Allowlist: []string{operator}}); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := db.Exec(`INSERT OR IGNORE INTO whatsapp_commercial_tests(account,operator) VALUES (?,?)`, account, operator); err != nil {
+				t.Fatal(err)
+			}
+			for j, text := range []string{"oi", "2"} {
+				_, err := service.commercial.Handle(ctx, commercial.Input{Account: account, Contact: commercialTestContact(operator), MessageID: fmt.Sprintf("paused-%d-%s-%d", i, command, j), Text: text, TestSession: true, Now: time.Now()})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
 			evt := &events.Message{Info: types.MessageInfo{MessageSource: source, ID: types.MessageID(fmt.Sprintf("command-%d-%s", i, command))}, Message: &waE2E.Message{Conversation: proto.String(command)}}
 			if service.AllowsFlow(evt) {
 				t.Fatal("operator command admitted to AI flow")
@@ -62,9 +80,16 @@ func TestPhoneCommandsThroughAttachedTransport(t *testing.T) {
 					t.Fatal("empty command reply")
 				}
 			case <-time.After(3 * time.Second):
-				t.Fatalf("command %s timed out", command)
+				t.Fatalf("command %s was swallowed by active commercial test", command)
+			}
+			var pending int
+			if err := db.QueryRow(`SELECT COUNT(*) FROM whatsapp_commercial_tests WHERE account=? AND operator=?`, account, operator).Scan(&pending); err != nil || pending != 0 {
+				t.Fatalf("test mode was not ended: %d, %v", pending, err)
 			}
 		}
+	}
+	if err := service.commercial.Configure(ctx, service.accountJID(), commercial.Config{Mode: commercial.Disabled}); err != nil {
+		t.Fatal(err)
 	}
 	guest := types.NewJID("5511777777777", types.DefaultUserServer)
 	evt := &events.Message{Info: types.MessageInfo{MessageSource: types.MessageSource{Chat: guest, Sender: guest}, ID: "guest"}, Message: &waE2E.Message{Conversation: proto.String("ola")}}
@@ -76,5 +101,18 @@ func TestPhoneCommandsThroughAttachedTransport(t *testing.T) {
 	}
 	if service.AllowsFlow(evt) {
 		t.Fatal("commercial guest must not receive a second AI flow reply")
+	}
+}
+
+func TestAdministrativeTestCommandPreservesGuestAnswers(t *testing.T) {
+	for _, text := range []string{"Menu", "status", "saude", "caixa", "status 101", "extratos", "processar extratos", "gerar relatorio"} {
+		if !administrativeTestCommand(text) {
+			t.Errorf("administrative command swallowed: %q", text)
+		}
+	}
+	for _, text := range []string{"oi", "1", "2", "101", "10/10/2026", "orcamento", "cancelar", "sair", "2 adultos"} {
+		if administrativeTestCommand(text) {
+			t.Errorf("guest answer mistaken for command: %q", text)
+		}
 	}
 }

@@ -1,5 +1,16 @@
 # Estado
 
+## Etapa 48 — Comandos interceptados pelo teste comercial v0.15.11
+
+- Diagnóstico real: `Menu` de 08/10/2026 00:04 BRT estava no histórico e sua chave exata já havia sido reivindicada no transporte. A conta titular tinha marca persistida de teste comercial; não era falha de conexão ou da IA.
+- Recuperação local: backup SQLite consistente em `dist/data/operations/recovery-backups/`; removida somente a marca de teste da conta titular atual (1 linha). Hóspedes, sessão WhatsApp e configuração comercial preservados. O aplicativo permaneceu aberto durante essa recuperação.
+- Correção: comando administrativo encerra a simulação isolada antes de seguir ao motor. Respostas numéricas, datas e controles de orçamento continuam no teste.
+- Evidência: regressão reproduziu timeout de `menu` com teste pausado antes da correção; depois passou para operador, titular por LID e grupo. Testes de classificação e `go vet` passaram.
+- Build v0.15.11, suíte Go completa, go vet e testes Node passaram. SHA-256 Tino.exe: `A419AC271B1C939DA015AF069B22E7895A61211F73E3A4D8C9DFBA1ACCCE9D75`.
+- Executável local substituído e reaberto; logs confirmam `Successfully authenticated` e `whatsapp connected` com a mesma sessão. Novo Menu de 00:14:47 BRT recebido e reivindicado; marca de teste permanece ausente.
+- Pendente: release e confirmação do usuário de que a resposta apareceu no celular.
+
+
 ## Etapa 47 — Recuperação do bot e IA nativa v0.15.10
 
 - Corrigidos deadlock na leitura de IA, ausência de autenticação, fallback que impedia inferência e chamada incompatível na UI legada.

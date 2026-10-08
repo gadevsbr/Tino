@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-10-08 — Superseded: uma marca persistida de `testar atendimento` encaminhava qualquer texto do operador ao fluxo de hóspede, inclusive `Menu`, e uma simulação pausada podia consumir silenciosamente comandos administrativos.
+- 2026-10-08 — Comandos administrativos reconhecidos encerram apenas o teste do operador e seguem para o motor operacional. Números, datas, orçamento e controles de teste permanecem como entrada da simulação. Estado real de hóspedes e modo comercial não são alterados.
+
 - 2026-10-07 — A configuração manual da IA em JSON é substituída por painel nativo e Worker autenticado. Nesta máquina a conexão está preparada; outras instalações conectam pela UI. Chave protegida com DPAPI, separada dos metadados e fora da release.
 - 2026-10-07 — Llama 3.1 8B FP8 foi confirmado por inferência real no binding; o identificador sem FP8 retornou modelo descontinuado. Regras, IA e fallback têm prioridade nessa ordem.
 - 2026-10-07 — Comandos operacionais e conversas comerciais não entram no Flow Builder/IA. Inferência usa FIFO por chat sem bloquear o despachante do WhatsApp; flags e conexão são consultadas novamente durante o uso.

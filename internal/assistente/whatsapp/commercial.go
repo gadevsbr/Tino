@@ -17,8 +17,10 @@ import (
 
 	"github.com/gadevsbr/tino/internal/assistente/bitz"
 	"github.com/gadevsbr/tino/internal/assistente/catalog"
+	"github.com/gadevsbr/tino/internal/assistente/commands"
 	"github.com/gadevsbr/tino/internal/assistente/commercial"
 	"github.com/gadevsbr/tino/internal/assistente/config"
+	"github.com/gadevsbr/tino/internal/assistente/extratos"
 	"github.com/gadevsbr/tino/internal/assistente/omnibees"
 	"github.com/gadevsbr/tino/internal/assistente/utils"
 	"go.mau.fi/whatsmeow"
@@ -361,10 +363,40 @@ func (s *Service) handleCommercialOperator(ctx context.Context, account, operato
 		return true
 	}
 	if testing > 0 {
+		if administrativeTestCommand(text) {
+			_, err = s.domainDB.ExecContext(ctx, `DELETE FROM whatsapp_commercial_tests WHERE account=? AND operator=?`, account, operator)
+			if err == nil {
+				err = s.commercial.Reset(ctx, account, commercialTestContact(operator))
+			}
+			if err != nil {
+				slog.Error("end commercial test for operational command", "error", err)
+				s.replyText(ctx, chat, "Não consegui encerrar o teste de atendimento. Tente sair atendimento e reenvie o comando.")
+				return true
+			}
+			return false
+		}
 		s.handleGuestAs(ctx, account, commercialTestContact(operator), operator, messageID, text, chat, true, false)
 		return true
 	}
 	return false
+}
+
+// Named operational commands exit the operator's guest simulation. Numeric
+// answers and quote controls remain inputs of that isolated simulation.
+func administrativeTestCommand(text string) bool {
+	n := utils.Normalize(text)
+	_, weekly, _ := extratos.ParseWeeklyCommand(text, time.Now())
+	if isReportCommand(text) || n == "extratos" || n == "processar extratos" || n == "cancelar extratos" || weekly {
+		return true
+	}
+	switch commands.Parse(text).Kind {
+	case commands.Unknown, commands.StartQuote, commands.Pause, commands.Continue, commands.Skip:
+		return false
+	case commands.RoomQuery:
+		return strings.HasPrefix(n, "status ") || strings.HasPrefix(n, "quarto ")
+	default:
+		return true
+	}
 }
 
 func commercialModeConfig(current commercial.Config, normalizedCommand string) commercial.Config {
