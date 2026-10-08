@@ -14,24 +14,28 @@ import (
 	"github.com/gadevsbr/tino/internal/assistente/advances"
 	"github.com/gadevsbr/tino/internal/assistente/cash"
 	"github.com/gadevsbr/tino/internal/assistente/commands"
+	"github.com/gadevsbr/tino/internal/assistente/commercial"
 	"github.com/gadevsbr/tino/internal/assistente/conversation"
 	"github.com/gadevsbr/tino/internal/assistente/omnibees"
 	"github.com/gadevsbr/tino/internal/assistente/rooms"
 )
 
 type App struct {
-	rooms        *rooms.Repository
-	sessions     *conversation.Repository
-	cash         *cash.Repository
-	backupNow    func(context.Context) (string, error)
-	backupStatus func(context.Context) (string, error)
-	health       func(context.Context) string
-	advances     *advances.Repository
-	authorize    func(context.Context, string, string) (bool, error)
-	listGroups   func(context.Context) ([]GroupOption, error)
-	sendReports  func(context.Context, string, []string, []string) (string, error)
-	quoteFetch   func(context.Context, omnibees.Search) (string, error)
+	guestAssistant commercial.AssistantFunc
+	rooms          *rooms.Repository
+	sessions       *conversation.Repository
+	cash           *cash.Repository
+	backupNow      func(context.Context) (string, error)
+	backupStatus   func(context.Context) (string, error)
+	health         func(context.Context) string
+	advances       *advances.Repository
+	authorize      func(context.Context, string, string) (bool, error)
+	listGroups     func(context.Context) ([]GroupOption, error)
+	sendReports    func(context.Context, string, []string, []string) (string, error)
+	quoteFetch     func(context.Context, omnibees.Search) (string, error)
 }
+
+func (a *App) EnableGuestAssistant(fn commercial.AssistantFunc) *App { a.guestAssistant = fn; return a }
 
 type GroupOption struct {
 	JID  string `json:"jid"`

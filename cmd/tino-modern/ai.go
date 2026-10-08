@@ -7,9 +7,10 @@ import (
 )
 
 type AIStatusDTO struct {
-	Endpoint string `json:"endpoint"`
-	Ready    bool   `json:"ready"`
-	Model    string `json:"model"`
+	CommercialCalls uint64 `json:"commercialCalls"`
+	Endpoint        string `json:"endpoint"`
+	Ready           bool   `json:"ready"`
+	Model           string `json:"model"`
 }
 
 func (a *App) GetAIStatus() (AIStatusDTO, error) {
@@ -18,7 +19,7 @@ func (a *App) GetAIStatus() (AIStatusDTO, error) {
 		return AIStatusDTO{}, err
 	}
 	token, _ := a.capabilities.AIToken()
-	return AIStatusDTO{Endpoint: cfg.Endpoint, Ready: cfg.Endpoint != "" && token != "", Model: "Llama 3.1 8B"}, nil
+	return AIStatusDTO{Endpoint: cfg.Endpoint, Ready: cfg.Endpoint != "" && token != "", Model: "Llama 3.3 70B (atendimento) / 3.1 8B (sugestões)", CommercialCalls: flow.CommercialAICalls.Load()}, nil
 }
 
 func (a *App) ConfigureAI(endpoint, token string) error {

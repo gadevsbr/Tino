@@ -39,6 +39,8 @@ var catalogCategories = func() []catalog.Category {
 	return result
 }()
 
+func (s *Service) SetGuestAssistant(fn commercial.AssistantFunc) { s.commercial.SetAssistant(fn) }
+
 func (s *Service) enableCommercial(ctx context.Context) error {
 	if s.app == nil {
 		return errors.New("operator application required")
@@ -487,6 +489,9 @@ func (s *Service) handleGuestAs(ctx context.Context, account, stateContact, disp
 		}
 	}
 	for _, body := range result.Messages {
+		if strings.EqualFold(strings.TrimSpace(body), "mensagem 1") || strings.EqualFold(strings.TrimSpace(body), "mensagem 2") {
+			continue
+		}
 		if strings.TrimSpace(body) == "" {
 			continue
 		}

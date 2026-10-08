@@ -1,5 +1,14 @@
 # Estado
 
+## Etapa 49 — IA no fluxo comercial v0.15.12
+
+- Implementação: interpretação de frases por etapa, perguntas naturais, suíte por nome, teste nativo e contador de chamadas. Preços, categorias, aprovação e pausa humana permanecem validados localmente. Placeholders literais “mensagem 1/2” não são enviados.
+- Evidência real: para 01 → 1; casal → 2; nenhuma criança → 0; três anos → 3. Jornada com modelo real e banco temporário chegou ao pedido local de pré-reserva, preservando tarifa sintética e ocupação; sem chamar WhatsApp/Bitz.
+- Ajustes após teste: schema de números, linguagem sem parentesco presumido e bloqueio de pedir datas novamente ao preparar pré-reserva.
+- Validação: suíte Go completa, go vet, testes Node do frontend/Worker e build Wails/CLI passaram. Jornada com IA real repetida após os ajustes passou até a escolha Deluxe por nome; não criou reserva real.
+- Executável v0.15.12 instalado e iniciado com a mesma sessão. SHA-256 Tino.exe: `A53624E86B4CD2D66BE71A64E5E831DAB5E6C7722661F25EB73ED1A02FD70956`.
+- Pendente: publicação da release e teste do novo fluxo no WhatsApp real pelo usuário; não afirmar validação real do canal com base no teste sintético.
+
 ## Etapa 48 — Comandos interceptados pelo teste comercial v0.15.11
 
 - Diagnóstico real: `Menu` de 08/10/2026 00:04 BRT estava no histórico e sua chave exata já havia sido reivindicada no transporte. A conta titular tinha marca persistida de teste comercial; não era falha de conexão ou da IA.
@@ -9,7 +18,7 @@
 - Build v0.15.11, suíte Go completa, go vet e testes Node passaram. SHA-256 Tino.exe: `A419AC271B1C939DA015AF069B22E7895A61211F73E3A4D8C9DFBA1ACCCE9D75`.
 - Executável local substituído e reaberto; logs confirmam `Successfully authenticated` e `whatsapp connected` com a mesma sessão. Novo Menu de 00:14:47 BRT recebido e reivindicado; marca de teste permanece ausente.
 - Release v0.15.11 publicada: https://github.com/gadevsbr/Tino/releases/tag/v0.15.11, commit funcional `7c42c31`, com UI e CLI.
-- Pendente: confirmação do usuário de que a resposta apareceu no celular.
+- Confirmado pelo usuário em 08/10: fluxo completo no WhatsApp, pré-reserva no Bitz e aprovação funcionaram. Restava a humanização com IA.
 
 
 ## Etapa 47 — Recuperação do bot e IA nativa v0.15.10

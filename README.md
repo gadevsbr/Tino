@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.15.11
+.\scripts\build.ps1 -Version 0.15.12
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -64,13 +64,15 @@ O fluxo continua persistido em YAML para portabilidade e backup, mas o arquivo n
 
 ## Inteligência Artificial no atendimento
 
+A IA participa automaticamente do atendimento comercial: reformula perguntas e entende frases como “para 01”, “somos um casal”, “minha filha tem três anos” e a escolha da suíte pelo nome. Coleta uma informação por vez; datas, ocupação, preços e categorias continuam validados localmente. Falhas do provedor mantêm as perguntas e validações locais.
+
 A IA é operada pela interface, sem editar arquivos. Em **Conversas**, o botão de brilho gera uma sugestão para a última mensagem recebida; revise o texto e clique em enviar. Grupos não recebem sugestões.
 
-Em **Central de recursos > Inteligência Artificial**, consulte a conexão e gere uma resposta de teste sem enviar ao WhatsApp. Nesta máquina, o serviço Cloudflare já foi provisionado e a chave está salva com proteção do Windows. Uma instalação em outro computador exige conectar o serviço pela mesma tela; chaves não acompanham releases nem código-fonte.
+Em **Central de recursos > Inteligência Artificial**, consulte a conexão, o contador de interações e teste uma frase sobre quartos sem enviar ao WhatsApp ou criar reservas. Nesta máquina, o serviço Cloudflare já foi provisionado e a chave está salva com proteção do Windows. Uma instalação em outro computador exige conectar o serviço pela mesma tela; chaves não acompanham releases nem código-fonte.
 
-O Worker do projeto fica em `workers/tino-ai` e usa `@cf/meta/llama-3.1-8b-instruct-fp8`, autenticação, limite de solicitações e tamanho de mensagem. A mensagem escolhida é enviada ao Cloudflare e está sujeita aos limites e custos da conta.
+O Worker em `workers/tino-ai` usa Llama 3.3 70B FP8 Fast com JSON estruturado em `/conversation` e Llama 3.1 8B FP8 nas sugestões em `/reply`, com autenticação e limites de chamadas e tamanho. No atendimento automático, mensagens do hóspede e contexto mínimo da etapa são enviados ao Cloudflare, sujeitos aos limites e custos da conta. Chaves, comandos administrativos e bases completas não são enviados.
 
-No Flow Builder ativado, regras explícitas têm prioridade, depois a IA, depois a resposta padrão se a IA falhar. A IA não substitui comandos de operadores, triagem, pausas humanas, cotações ou aprovações do atendimento comercial. A fila por conversa evita bloquear o processamento de eventos do WhatsApp.
+No Flow Builder ativado, regras explícitas têm prioridade, depois a IA, depois a resposta padrão se a IA falhar. No comercial, a IA interpreta e redige; o motor mantém comandos de operadores, pausas humanas, cotações, criação no Bitz e aprovação. Preços e listas de suítes permanecem literais; áudio continua com encaminhamento humano. A fila por conversa evita bloquear o processamento de eventos do WhatsApp.
 
 O aplicativo resolve dados e configurações relativamente ao executável, independentemente da pasta de abertura do atalho. Bases existentes em outras pastas não são mescladas automaticamente. A conexão do WhatsApp e o carregamento do motor de comandos aparecem separadamente na interface.
 

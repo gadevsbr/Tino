@@ -22,6 +22,7 @@ import (
 	"github.com/gadevsbr/tino/internal/assistente/rooms"
 	assistwa "github.com/gadevsbr/tino/internal/assistente/whatsapp"
 	"github.com/gadevsbr/tino/internal/capability"
+	"github.com/gadevsbr/tino/internal/flow"
 	"go.mau.fi/whatsmeow"
 )
 
@@ -61,12 +62,25 @@ func openHotelRuntime(parent context.Context, dataDir string, settings capabilit
 	cashRepo := cash.NewRepository(db, location)
 	advanceRepo := advances.NewRepository(db, location)
 	application := assistapp.New(roomRepo, conversation.NewRepository(db)).EnableCash(cashRepo).EnableAdvances(advanceRepo)
+	capStore := capability.NewStore(filepath.Join(dataDir, "capabilities.json"))
+	assist := func(ctx context.Context, req commercial.DialogueRequest) (commercial.DialogueAnswer, error) {
+		ai, err := flow.ConfiguredAI(capStore)
+		if err != nil {
+			return commercial.DialogueAnswer{}, err
+		}
+		if ai == nil {
+			return commercial.DialogueAnswer{}, fmt.Errorf("IA desativada")
+		}
+		return ai.Converse(ctx, req)
+	}
+	application.EnableGuestAssistant(assist)
 	service, err := assistwa.NewWithClient(parent, cfg, db, application, client)
 	if err != nil {
 		_ = db.Close()
 		return nil, err
 	}
 	service.SetMarkUnread(markUnread)
+	service.SetGuestAssistant(assist)
 	ctx, cancel := context.WithCancel(parent)
 	service.StartAttached(ctx)
 	commercialService, err := commercial.New(parent, db, func(context.Context, string, string, string) (commercial.QuoteReply, error) {

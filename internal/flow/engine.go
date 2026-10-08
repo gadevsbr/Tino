@@ -198,13 +198,17 @@ func (ai *AIService) Generate(text string) (string, error) {
 		"max_tokens": ai.MaxTokens,
 	}
 
+	return ai.Complete(context.Background(), payload)
+}
+
+func (ai *AIService) Complete(ctx context.Context, payload any) (string, error) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return "", fmt.Errorf("erro ao codificar payload: %w", err)
 	}
 
 	// Create the request
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, ai.Endpoint, bytes.NewReader(payloadBytes))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ai.Endpoint, bytes.NewReader(payloadBytes))
 	if err != nil {
 		return "", fmt.Errorf("erro ao criar requisição: %w", err)
 	}
@@ -212,7 +216,7 @@ func (ai *AIService) Generate(text string) (string, error) {
 	req.Header.Set("Authorization", "Bearer "+ai.Token)
 
 	// Set timeout from AI service
-	ctx, cancel := context.WithTimeout(context.Background(), ai.Timeout)
+	ctx, cancel := context.WithTimeout(ctx, ai.Timeout)
 	defer cancel()
 	req = req.WithContext(ctx)
 

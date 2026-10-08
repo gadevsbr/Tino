@@ -1,11 +1,15 @@
 # Decisões
 
+- 2026-10-08 — O usuário confirmou fluxo completo, Bitz e aprovação no WhatsApp, mas pediu linguagem natural. IA passa a interpretar etapas e redigir perguntas; disponibilidade, valores, ocupação, escolha válida e aprovação permanecem no motor. Pausas humanas não são liberadas pela IA.
+- 2026-10-08 — Llama 3.1 FP8 não suporta JSON schema na chamada real (erro 5025); `/conversation` usa Llama 3.3 70B FP8 Fast com schema por etapa. `/reply` mantém 3.1. Fallback local preserva operação em falhas.
+- 2026-10-08 — Perfis AI Engineer e Reality Checker de msitarzewski/agency-agents consultados: testes reais de inferência separados de reservas/WhatsApp e linguagem sem parentesco, gênero ou serviços presumidos.
+
 - 2026-10-08 — Superseded: uma marca persistida de `testar atendimento` encaminhava qualquer texto do operador ao fluxo de hóspede, inclusive `Menu`, e uma simulação pausada podia consumir silenciosamente comandos administrativos.
 - 2026-10-08 — Comandos administrativos reconhecidos encerram apenas o teste do operador e seguem para o motor operacional. Números, datas, orçamento e controles de teste permanecem como entrada da simulação. Estado real de hóspedes e modo comercial não são alterados.
 
 - 2026-10-07 — A configuração manual da IA em JSON é substituída por painel nativo e Worker autenticado. Nesta máquina a conexão está preparada; outras instalações conectam pela UI. Chave protegida com DPAPI, separada dos metadados e fora da release.
 - 2026-10-07 — Llama 3.1 8B FP8 foi confirmado por inferência real no binding; o identificador sem FP8 retornou modelo descontinuado. Regras, IA e fallback têm prioridade nessa ordem.
-- 2026-10-07 — Comandos operacionais e conversas comerciais não entram no Flow Builder/IA. Inferência usa FIFO por chat sem bloquear o despachante do WhatsApp; flags e conexão são consultadas novamente durante o uso.
+- 2026-10-07 — Superseded parcialmente em 2026-10-08: conversas comerciais não entravam na IA; agora recebem interpretação e redação assistidas. Comandos operacionais permanecem fora da IA e o comercial fora do Flow Builder. Inferência usa FIFO por chat; flags e conexão são consultadas novamente durante o uso.
 - 2026-10-07 — Superseded: resolver arquivos pela pasta de trabalho podia selecionar bases diferentes conforme o atalho. Desktop ancora os caminhos no executável e preserva ambas as bases sem mesclagem. Motor carregado e WhatsApp autenticado são estados separados.
 - 2026-10-07 — O usuário relatou comandos sem resposta pelo celular apesar de conectado. Deadlock de GetAIConfig foi reproduzido por inspeção e corrigido; causa completa da falha em produção ainda exige nova mensagem real. Não confundir teste local com resposta real do bot.
 

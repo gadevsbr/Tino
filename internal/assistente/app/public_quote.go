@@ -56,6 +56,26 @@ func (a *App) publicQuote(ctx context.Context, account, contact, text string, fe
 		session.Status = "COMPLETED"
 		return commercial.QuoteReply{Text: "Orçamento cancelado."}, a.sessions.Save(ctx, session)
 	}
+	if a.guestAssistant != nil {
+		canonical := false
+		if strings.Contains(session.Type, "CHECKIN") || strings.Contains(session.Type, "CHECKOUT") {
+			_, canonical = parseQuoteDate(text)
+		} else {
+			_, e := strconv.Atoi(strings.TrimSpace(text))
+			canonical = e == nil
+		}
+		if !canonical {
+			text = commercial.NormalizeDialogue(ctx, a.guestAssistant, commercial.DialogueRequest{Step: session.Type, Message: text, Prompt: session.Type + "\nDados já confirmados: " + session.Payload})
+		}
+		if text == "atendente" || text == "sair" {
+			session.Status = "COMPLETED"
+			reply := "Tudo bem, encerrei este orçamento. Quando precisar, é só me chamar."
+			if text == "atendente" {
+				reply = "Vou encaminhar sua conversa para nossa equipe continuar por aqui."
+			}
+			return commercial.QuoteReply{Text: reply, Handoff: text == "atendente"}, a.sessions.Save(ctx, session)
+		}
+	}
 	var p publicQuotePayload
 	if err = json.Unmarshal([]byte(session.Payload), &p); err != nil {
 		return commercial.QuoteReply{}, err

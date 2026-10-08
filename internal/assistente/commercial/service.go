@@ -67,6 +67,7 @@ type PreReservation struct {
 	Rooms             []QuoteRoom
 }
 type QuoteReply struct {
+	Handoff      bool
 	Text         string
 	Messages     []string
 	Active       bool
@@ -77,11 +78,25 @@ type QuoteReply struct {
 type QuoteFunc func(context.Context, string, string, string) (QuoteReply, error)
 
 type Service struct {
-	configLock sync.Mutex
-	db         *sql.DB
-	quote      QuoteFunc
-	locks      [64]sync.Mutex
+	assistantMu sync.RWMutex
+	assistant   AssistantFunc
+	configLock  sync.Mutex
+	db          *sql.DB
+	quote       QuoteFunc
+	locks       [64]sync.Mutex
 }
+
+func (s *Service) SetAssistant(fn AssistantFunc) {
+	s.assistantMu.Lock()
+	s.assistant = fn
+	s.assistantMu.Unlock()
+}
+func (s *Service) Assistant() AssistantFunc {
+	s.assistantMu.RLock()
+	defer s.assistantMu.RUnlock()
+	return s.assistant
+}
+
 type state struct {
 	ConfigEpoch      int64               `json:"config_epoch"`
 	LastSeen         time.Time           `json:"last_seen"`
@@ -336,10 +351,45 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		st.LastSeen = in.Now
 	}
 	text := strings.ToLower(strings.TrimSpace(in.Text))
+	guestMessage := in.Text
+	assist := s.Assistant()
+	if !idle && !st.Paused && !in.Audio && assist != nil {
+		if st.AwaitingChoice {
+			if text != "1" && text != "2" && text != "sair" && text != "cancelar" {
+				in.Text = NormalizeDialogue(ctx, assist, DialogueRequest{Step: "TRIAGE", Message: in.Text, Options: []string{"orçamento", "atendente"}})
+			}
+		} else if !st.QuoteActive && (st.Plan != nil || len(st.Categories) > 0) {
+			categories := st.Categories
+			if st.Plan != nil && len(st.SelectedRooms) < len(st.Plan.Rooms) {
+				categories = st.Plan.Rooms[len(st.SelectedRooms)].Categories
+			}
+			if _, err := strconv.Atoi(text); err != nil && text != "sair" && text != "cancelar" && text != "atendente" {
+				options := make([]string, len(categories))
+				for i, c := range categories {
+					options[i] = fmt.Sprintf("%d — %s", i+1, c.Name)
+				}
+				// Category values are canonical indexes, while labels are context.
+				answer, err := assist(ctx, DialogueRequest{Task: "interpret", Step: "CATEGORY", Message: in.Text, Options: options, Today: HotelToday()})
+				if err == nil && answer.Understood {
+					index, e := strconv.Atoi(answer.Value)
+					if e == nil && index >= 1 && index <= len(categories) {
+						in.Text = answer.Value
+					} else if answer.Value == "atendente" || answer.Value == "sair" {
+						in.Text = answer.Value
+					}
+				}
+			}
+		}
+		text = strings.ToLower(strings.TrimSpace(in.Text))
+	}
 	r := Reply{Handled: true}
 	finish := func() (Reply, error) {
 		if err := s.save(ctx, in, st); err != nil {
 			return Reply{}, err
+		}
+		r.Text = HumanizeDialogue(ctx, assist, guestMessage, r.Text)
+		if r.SelectionPrompt != "" {
+			r.SelectionPrompt = HumanizeDialogue(ctx, assist, guestMessage, r.SelectionPrompt)
 		}
 		return r, nil
 	}
@@ -423,6 +473,10 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 			return Reply{}, e
 		}
 		st.QuoteActive = q.Active
+		if q.Handoff {
+			st.Paused = true
+			r.Handoff = true
+		}
 		st.Categories = q.Categories
 		st.Plan = q.Plan
 		r.Text = q.Text
@@ -451,6 +505,10 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 			return Reply{}, e
 		}
 		st.QuoteActive = q.Active
+		if q.Handoff {
+			st.Paused = true
+			r.Handoff = true
+		}
 		st.Categories = q.Categories
 		st.Plan = q.Plan
 		r.Text = q.Text
