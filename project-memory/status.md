@@ -5,7 +5,9 @@
 - Pedido: incluir números dos quartos na mensagem que acompanha `relatorio em pdf`.
 - Implementação: listas separadas de entrada (amarelo), saída (magenta) e saída e entrada (rosa); listas de sujos/desforrados preservadas. Situações vazias indicam “Nenhum quarto”.
 - Evidência: testes de relatórios e transporte WhatsApp passaram, incluindo três status e listas vazias; go vet dos pacotes passou. Build Wails/CLI v0.15.13 concluído e instalado.
-- Pendente: release e recebimento real da mensagem pelo usuário. Nenhum envio real feito para validação.
+- Aplicativo reaberto responsivo; logs confirmam autenticação e conexão com a mesma sessão WhatsApp. SHA-256 Tino.exe: `92DDD7D59F2FDD48D3BC8B562D2D361FFC0A5A4D1514A235244A6452D2DFE1FC`.
+- Release v0.15.13 publicada: https://github.com/gadevsbr/Tino/releases/tag/v0.15.13, commit `140044d`, UI e CLI com hashes conferidos.
+- Pendente: recebimento real da mensagem pelo usuário. Nenhum envio real feito para validação.
 
 ## Etapa 49 — IA no fluxo comercial v0.15.12
 
