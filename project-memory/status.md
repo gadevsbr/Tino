@@ -7,7 +7,8 @@
 - Desktop ancora os dados no executável; duas bases existentes preservadas. A pasta `dist/data` tem 42 quartos e 805 mensagens reivindicadas, mas zero dispositivos WhatsApp; a raiz tem outra base e não foi mesclada.
 - Evidência: teste real do Cloudflare e da ponte desktop passou; testes de transporte para menu/status, fallback/autenticação, carregamento sem deadlock e contratos frontend passaram. Suíte completa Go, go vet, testes Node e build Wails passaram após os ajustes finais.
 - Build v0.15.10 concluído; SHA-256 de Tino.exe: `B8BDD27A0CB0EAF23B32358B05A9CEDA69E4D3032593BF1A1660759363BDF8DA`. Processo responsivo com WebView2 iniciado; inspeção visual nativa não realizada.
-- Pendente: release e comando recebido/respondido no WhatsApp real. O relato de conexão ativa foi registrado; a causa completa do incidente não está comprovada por um teste local.
+- Release v0.15.10 publicada em https://github.com/gadevsbr/Tino/releases/tag/v0.15.10, commit funcional `ece1af9` na branch `codex/native-ai-bot-recovery`; hashes dos dois assets conferidos no GitHub. Worker rejeitou chamada sem chave com HTTP 401.
+- Pendente: comando recebido/respondido no WhatsApp real. O relato de conexão ativa foi registrado; a causa completa do incidente não está comprovada por um teste local.
 
 
 ## Etapa 46 (Superseded pela etapa 47; evidências anteriores não suficientes) — IA configurável com instruções automáticas v0.15.9
