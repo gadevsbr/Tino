@@ -35,3 +35,9 @@ cmd/tino-modern/frontend/package.json.md5
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Cloudflare local credentials and dependencies
+.dev.vars*
+*.ai-secret
+.wrangler/
+workers/**/node_modules/

@@ -550,7 +550,7 @@ func (a *application) startFlow() {
 			a.ui(func() { a.flowBtn.SetEnabled(true) })
 			return
 		}
-		engine, err := flow.New(a.mgr.Client, def)
+		engine, err := flow.New(a.mgr.Client, def, nil)
 		if err != nil {
 			a.appendLog("Fluxo inválido: " + err.Error())
 			a.mu.Lock()

@@ -1,12 +1,20 @@
 package flow
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/gadevsbr/tino/internal/assistente/queue"
 
 	"go.mau.fi/whatsmeow"
 	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
@@ -25,29 +33,42 @@ type Definition struct {
 	Rules        []Rule `yaml:"rules"`
 	DefaultReply string `yaml:"default_reply"`
 }
-type Engine struct {
-	client *whatsmeow.Client
-	def    Definition
-	mu     sync.Mutex
-	seen   map[string]struct{}
+type AIService struct {
+	Endpoint  string
+	Token     string
+	Model     string
+	MaxTokens int
+	Timeout   time.Duration
+	Client    *http.Client
 }
 
-func Load(path string, client *whatsmeow.Client) (*Engine, error) {
+type Engine struct {
+	client    *whatsmeow.Client
+	def       Definition
+	mu        sync.Mutex
+	seen      map[string]struct{}
+	ai        *AIService
+	queue     *queue.PerKey
+	Allow     func(*events.Message) bool
+	ResolveAI func() (*AIService, error)
+}
+
+func Load(path string, client *whatsmeow.Client, ai *AIService) (*Engine, error) {
 	def, err := LoadDefinition(path)
 	if err != nil {
 		return nil, err
 	}
-	return New(client, def)
+	return New(client, def, ai)
 }
 
-func New(client *whatsmeow.Client, def Definition) (*Engine, error) {
+func New(client *whatsmeow.Client, def Definition, ai *AIService) (*Engine, error) {
 	if client == nil {
 		return nil, fmt.Errorf("cliente WhatsApp é obrigatório")
 	}
 	if err := Validate(def); err != nil {
 		return nil, err
 	}
-	return &Engine{client: client, def: def, seen: make(map[string]struct{})}, nil
+	return &Engine{client: client, def: def, seen: make(map[string]struct{}), ai: ai, queue: queue.New()}, nil
 }
 
 func LoadDefinition(path string) (Definition, error) {
@@ -120,14 +141,19 @@ func (e *Engine) Handle(evt any) {
 	if text == "" {
 		return
 	}
-	reply := e.match(text)
-	if reply == "" {
-		return
-	}
-	ctx := context.Background()
-	if _, err := e.client.SendMessage(ctx, msg.Info.Chat, &waE2E.Message{Conversation: proto.String(reply)}); err != nil {
-		fmt.Fprintf(os.Stderr, "erro ao responder %s: %v\n", msg.Info.Chat, err)
-	}
+	e.queue.Enqueue(msg.Info.Chat.String(), func() {
+		if e.Allow != nil && !e.Allow(msg) {
+			return
+		}
+		reply := e.Reply(text)
+		if reply == "" {
+			return
+		}
+		ctx := context.Background()
+		if _, err := e.client.SendMessage(ctx, msg.Info.Chat, &waE2E.Message{Conversation: proto.String(reply)}); err != nil {
+			fmt.Fprintf(os.Stderr, "erro ao responder %s: %v\n", msg.Info.Chat, err)
+		}
+	})
 }
 
 func extractText(m *events.Message) string {
@@ -145,4 +171,104 @@ func extractText(m *events.Message) string {
 
 func (e *Engine) match(text string) string {
 	return Match(e.def, text)
+}
+
+func (e *Engine) generateAIReply(text string) (string, error) {
+	return e.ai.Generate(text)
+}
+
+func (ai *AIService) Generate(text string) (string, error) {
+	if ai == nil {
+		return "", errors.New("serviço de IA não configurado")
+	}
+
+	// Prepare the request payload
+	payload := map[string]interface{}{
+		"model": ai.Model,
+		"messages": []map[string]string{
+			{
+				"role":    "system",
+				"content": "Você é um assistente prestativo para um negócio de hotelaria. Responda em português do Brasil, de forma clara e objetiva. Se não souber a resposta, diga que não sabe e sugira entrar em contato com a equipe humana.",
+			},
+			{
+				"role":    "user",
+				"content": text,
+			},
+		},
+		"max_tokens": ai.MaxTokens,
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("erro ao codificar payload: %w", err)
+	}
+
+	// Create the request
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, ai.Endpoint, bytes.NewReader(payloadBytes))
+	if err != nil {
+		return "", fmt.Errorf("erro ao criar requisição: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+ai.Token)
+
+	// Set timeout from AI service
+	ctx, cancel := context.WithTimeout(context.Background(), ai.Timeout)
+	defer cancel()
+	req = req.WithContext(ctx)
+
+	// Make the request
+	resp, err := ai.Client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("erro ao chamar serviço de IA: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("serviço de IA retornou status %d", resp.StatusCode)
+	}
+
+	// Parse the response
+	var aiResponse struct {
+		Result struct {
+			Response string `json:"response"`
+		} `json:"result"`
+		Success bool `json:"success"`
+	}
+
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 65536)).Decode(&aiResponse); err != nil {
+		return "", fmt.Errorf("erro ao decodificar resposta da IA: %w", err)
+	}
+
+	if !aiResponse.Success {
+		return "", fmt.Errorf("serviço de IA retornou sucesso falso")
+	}
+
+	reply := strings.TrimSpace(aiResponse.Result.Response)
+	if reply == "" {
+		return "", errors.New("IA retornou resposta vazia")
+	}
+	return reply, nil
+}
+
+// Reply preserves explicit rules, then AI, then the configured fallback.
+func (e *Engine) Reply(text string) string {
+	rules := e.def
+	rules.DefaultReply = ""
+	if reply := Match(rules, text); reply != "" {
+		return reply
+	}
+	ai := e.ai
+	if e.ResolveAI != nil {
+		var err error
+		ai, err = e.ResolveAI()
+		if err != nil {
+			return e.def.DefaultReply
+		}
+	}
+	if ai != nil {
+		if reply, err := ai.Generate(text); err == nil {
+			return reply
+		}
+	}
+	return e.def.DefaultReply
 }

@@ -24,7 +24,11 @@ var version = "dev"
 var assets embed.FS
 
 func main() {
-	cfg, err := config.Load(filepath.Join("config", "config.yaml"))
+	executable, err := os.Executable()
+	if err != nil {
+		fatal(err)
+	}
+	cfg, err := config.LoadDesktop(filepath.Dir(executable))
 	if err != nil {
 		fatal(err)
 	}

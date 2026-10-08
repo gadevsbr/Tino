@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.15.6
+.\scripts\build.ps1 -Version 0.15.10
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -61,6 +61,18 @@ Quando o CSV não contém `message`/`mensagem`, a mensagem é preenchida na pró
 Na aba **Flow Builder**, use **Nova regra** para definir a condição e a resposta sem editar arquivos. As regras podem ser editadas, excluídas e movidas para cima ou para baixo; a primeira correspondência vence. O simulador mostra a resposta antes da ativação. A resposta padrão é usada quando nenhuma regra combina.
 
 O fluxo continua persistido em YAML para portabilidade e backup, mas o arquivo não precisa ser manipulado manualmente. O atendimento automático de hóspedes permanece restrito a conversas individuais. Em grupos, somente comandos enviados pelo titular da conta ou por operadores autorizados são processados.
+
+## Inteligência Artificial no atendimento
+
+A IA é operada pela interface, sem editar arquivos. Em **Conversas**, o botão de brilho gera uma sugestão para a última mensagem recebida; revise o texto e clique em enviar. Grupos não recebem sugestões.
+
+Em **Central de recursos > Inteligência Artificial**, consulte a conexão e gere uma resposta de teste sem enviar ao WhatsApp. Nesta máquina, o serviço Cloudflare já foi provisionado e a chave está salva com proteção do Windows. Uma instalação em outro computador exige conectar o serviço pela mesma tela; chaves não acompanham releases nem código-fonte.
+
+O Worker do projeto fica em `workers/tino-ai` e usa `@cf/meta/llama-3.1-8b-instruct-fp8`, autenticação, limite de solicitações e tamanho de mensagem. A mensagem escolhida é enviada ao Cloudflare e está sujeita aos limites e custos da conta.
+
+No Flow Builder ativado, regras explícitas têm prioridade, depois a IA, depois a resposta padrão se a IA falhar. A IA não substitui comandos de operadores, triagem, pausas humanas, cotações ou aprovações do atendimento comercial. A fila por conversa evita bloquear o processamento de eventos do WhatsApp.
+
+O aplicativo resolve dados e configurações relativamente ao executável, independentemente da pasta de abertura do atalho. Bases existentes em outras pastas não são mescladas automaticamente. A conexão do WhatsApp e o carregamento do motor de comandos aparecem separadamente na interface.
 
 ## Central de recursos
 

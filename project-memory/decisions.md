@@ -1,5 +1,18 @@
 # Decisões
 
+- 2026-10-07 — A configuração manual da IA em JSON é substituída por painel nativo e Worker autenticado. Nesta máquina a conexão está preparada; outras instalações conectam pela UI. Chave protegida com DPAPI, separada dos metadados e fora da release.
+- 2026-10-07 — Llama 3.1 8B FP8 foi confirmado por inferência real no binding; o identificador sem FP8 retornou modelo descontinuado. Regras, IA e fallback têm prioridade nessa ordem.
+- 2026-10-07 — Comandos operacionais e conversas comerciais não entram no Flow Builder/IA. Inferência usa FIFO por chat sem bloquear o despachante do WhatsApp; flags e conexão são consultadas novamente durante o uso.
+- 2026-10-07 — Superseded: resolver arquivos pela pasta de trabalho podia selecionar bases diferentes conforme o atalho. Desktop ancora os caminhos no executável e preserva ambas as bases sem mesclagem. Motor carregado e WhatsApp autenticado são estados separados.
+- 2026-10-07 — O usuário relatou comandos sem resposta pelo celular apesar de conectado. Deadlock de GetAIConfig foi reproduzido por inspeção e corrigido; causa completa da falha em produção ainda exige nova mensagem real. Não confundir teste local com resposta real do bot.
+
+- 2026-10-02 — Superseded (2026-10-07): Implementada integração com serviços de IA para respostas automáticas mais inteligentes no Flow Builder como recurso nativo pré-habilitado. Quando nenhuma regra fixa corresponde à mensagem recebida, o sistema utiliza um serviço de IA configurado (ex: Cloudflare Workers AI) para gerar uma resposta contextualizada, mantendo o comportamento determinístico existente para regras definidas pelo usuário.
+- 2026-10-02 — Superseded (2026-10-07): O módulo de IA vem habilitado por padrão no sistema (visível na Central de recursos) e requer apenas configuração do endpoint através do arquivo `data/capabilities.json`, que é criado na primeira execução com exemplo pré-preenchido que guida o usuário a inserir seu Account ID do Cloudflare (obtido via `wrangler whoami`).
+- 2026-10-02 — Superseded (2026-10-07): A integração com IA preserva os requisitos de segurança e privacidade: nenhum dado sensível é enviado automaticamente, e o prompt do sistema instrui a IA a não revelar informações confidenciais ou a sugerir contato com equipe humana quando inadequado.
+- 2026-10-02 — Superseded (2026-10-07): Corrigida a lógica de reconciliação de configurações para preservar corretamente as configurações de IA ao atualizar de versões anteriores, garantindo que configurações de IA não sejam perdidas durante atualizações do sistema.
+- 2026-10-02 — Superseded (2026-10-07): Adicionada inicialização explícita do capabilities store no construtor do App para garantir que o arquivo de configuração seja criado na primeira execução, independentemente da interação do usuário com recursos de capacidade.
+- 2026-10-02 — Superseded (2026-10-07): Tornou as instruções de substituição do Account ID no arquivo de configuração mais visíveis e impossíveis de ignorar, reduzindo a barreira para configuração inicial.
+
 - 2026-10-01 — O Bitz continua autoridade da disponibilidade por período; a categoria configurada no Tino e o status `INTERDITADO` formam uma restrição operacional adicional. UHs da mesma categoria são alternativas determinísticas e uma UH não pode ser reutilizada na mesma pré-reserva.
 - 2026-10-01 — Categoria sem nenhum quarto configurado mantém temporariamente o matching textual anterior para migração gradual. Assim que existir ao menos uma UH mapeada naquela categoria, o Tino exige capacidade local não interditada e não troca silenciosamente de categoria.
 

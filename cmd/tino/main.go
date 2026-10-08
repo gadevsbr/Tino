@@ -13,6 +13,7 @@ import (
 
 	"github.com/gadevsbr/tino/internal/audit"
 	"github.com/gadevsbr/tino/internal/batch"
+	"github.com/gadevsbr/tino/internal/capability"
 	"github.com/gadevsbr/tino/internal/config"
 	"github.com/gadevsbr/tino/internal/flow"
 	"github.com/gadevsbr/tino/internal/session"
@@ -98,7 +99,13 @@ func run() error {
 		if err := mgr.Connect(ctx, false); err != nil {
 			return err
 		}
-		engine, err := flow.Load(cfg.Flow.RulesFile, mgr.Client)
+		// Get AI configuration from capability store
+		capStore := capability.NewStore(filepath.Join(cfg.DataDir, "capabilities.json"))
+		aiService, err := flow.ConfiguredAI(capStore)
+		if err != nil {
+			return err
+		}
+		engine, err := flow.Load(cfg.Flow.RulesFile, mgr.Client, aiService)
 		if err != nil {
 			return err
 		}

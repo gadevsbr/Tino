@@ -1,3 +1,6 @@
+# Regras de fluxo de atendimento automático
+# Quando nenhuma regra corresponde, o sistema pode usar um serviço de IA (se configurado e habilitado)
+# para gerar respostas mais inteligentes
 rules:
   - name: horario
     contains: horario

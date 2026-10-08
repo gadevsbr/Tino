@@ -131,6 +131,28 @@ func processableMessage(evt *events.Message) bool {
 	return m.GetConversation() != "" || m.GetExtendedTextMessage() != nil || m.GetImageMessage() != nil || m.GetVideoMessage() != nil || m.GetAudioMessage() != nil || m.GetDocumentMessage() != nil || m.GetProductMessage() != nil
 }
 
+// AllowsFlow keeps operator commands and commercial conversations with their owner.
+func (s *Service) AllowsFlow(evt *events.Message) bool {
+	if !processableMessage(evt) || evt.Info.IsFromMe || evt.Info.IsGroup {
+		return false
+	}
+	contact := s.resolvePhone(context.Background(), evt.Info.Sender, evt.Info.SenderAlt)
+	if contact != "" && s.auth.Allowed(contact) {
+		return false
+	}
+	if s.commercial == nil {
+		return true
+	}
+	cfg, err := s.commercial.Configuration(context.Background(), s.accountJID())
+	if err != nil {
+		return false
+	}
+	if contact == "" {
+		contact = evt.Info.Sender.ToNonAD().String()
+	}
+	return !admitted(cfg, commercialContact(cfg, contact))
+}
+
 func individualJID(j types.JID) bool {
 	return j.User != "" && (j.Server == types.DefaultUserServer || j.Server == types.LegacyUserServer || j.Server == types.HiddenUserServer)
 }

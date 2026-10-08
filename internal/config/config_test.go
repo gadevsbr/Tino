@@ -21,3 +21,13 @@ func TestLoad(t *testing.T) {
 		t.Fatalf("config inesperada: %#v", c)
 	}
 }
+func TestDesktopPathsStayWithExecutable(t *testing.T) {
+	base := t.TempDir()
+	cfg, err := LoadDesktop(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.DataDir != filepath.Join(base, "data") || cfg.Flow.RulesFile != filepath.Join(base, "config", "flows.yaml") {
+		t.Fatalf("wrong paths: %#v", cfg)
+	}
+}

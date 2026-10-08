@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -68,6 +69,21 @@ func Load(path string) (Config, error) {
 	}
 	if cfg.Batch.MaxPerRun <= 0 {
 		return Config{}, errors.New("batch.max_per_run deve ser positivo")
+	}
+	return cfg, nil
+}
+
+// LoadDesktop anchors files to the executable, regardless of shortcut working directory.
+func LoadDesktop(base string) (Config, error) {
+	cfg, err := Load(filepath.Join(base, "config", "config.yaml"))
+	if err != nil {
+		return Config{}, err
+	}
+	if !filepath.IsAbs(cfg.DataDir) {
+		cfg.DataDir = filepath.Join(base, cfg.DataDir)
+	}
+	if !filepath.IsAbs(cfg.Flow.RulesFile) {
+		cfg.Flow.RulesFile = filepath.Join(base, cfg.Flow.RulesFile)
 	}
 	return cfg, nil
 }

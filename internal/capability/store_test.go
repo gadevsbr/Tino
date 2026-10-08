@@ -3,6 +3,7 @@ package capability
 import (
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestStoreRoundTrip(t *testing.T) {
@@ -43,5 +44,18 @@ func TestLoadPromotesNewlyAvailableModules(t *testing.T) {
 		if module.ID == "rooms" && (!module.Available || !module.Enabled) {
 			t.Fatalf("módulo novo não promovido: %#v", module)
 		}
+	}
+}
+func TestAIConfigurationLoadDoesNotDeadlock(t *testing.T) {
+	store := NewStore(filepath.Join(t.TempDir(), "capabilities.json"))
+	done := make(chan error, 1)
+	go func() { _, err := store.GetAIConfig(); done <- err }()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("GetAIConfig blocked")
 	}
 }

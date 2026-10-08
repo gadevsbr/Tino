@@ -34,10 +34,12 @@ type App struct {
 	flowDef      flow.Definition
 	version      string
 	flowStarted  bool
+	flowHandler  uint32
 	mu           sync.Mutex
 	hotelMu      sync.Mutex
 	hotel        *hotelRuntime
 	eventsReady  bool
+	botError     string
 }
 
 type StatusDTO struct {
@@ -46,6 +48,8 @@ type StatusDTO struct {
 	Text          string `json:"text"`
 	Profile       string `json:"profile"`
 	Version       string `json:"version"`
+	BotReady      bool   `json:"botReady"`
+	BotText       string `json:"botText"`
 }
 
 type ConversationDTO struct {
@@ -70,7 +74,10 @@ type BatchRequest struct {
 }
 
 func NewApp(cfg config.Config, mgr *session.Manager, chats *chat.Store, capabilities *capability.Store, def flow.Definition, version string) *App {
-	return &App{cfg: cfg, mgr: mgr, chats: chats, capabilities: capabilities, flowDef: def, version: version}
+	app := &App{cfg: cfg, mgr: mgr, chats: chats, capabilities: capabilities, flowDef: def, version: version}
+	// Initialize capabilities store to ensure file is created on first run
+	_, _ = capabilities.Load()
+	return app
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -118,7 +125,17 @@ func (a *App) GetStatus() StatusDTO {
 	if logged {
 		text = "Conectada e autenticada"
 	}
-	return StatusDTO{Authenticated: logged, SessionSaved: saved, Text: text, Profile: a.cfg.Profile, Version: a.version}
+	a.hotelMu.Lock()
+	ready := a.hotel != nil && a.botError == ""
+	botText := "Motor de comandos carregado"
+	if !ready {
+		botText = "Motor de comandos indisponível: " + a.botError
+	}
+	a.hotelMu.Unlock()
+	if !logged && ready {
+		botText = "Motor carregado; conecte o WhatsApp para receber comandos"
+	}
+	return StatusDTO{Authenticated: logged, SessionSaved: saved, Text: text, Profile: a.cfg.Profile, Version: a.version, BotReady: ready, BotText: botText}
 }
 
 func (a *App) Connect() error {
@@ -307,13 +324,28 @@ func (a *App) StartFlow(def flow.Definition) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.flowStarted {
-		return nil
+		a.mgr.Client.RemoveEventHandler(a.flowHandler)
+		a.flowStarted = false
 	}
-	engine, err := flow.New(a.mgr.Client, def)
+
+	aiService, err := flow.ConfiguredAI(a.capabilities)
 	if err != nil {
 		return err
 	}
-	a.mgr.Client.AddEventHandler(engine.Handle)
+	engine, err := flow.New(a.mgr.Client, def, aiService)
+	if err != nil {
+		return err
+	}
+	engine.ResolveAI = func() (*flow.AIService, error) { return flow.ConfiguredAI(a.capabilities) }
+	engine.Allow = func(evt *events.Message) bool {
+		if a.requireCapability("flow") != nil {
+			return false
+		}
+		a.hotelMu.Lock()
+		defer a.hotelMu.Unlock()
+		return a.hotel != nil && a.hotel.service.AllowsFlow(evt)
+	}
+	a.flowHandler = a.mgr.Client.AddEventHandler(engine.Handle)
 	a.flowStarted = true
 	a.emitActivity("Flow Builder", "Atendimento automático ativado", "success")
 	return nil
@@ -367,6 +399,7 @@ func (a *App) restartHotelRuntime() error {
 	}
 	settings, err := a.capabilities.Load()
 	if err != nil {
+		a.botError = err.Error()
 		return err
 	}
 	runtime, err := openHotelRuntime(a.ctx, a.cfg.DataDir, settings, a.mgr.Client, func(ctx context.Context, jid string) error {
@@ -377,9 +410,11 @@ func (a *App) restartHotelRuntime() error {
 		return nil
 	})
 	if err != nil {
+		a.botError = err.Error()
 		return err
 	}
 	a.hotel = runtime
+	a.botError = ""
 	return nil
 }
 

@@ -17,5 +17,10 @@ test('normaliza o contrato JSON emitido pelo backend Go', () => {
 
 test('mantém compatibilidade defensiva com nomes antigos', () => {
   const result = normalizeCapabilities({ Modules: [], Roles: [], WorkspaceRoot: '' })
-  assert.deepEqual(result, { modules: [], roles: [], operators: [], workspaceRoot: '' })
+  assert.deepEqual(result, { ai: {}, modules: [], roles: [], operators: [], workspaceRoot: '' })
+})
+
+test('preserva a conexão de IA ao salvar os demais recursos', () => {
+  const ai = { endpoint: 'https://example.workers.dev/reply', model: 'llama' }
+  assert.deepEqual(normalizeCapabilities({ ai }).ai, ai)
 })
