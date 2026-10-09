@@ -5,7 +5,9 @@
 - Pedido: respostas privadas; em grupos, somente relatórios de quartos e caixa.
 - Implementação: filtro antes da fila e bloqueio central de saída; somente construtores de relatórios de quartos/caixa liberam envio ao grupo. Compartilhamento de vales e texto manual da UI recusados; grupos sem caixa ficam em silêncio.
 - Evidência: testes de transporte/desktop, go vet e builds Wails/CLI passaram. Comandos gerais em grupo são ignorados antes de reivindicar a mensagem; testes cobrem saída bloqueada, relatórios permitidos e respostas privadas preservadas.
-- Instalado v0.15.15; pendentes confirmação de autenticação, release e verificação pelo usuário em grupo real. Nenhuma mensagem real enviada para validar.
+- Instalado v0.15.15, processo responsivo e logs confirmam autenticação/conexão com a mesma sessão. SHA-256 Tino.exe: `0399C06613C594C807313989963FEA967D60F36D539FFC47351ED0ACF7D6C65E`.
+- Release v0.15.15 publicada: https://github.com/gadevsbr/Tino/releases/tag/v0.15.15, commit `7399468`, assets UI/CLI com hashes conferidos.
+- Pendente: verificação pelo usuário em grupo real. Nenhuma mensagem de teste real enviada. Agendamento privado preexistente registrou falha de consulta LID para destinos cadastrados; não confundir com falha do bloqueio de grupos.
 
 ## Etapa 51 — Boletos a pagar e lembretes v0.15.14
 
