@@ -25,7 +25,7 @@ Inventário para decidir como cada capacidade deverá funcionar no Tino. A prese
 
 - PDF da situação dos quartos com resumo por estado e hóspedes.
 - Escolha de relatório de quartos, caixa ou ambos.
-- Envio para grupos e telefones selecionados.
+- Envio para grupos limitado aos relatórios de quartos e caixa, solicitado por titular/operadores; demais comandos, atendimento e documentos ficam restritos ao privado.
 
 ## 4. Caixa
 

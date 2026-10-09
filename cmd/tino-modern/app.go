@@ -223,6 +223,9 @@ func (a *App) SendMessage(jidRaw, text string) error {
 	if err != nil {
 		return err
 	}
+	if jid.Server == types.GroupServer {
+		return errors.New("em grupos, envie somente relatórios de quartos ou caixa pela área operacional")
+	}
 	text = strings.TrimSpace(text)
 	if text == "" {
 		return errors.New("a mensagem está vazia")

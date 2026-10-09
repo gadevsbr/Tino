@@ -335,7 +335,7 @@ func (s *Service) onEvent(raw any) {
 		if s.wasSent(context.Background(), string(evt.Info.ID)) {
 			return
 		}
-		// Commands typed by the account owner in a group are valid operator
+		// Report requests typed by the account owner in a group are valid operator
 		// commands. Outbound messages to another private chat remain ignored.
 		if !selfChat && !evt.Info.IsGroup {
 			return
@@ -353,7 +353,7 @@ func (s *Service) onEvent(raw any) {
 	operator := evt.Info.IsFromMe || selfChat || (sender != "" && s.auth.Allowed(sender)) || (!evt.Info.IsGroup && s.bitzApprovalCommand(context.Background(), sender, text))
 	// Group conversations never enter the public guest flow. Only the account
 	// owner or an explicitly authorized operator can trigger commands there.
-	if evt.Info.IsGroup && !operator {
+	if evt.Info.IsGroup && (!operator || !groupReportCommand(text)) {
 		return
 	}
 	document := evt.Message.GetDocumentMessage()
@@ -645,6 +645,9 @@ func (s *Service) sendAdvanceReportForMonth(ctx context.Context, to types.JID, e
 // ShareReport exposes the same audited WhatsApp delivery used by chat commands
 // to the desktop UI. Kind accepts ROOMS, CASH or ADVANCES.
 func (s *Service) ShareReport(ctx context.Context, kind string, to types.JID, from, until, employee string) error {
+	if to.Server == types.GroupServer && strings.ToUpper(strings.TrimSpace(kind)) != "ROOMS" && strings.ToUpper(strings.TrimSpace(kind)) != "CASH" {
+		return errors.New("em grupos, somente relatórios de quartos e caixa são permitidos")
+	}
 	switch strings.ToUpper(strings.TrimSpace(kind)) {
 	case "ROOMS":
 		return s.sendReport(ctx, to)
@@ -666,6 +669,9 @@ func (s *Service) ShareReport(ctx context.Context, kind string, to types.JID, fr
 }
 
 func (s *Service) sendMessage(ctx context.Context, to types.JID, message *waE2E.Message) (whatsmeow.SendResponse, error) {
+	if to.Server == types.GroupServer && ctx.Value(groupReportKey{}) != true {
+		return whatsmeow.SendResponse{}, errors.New("envio para grupo bloqueado: somente relatórios de quartos e caixa")
+	}
 	if s.sendOverride != nil {
 		return s.sendOverride(ctx, to, message)
 	}
@@ -696,12 +702,16 @@ func (s *Service) sendCashReport(ctx context.Context, to types.JID) error {
 }
 
 func (s *Service) sendCashReportFor(ctx context.Context, to types.JID, from, until string) error {
+	ctx = context.WithValue(ctx, groupReportKey{}, true)
 	from, until = cashReportRange(from, until, time.Now().In(s.cfg.Timezone))
 	days, err := s.cash.Range(ctx, from, until)
 	if err != nil {
 		return err
 	}
 	if len(days) == 0 {
+		if to.Server == types.GroupServer {
+			return nil
+		}
 		_, err = s.sendMessage(ctx, to, &waE2E.Message{Conversation: proto.String("Nenhum caixa registrado nesse dia ou período.")})
 		return err
 	}
@@ -793,6 +803,7 @@ func isReportCommand(text string) bool {
 	return false
 }
 func (s *Service) sendReport(ctx context.Context, to types.JID) error {
+	ctx = context.WithValue(ctx, groupReportKey{}, true)
 	list, err := s.rooms.ListAll(ctx)
 	if err != nil {
 		return err

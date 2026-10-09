@@ -1,5 +1,12 @@
 # Estado
 
+## Etapa 52 — Grupos restritos a relatórios v0.15.15
+
+- Pedido: respostas privadas; em grupos, somente relatórios de quartos e caixa.
+- Implementação: filtro antes da fila e bloqueio central de saída; somente construtores de relatórios de quartos/caixa liberam envio ao grupo. Compartilhamento de vales e texto manual da UI recusados; grupos sem caixa ficam em silêncio.
+- Evidência: testes de transporte/desktop, go vet e builds Wails/CLI passaram. Comandos gerais em grupo são ignorados antes de reivindicar a mensagem; testes cobrem saída bloqueada, relatórios permitidos e respostas privadas preservadas.
+- Instalado v0.15.15; pendentes confirmação de autenticação, release e verificação pelo usuário em grupo real. Nenhuma mensagem real enviada para validar.
+
 ## Etapa 51 — Boletos a pagar e lembretes v0.15.14
 
 - Pedido: lembrar boletos a pagar; usuário solicitou conclusão sem definir cadastro, destino ou horário.

@@ -1,5 +1,7 @@
 # Decisões
 
+- 2026-10-09 — Superseded: autorização de operadores para executar comandos gerais em grupos (decisão de 28/09). Por pedido explícito, grupos aceitam apenas pedidos autorizados de relatórios de quartos e caixa; demais mensagens são ignoradas antes do processamento. Envio comum, vales, atendimento e texto manual da UI ficam bloqueados para grupos.
+
 - 2026-10-09 — Boletos são contas a pagar locais, com descrição, valor em centavos e vencimento; marcar pago não realiza pagamento nem cria saída de caixa. Cadastro manual na UI ou texto administrativo, sem extração automática de PDF/foto nesta etapa.
 - 2026-10-09 — Lembretes exigem destino escolhido pelo operador; não presumir telefone a partir de sessões antigas. Configuração pela UI/WhatsApp, desativada inicialmente, com sugestão de 3 dias e 9h BRT. Agendamento requer Tino em execução; persiste confirmação diária e usa lease para evitar envios simultâneos.
 

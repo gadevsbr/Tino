@@ -50,7 +50,7 @@ func TestPhoneCommandsThroughAttachedTransport(t *testing.T) {
 		replies <- message.GetConversation()
 		return whatsmeow.SendResponse{ID: "reply"}, nil
 	}
-	for i, source := range []types.MessageSource{{Chat: phone, Sender: phone}, {Chat: mgr.Client.Store.LID.ToNonAD(), Sender: mgr.Client.Store.LID.ToNonAD(), IsFromMe: true}, {Chat: types.NewJID("120363000000001", types.GroupServer), Sender: phone, IsGroup: true}} {
+	for i, source := range []types.MessageSource{{Chat: phone, Sender: phone}, {Chat: mgr.Client.Store.LID.ToNonAD(), Sender: mgr.Client.Store.LID.ToNonAD(), IsFromMe: true}} {
 		for _, command := range []string{"menu", "status"} {
 			operator := phone.User
 			if source.IsFromMe {
@@ -87,6 +87,20 @@ func TestPhoneCommandsThroughAttachedTransport(t *testing.T) {
 				t.Fatalf("test mode was not ended: %d, %v", pending, err)
 			}
 		}
+	}
+	group := types.NewJID("120363000000001", types.GroupServer)
+	for _, text := range []string{"menu", "status", "boletos", "101 verde"} {
+		id := "ignored-group-" + text
+		service.onEvent(&events.Message{Info: types.MessageInfo{MessageSource: types.MessageSource{Chat: group, Sender: phone, IsGroup: true}, ID: types.MessageID(id)}, Message: &waE2E.Message{Conversation: proto.String(text)}})
+		var claimed int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM processed_messages WHERE message_id=?`, transportMessageKey(service.accountJID(), phone.User, id)).Scan(&claimed); err != nil || claimed != 0 {
+			t.Fatal("group command processed", text, claimed, err)
+		}
+	}
+	select {
+	case reply := <-replies:
+		t.Fatal("unexpected group reply", reply)
+	default:
 	}
 	if err := service.commercial.Configure(ctx, service.accountJID(), commercial.Config{Mode: commercial.Disabled}); err != nil {
 		t.Fatal(err)
