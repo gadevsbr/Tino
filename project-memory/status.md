@@ -9,7 +9,8 @@
 - Inspeção visual: controle de UI não expôs apps/navegadores nesta sessão; build frontend passou, sem afirmar inspeção pixel a pixel.
 - Instalado v0.15.14; backup SQLite consistente antes da migração. Banco real tem as duas tabelas novas, 42 quartos preservados e zero boletos de teste. Processo responsivo e logs de autenticação/conexão confirmados, mesma sessão.
 - SHA-256 Tino.exe: `692C9981BFEDAB2C051C316D1A9D9F0034576D07BD18C08C5B9BE780C018C74D`.
-- Pendente: release e lembrete real após operador escolher destino. Nenhum lembrete real foi enviado.
+- Release v0.15.14 publicada: https://github.com/gadevsbr/Tino/releases/tag/v0.15.14, commit funcional `37ff33f`, UI/CLI com hashes dos assets conferidos.
+- Pendente: lembrete real após operador escolher destino. Nenhum lembrete real foi enviado.
 
 ## Etapa 50 — Números de entrada e saída na mensagem do relatório v0.15.13
 
