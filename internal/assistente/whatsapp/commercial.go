@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gadevsbr/tino/internal/assistente/bills"
 	"github.com/gadevsbr/tino/internal/assistente/bitz"
 	"github.com/gadevsbr/tino/internal/assistente/catalog"
 	"github.com/gadevsbr/tino/internal/assistente/commands"
@@ -386,6 +387,9 @@ func (s *Service) handleCommercialOperator(ctx context.Context, account, operato
 // Named operational commands exit the operator's guest simulation. Numeric
 // answers and quote controls remain inputs of that isolated simulation.
 func administrativeTestCommand(text string) bool {
+	if bills.IsCommand(text) {
+		return true
+	}
 	n := utils.Normalize(text)
 	_, weekly, _ := extratos.ParseWeeklyCommand(text, time.Now())
 	if isReportCommand(text) || n == "extratos" || n == "processar extratos" || n == "cancelar extratos" || weekly {

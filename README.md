@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.15.13
+.\scripts\build.ps1 -Version 0.15.14
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -101,6 +101,12 @@ As respostas automáticas comerciais exibem presença de digitação e aguardam 
 Em **Integração Bitz**, acessível diretamente pelo menu lateral, o operador configura o usuário, a senha protegida pelo Windows, o CPF operacional, o WhatsApp aprovador e a mensagem final. Após a escolha de uma categoria para cada quarto, o Tino cria uma única pré-reserva idempotente, avisa o aprovador e só responde ao hóspede depois do comando `aprovar pre-reserva CODIGO`. O teste de acesso apenas autentica e não cria reserva.
 
 O fluxo real usa Scrapling empacotado no `Tino.exe`. Para validar todas as telas sem salvar, use `scripts/test-bitz.ps1` com datas e categorias físicas. `scripts/test-bitz-live.ps1` exige confirmação explícita porque cria uma pré-reserva real.
+
+## Boletos a pagar
+
+Em **Operação financeira > Boletos a pagar**, cadastre descrição, valor e vencimento. Configure o WhatsApp com DDI, antecedência e horário e ative os lembretes. O Tino envia um aviso diário por boleto desde a antecedência até ser marcado pago ou cancelado, incluindo os dias de atraso. Precisa permanecer aberto e conectado ao WhatsApp; tenta novamente ao reconectar e recupera avisos do dia ao abrir após o horário.
+
+Comandos administrativos: `boletos`, `boleto 20/10/2026 150,00 | Energia`, `boleto pago 1`, `cancelar boleto 1`, `lembretes boletos TELEFONE 3 09:00` e `lembretes boletos desativar`. A baixa é apenas um registro; não paga o boleto nem movimenta o caixa. Cadastro por PDF/foto não está incluído nesta etapa.
 
 ## Importação de caixa por PDF
 

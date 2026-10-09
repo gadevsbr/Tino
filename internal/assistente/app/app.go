@@ -810,6 +810,14 @@ OBSERVAÇÕES
 RELATÓRIO
 • relatorio em pdf
 
+BOLETOS A PAGAR
+• boletos — listar pendentes e ver os comandos
+• boleto 20/10/2026 150,00 | Energia — cadastrar
+• boleto pago 1 — marcar como pago
+• cancelar boleto 1
+• lembretes boletos TELEFONE 3 09:00 — ativar avisos
+• lembretes boletos desativar
+
 ORÇAMENTO OMNIBEES
 • orçamento — responder às perguntas de datas e hóspedes
 • envie o link completo dos resultados da OmniBees — o bot responde com o orçamento

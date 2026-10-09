@@ -28,6 +28,7 @@ import (
 	"github.com/gadevsbr/tino/internal/assistente/app"
 	"github.com/gadevsbr/tino/internal/assistente/authorization"
 	"github.com/gadevsbr/tino/internal/assistente/backup"
+	"github.com/gadevsbr/tino/internal/assistente/bills"
 	"github.com/gadevsbr/tino/internal/assistente/bitz"
 	"github.com/gadevsbr/tino/internal/assistente/cash"
 	"github.com/gadevsbr/tino/internal/assistente/catalog"
@@ -246,6 +247,14 @@ func (s *Service) scheduler(ctx context.Context) {
 	}
 }
 func (s *Service) runScheduled(ctx context.Context, now time.Time) {
+	if s.client != nil && s.client.IsConnected() && s.client.IsLoggedIn() {
+		if err := bills.New(s.domainDB).Remind(ctx, now, s.cfg.Timezone, func(ctx context.Context, target, text string) error {
+			_, err := s.sendMessage(ctx, types.NewJID(target, types.DefaultUserServer), &waE2E.Message{Conversation: proto.String(text)})
+			return err
+		}); err != nil {
+			slog.Error("bill reminders", "error", err)
+		}
+	}
 	local := now.In(s.cfg.Timezone)
 	date := local.Format("2006-01-02")
 	if local.Hour() >= s.cfg.BackupHour && !s.settingDone(ctx, "backup:"+date) {
@@ -443,6 +452,14 @@ func (s *Service) onEvent(raw any) {
 			return
 		}
 		parsedCommand := commands.Parse(text)
+		if bills.IsCommand(text) {
+			reply, err := bills.New(s.domainDB).Command(ctx, text)
+			if err != nil {
+				reply = "Não consegui concluir: " + err.Error()
+			}
+			s.replyText(ctx, evt.Info.Chat, reply)
+			return
+		}
 		if parsedCommand.Kind == commands.ReceiptList {
 			if err := s.sendReceiptList(ctx, evt.Info.Chat, parsedCommand.Date); err != nil {
 				slog.Error("list cash receipts", "error", err)

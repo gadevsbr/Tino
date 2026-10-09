@@ -1,5 +1,16 @@
 # Estado
 
+## Etapa 51 — Boletos a pagar e lembretes v0.15.14
+
+- Pedido: lembrar boletos a pagar; usuário solicitou conclusão sem definir cadastro, destino ou horário.
+- Escopo: cadastro manual na UI e comando WhatsApp, lista de pendentes/pagos/cancelados, baixa sem movimentar caixa, configuração nativa de destino/antecedência/horário. Sugestão: 3 dias antes às 9h BRT; envio desativado até o operador salvar um destino.
+- Agendamento local: um aviso diário por boleto desde a antecedência até a baixa/cancelamento, incluindo atrasados. Retoma tentativas após falha; registro diário persiste no banco. Tino aberto e WhatsApp autenticado são necessários.
+- Evidência: suíte Go completa, go vet, testes Node e build Wails/CLI passaram. Testes cobrem retomada após falha, ausência de duplicata diária após reinício, fuso/horário, interrupção após pagamento, cadastro por comando e API desktop com banco temporário. Bindings Wails das quatro ações conferidos.
+- Inspeção visual: controle de UI não expôs apps/navegadores nesta sessão; build frontend passou, sem afirmar inspeção pixel a pixel.
+- Instalado v0.15.14; backup SQLite consistente antes da migração. Banco real tem as duas tabelas novas, 42 quartos preservados e zero boletos de teste. Processo responsivo e logs de autenticação/conexão confirmados, mesma sessão.
+- SHA-256 Tino.exe: `692C9981BFEDAB2C051C316D1A9D9F0034576D07BD18C08C5B9BE780C018C74D`.
+- Pendente: release e lembrete real após operador escolher destino. Nenhum lembrete real foi enviado.
+
 ## Etapa 50 — Números de entrada e saída na mensagem do relatório v0.15.13
 
 - Pedido: incluir números dos quartos na mensagem que acompanha `relatorio em pdf`.

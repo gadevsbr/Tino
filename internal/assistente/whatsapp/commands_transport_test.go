@@ -105,7 +105,7 @@ func TestPhoneCommandsThroughAttachedTransport(t *testing.T) {
 }
 
 func TestAdministrativeTestCommandPreservesGuestAnswers(t *testing.T) {
-	for _, text := range []string{"Menu", "status", "saude", "caixa", "status 101", "extratos", "processar extratos", "gerar relatorio"} {
+	for _, text := range []string{"Menu", "status", "saude", "caixa", "status 101", "extratos", "processar extratos", "gerar relatorio", "boletos", "boleto pago 1", "lembretes boletos desativar"} {
 		if !administrativeTestCommand(text) {
 			t.Errorf("administrative command swallowed: %q", text)
 		}

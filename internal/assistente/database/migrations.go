@@ -103,6 +103,15 @@ CREATE TABLE extrato_week_files (
 CREATE INDEX idx_extrato_week_files_week ON extrato_week_files(week_id,id);`,
 	`ALTER TABLE rooms ADD COLUMN bitz_category TEXT NOT NULL DEFAULT '';
 CREATE INDEX idx_rooms_bitz_category_status ON rooms(bitz_category,operational_status,number);`,
+	`CREATE TABLE payable_bills (
+ id INTEGER PRIMARY KEY, description TEXT NOT NULL, amount_cents INTEGER NOT NULL CHECK(amount_cents>0),
+ due_date TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('OPEN','PAID','CANCELLED')),
+ created_at TEXT NOT NULL, paid_at TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE bill_reminders (
+ bill_id INTEGER NOT NULL REFERENCES payable_bills(id), day TEXT NOT NULL,
+ status TEXT NOT NULL, lease_until INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(bill_id,day)
+);`,
 }
 
 func Migrate(ctx context.Context, db *sql.DB) error {

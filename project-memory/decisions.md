@@ -1,5 +1,8 @@
 # Decisões
 
+- 2026-10-09 — Boletos são contas a pagar locais, com descrição, valor em centavos e vencimento; marcar pago não realiza pagamento nem cria saída de caixa. Cadastro manual na UI ou texto administrativo, sem extração automática de PDF/foto nesta etapa.
+- 2026-10-09 — Lembretes exigem destino escolhido pelo operador; não presumir telefone a partir de sessões antigas. Configuração pela UI/WhatsApp, desativada inicialmente, com sugestão de 3 dias e 9h BRT. Agendamento requer Tino em execução; persiste confirmação diária e usa lease para evitar envios simultâneos.
+
 - 2026-10-08 — O resumo textual de quartos passa a listar também números de entrada, saída e saída e entrada. As três situações ficam separadas conforme o status registrado, sem presumir que quartos rosas tenham status amarelo ou magenta.
 
 - 2026-10-08 — O usuário confirmou fluxo completo, Bitz e aprovação no WhatsApp, mas pediu linguagem natural. IA passa a interpretar etapas e redigir perguntas; disponibilidade, valores, ocupação, escolha válida e aprovação permanecem no motor. Pausas humanas não são liberadas pela IA.

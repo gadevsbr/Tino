@@ -29,6 +29,13 @@ Inventário para decidir como cada capacidade deverá funcionar no Tino. A prese
 
 ## 4. Caixa
 
+### Boletos a pagar (integrado ao Tino v0.15.14)
+
+- Cadastro manual na UI e por comando administrativo no WhatsApp.
+- Vencimento, valor, pendentes, pagos e cancelados.
+- Lembretes diários configuráveis no WhatsApp, inclusive após vencimento, encerrados na baixa/cancelamento.
+- Agendamento local com registro persistente de avisos; exige Tino aberto e conectado. Não realiza pagamentos nem altera o caixa.
+
 - Abrir caixa por data e editar o valor de abertura.
 - Registrar entrada em dinheiro, PIX ou cartão.
 - Registrar saída em dinheiro.
