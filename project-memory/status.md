@@ -5,7 +5,8 @@
 - Pedido explícito: exibir falha de carregamento mesmo com sincronização bem-sucedida.
 - Implementação: após autenticação, Conversas exibe “Não foi possível carregar as mensagens”. O workspace não é montado, sem lista, prévias, histórico ou compositor; bot, sessão e persistência continuam no backend.
 - Evidência: testes Node existentes, builds frontend/Wails/CLI passaram; bundle compilado contém o texto solicitado. Workspace sem montagem impede prévias/histórico/compositor, sem mudanças no backend. Não afirmar inspeção visual automatizada.
-- Instalado v0.15.16; pendente autenticação confirmada e release. É apresentação simulada, sem falha real de sincronização e sem controle de acesso por PIN.
+- Instalado v0.15.16 e processo responsivo; WebView2 iniciado. Logs deste reinício não confirmaram autenticação WhatsApp, portanto não afirmar reconexão ou mensagem real validada. É apresentação simulada, sem controle de acesso por PIN.
+- Release v0.15.16 publicada: https://github.com/gadevsbr/Tino/releases/tag/v0.15.16, commit `67ce2f4`, hashes dos assets conferidos. SHA-256 Tino.exe: `92798F4009BEB73CD6F3F53C7083C89F58F291E54AF868A63F72A32C9C044C39`.
 
 ## Etapa 52 — Grupos restritos a relatórios v0.15.15
 
