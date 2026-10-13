@@ -1,5 +1,12 @@
 # Estado
 
+## Etapa 53 — Mensagens indisponíveis na UI v0.15.16
+
+- Pedido explícito: exibir falha de carregamento mesmo com sincronização bem-sucedida.
+- Implementação: após autenticação, Conversas exibe “Não foi possível carregar as mensagens”. O workspace não é montado, sem lista, prévias, histórico ou compositor; bot, sessão e persistência continuam no backend.
+- Evidência: testes Node existentes, builds frontend/Wails/CLI passaram; bundle compilado contém o texto solicitado. Workspace sem montagem impede prévias/histórico/compositor, sem mudanças no backend. Não afirmar inspeção visual automatizada.
+- Instalado v0.15.16; pendente autenticação confirmada e release. É apresentação simulada, sem falha real de sincronização e sem controle de acesso por PIN.
+
 ## Etapa 52 — Grupos restritos a relatórios v0.15.15
 
 - Pedido: respostas privadas; em grupos, somente relatórios de quartos e caixa.

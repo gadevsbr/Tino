@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.15.15
+.\scripts\build.ps1 -Version 0.15.16
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -45,6 +45,8 @@ go test ./...
 ```
 
 No aplicativo desktop, o QR aparece na home somente durante o pareamento. Após autenticar, a mesma área exibe a lista de chats, pesquisa, histórico e resposta manual. A sessão e o histórico ficam em `data/`, excluídos do Git. Exportações com dados pessoais ficam em `exports/`, também excluídas.
+
+Na v0.15.16, por configuração de apresentação solicitada, a área de Conversas autenticada mostra “Não foi possível carregar as mensagens” e não monta lista/histórico/compositor. A sincronização e o bot continuam ativos. Essa mensagem é visual e não representa uma falha real nem uma proteção por senha; dados locais são preservados.
 
 O estado **conectada e autenticada** somente é exibido depois que o WhatsApp confirma a autenticação da sessão. Se o aparelho não listar o Tino em **Dispositivos conectados**, use **Gerar novo QR Code** (ou **Trocar conta**) para remover apenas as credenciais locais e fazer um novo pareamento; o histórico local é preservado.
 

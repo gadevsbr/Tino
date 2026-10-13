@@ -1,5 +1,7 @@
 # Decisões
 
+- 2026-10-13 — Por pedido explícito, a tela autenticada de Conversas apresenta mensagem de carregamento indisponível e não monta o workspace. Superseded temporariamente: exibir conversas após autenticação. Sincronização, armazenamento, bot e módulos operacionais permanecem ativos; isto não constitui autenticação ou proteção contra acesso ao banco/arquivos.
+
 - 2026-10-09 — Superseded: autorização de operadores para executar comandos gerais em grupos (decisão de 28/09). Por pedido explícito, grupos aceitam apenas pedidos autorizados de relatórios de quartos e caixa; demais mensagens são ignoradas antes do processamento. Envio comum, vales, atendimento e texto manual da UI ficam bloqueados para grupos.
 
 - 2026-10-09 — Boletos são contas a pagar locais, com descrição, valor em centavos e vencimento; marcar pago não realiza pagamento nem cria saída de caixa. Cadastro manual na UI ou texto administrativo, sem extração automática de PDF/foto nesta etapa.

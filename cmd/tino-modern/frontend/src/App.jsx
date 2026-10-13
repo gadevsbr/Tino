@@ -107,7 +107,7 @@ function Conversations({ status, qr, busy, connect, reset, refreshStatus, notify
       <div className="info-strip"><ShieldCheck/><span>O Tino não solicita sua senha e mantém a sessão somente neste computador.</span></div>
     </section>
   </div>
-  return <ChatWorkspace notify={notify}/>
+  return <section className="panel" style={{minHeight:'calc(100vh - 154px)',display:'grid',placeItems:'center'}}><div className="wa-chat-empty" role="status"><div className="wa-empty-orbit"><MessageCircle/></div><h2>Não foi possível carregar as mensagens</h2><p>Tente novamente mais tarde.</p></div></section>
 }
 
 function ChatWorkspace({ notify }) {
