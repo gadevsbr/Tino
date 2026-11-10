@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -34,16 +35,19 @@ func TestDownloadUpdateVerifiesOfficialAssetDigest(t *testing.T) {
 	assetURL := "https://github.com/gadevsbr/Tino/releases/download/v0.17.3/Tino.exe"
 	client := &http.Client{Transport: updateTransport(func(req *http.Request) (*http.Response, error) {
 		body := ""
-		if req.URL.String() == "https://api.test/latest" {
-			body = fmt.Sprintf(`{"tag_name":"v0.17.3","assets":[{"name":"Tino.exe","browser_download_url":%q,"digest":"sha256:%s","size":%d}]}`, assetURL, hex.EncodeToString(digest[:]), len(payload))
+		finalURL := req.URL
+		if req.URL.String() == "https://github.com/gadevsbr/Tino/releases/latest" {
+			finalURL, _ = url.Parse("https://github.com/gadevsbr/Tino/releases/tag/v0.17.3")
+		} else if req.URL.String() == assetURL+".sha256" {
+			body = hex.EncodeToString(digest[:])
 		} else if req.URL.String() == assetURL {
 			body = string(payload)
 		} else {
 			return nil, fmt.Errorf("unexpected URL %s", req.URL)
 		}
-		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
+		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header), Request: &http.Request{URL: finalURL}, ContentLength: int64(len(body))}, nil
 	})}
-	path, version, err := downloadUpdate(context.Background(), client, "https://api.test/latest", "0.17.2", t.TempDir())
+	path, version, err := downloadUpdate(context.Background(), client, releaseAPI, "0.17.2", t.TempDir())
 	if err != nil || version != "v0.17.3" || !strings.HasSuffix(path, "Tino-0.17.3.exe") {
 		t.Fatalf("path=%q version=%q err=%v", path, version, err)
 	}
@@ -52,13 +56,18 @@ func TestDownloadUpdateVerifiesOfficialAssetDigest(t *testing.T) {
 func TestDownloadUpdateRejectsWrongDigest(t *testing.T) {
 	assetURL := "https://github.com/gadevsbr/Tino/releases/download/v0.17.3/Tino.exe"
 	client := &http.Client{Transport: updateTransport(func(req *http.Request) (*http.Response, error) {
-		body := `{"tag_name":"v0.17.3","assets":[{"name":"Tino.exe","browser_download_url":"` + assetURL + `","digest":"sha256:` + strings.Repeat("0", 64) + `","size":3}]}`
-		if req.URL.String() == assetURL {
+		body := ""
+		finalURL := req.URL
+		if req.URL.String() == releaseAPI {
+			finalURL, _ = url.Parse("https://github.com/gadevsbr/Tino/releases/tag/v0.17.3")
+		} else if req.URL.String() == assetURL+".sha256" {
+			body = strings.Repeat("0", 64)
+		} else if req.URL.String() == assetURL {
 			body = "bad"
 		}
-		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
+		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header), Request: &http.Request{URL: finalURL}, ContentLength: int64(len(body))}, nil
 	})}
-	if _, _, err := downloadUpdate(context.Background(), client, "https://api.test/latest", "0.17.2", t.TempDir()); err == nil {
+	if _, _, err := downloadUpdate(context.Background(), client, releaseAPI, "0.17.2", t.TempDir()); err == nil {
 		t.Fatal("wrong digest accepted")
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -18,25 +17,11 @@ import (
 )
 
 const (
-	releaseAPI      = "https://api.github.com/repos/gadevsbr/Tino/releases/latest"
+	releaseAPI      = "https://github.com/gadevsbr/Tino/releases/latest"
 	maxUpdateBytes  = 250 << 20
 	updateAssetName = "Tino.exe"
 	updateUserAgent = "Tino-Updater"
 )
-
-type releaseInfo struct {
-	TagName    string         `json:"tag_name"`
-	Draft      bool           `json:"draft"`
-	Prerelease bool           `json:"prerelease"`
-	Assets     []releaseAsset `json:"assets"`
-}
-
-type releaseAsset struct {
-	Name               string `json:"name"`
-	BrowserDownloadURL string `json:"browser_download_url"`
-	Digest             string `json:"digest"`
-	Size               int64  `json:"size"`
-}
 
 func downloadUpdate(ctx context.Context, client *http.Client, apiURL, currentVersion, dir string) (string, string, error) {
 	if normalizeVersion(currentVersion) == "" {
@@ -46,47 +31,49 @@ func downloadUpdate(ctx context.Context, client *http.Client, apiURL, currentVer
 	if err != nil {
 		return "", "", err
 	}
-	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", updateUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", "", err
 	}
-	defer resp.Body.Close()
+	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return "", "", fmt.Errorf("GitHub respondeu HTTP %d", resp.StatusCode)
 	}
-	var release releaseInfo
-	if err = json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&release); err != nil {
-		return "", "", err
+	prefix := "/gadevsbr/Tino/releases/tag/"
+	if resp.Request == nil || !strings.EqualFold(resp.Request.URL.Hostname(), "github.com") || !strings.HasPrefix(resp.Request.URL.Path, prefix) {
+		return "", "", errors.New("GitHub não informou a release estável")
 	}
-	if release.Draft || release.Prerelease || compareVersions(release.TagName, currentVersion) <= 0 {
+	tag := strings.TrimPrefix(resp.Request.URL.Path, prefix)
+	if normalizeVersion(tag) == "" || compareVersions(tag, currentVersion) <= 0 {
 		return "", "", nil
 	}
-	var asset releaseAsset
-	for _, candidate := range release.Assets {
-		if candidate.Name == updateAssetName {
-			asset = candidate
-			break
-		}
+	downloadURL := "https://github.com/gadevsbr/Tino/releases/download/" + tag + "/" + updateAssetName
+	checksumURL := downloadURL + ".sha256"
+	req, _ = http.NewRequestWithContext(ctx, http.MethodGet, checksumURL, nil)
+	req.Header.Set("User-Agent", updateUserAgent)
+	resp, err = client.Do(req)
+	if err != nil {
+		return "", "", err
 	}
-	want := strings.TrimPrefix(strings.ToLower(asset.Digest), "sha256:")
-	if asset.BrowserDownloadURL == "" || len(want) != 64 || asset.Size <= 0 || asset.Size > maxUpdateBytes {
-		return "", "", errors.New("release sem executável ou SHA-256 válido")
+	checksum, readErr := io.ReadAll(io.LimitReader(resp.Body, 128))
+	resp.Body.Close()
+	want := strings.ToLower(strings.TrimSpace(string(checksum)))
+	if readErr != nil || resp.StatusCode != http.StatusOK || len(want) != 64 {
+		return "", "", errors.New("release sem SHA-256 válido")
 	}
-	downloadURL := "https://github.com/gadevsbr/Tino/releases/download/" + release.TagName + "/" + updateAssetName
-	if asset.BrowserDownloadURL != downloadURL {
-		return "", "", errors.New("endereço inesperado do executável")
+	if _, err = hex.DecodeString(want); err != nil {
+		return "", "", errors.New("SHA-256 da release inválido")
 	}
 	if err = os.MkdirAll(dir, 0o700); err != nil {
 		return "", "", err
 	}
-	target := filepath.Join(dir, "Tino-"+normalizeVersion(release.TagName)+".exe")
+	target := filepath.Join(dir, "Tino-"+normalizeVersion(tag)+".exe")
 	file, err := os.OpenFile(target+".download", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
 		return "", "", err
 	}
-	req, _ = http.NewRequestWithContext(ctx, http.MethodGet, asset.BrowserDownloadURL, nil)
+	req, _ = http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 	req.Header.Set("User-Agent", updateUserAgent)
 	resp, err = client.Do(req)
 	if err != nil {
@@ -98,7 +85,7 @@ func downloadUpdate(ctx context.Context, client *http.Client, apiURL, currentVer
 	written, copyErr := io.Copy(io.MultiWriter(file, hash), io.LimitReader(resp.Body, maxUpdateBytes+1))
 	closeErr := file.Close()
 	resp.Body.Close()
-	if copyErr != nil || closeErr != nil || resp.StatusCode != http.StatusOK || written != asset.Size || written > maxUpdateBytes || hex.EncodeToString(hash.Sum(nil)) != want {
+	if copyErr != nil || closeErr != nil || resp.StatusCode != http.StatusOK || written <= 0 || written > maxUpdateBytes || (resp.ContentLength > 0 && written != resp.ContentLength) || hex.EncodeToString(hash.Sum(nil)) != want {
 		os.Remove(file.Name())
 		return "", "", errors.New("download da atualização não passou na verificação")
 	}
@@ -107,7 +94,7 @@ func downloadUpdate(ctx context.Context, client *http.Client, apiURL, currentVer
 		os.Remove(file.Name())
 		return "", "", err
 	}
-	return target, release.TagName, nil
+	return target, tag, nil
 }
 
 func normalizeVersion(value string) string {
