@@ -55,17 +55,33 @@ class Flow:
 
         self.stage = 'identity'
         modal = page.locator('#modal-reserva')
+        opened = False
         for _ in range(3):
             page.locator('#btn-add-reserva').click()
             try:
                 modal.locator('#reserva_cpf').wait_for(state='visible', timeout=3000)
+                opened = True
                 break
             except Exception:
                 pass
-        modal.locator('#reserva_cpf').fill(r['cpf'])
-        modal.locator('[title="Pesquisar por CPF"]').click()
-        page.wait_for_function('Number(vueReserva.reserva.pessoa_id) > 0')
-        modal.locator('#btn-avancar').click()
+        if not opened:
+            raise FlowError('identity_form_not_opened')
+        try:
+            modal.locator('#reserva_cpf').fill(r['cpf'])
+        except Exception as exc:
+            raise FlowError('cpf_field_unavailable') from exc
+        try:
+            modal.locator('[title="Pesquisar por CPF"]').click()
+        except Exception as exc:
+            raise FlowError('cpf_search_unavailable') from exc
+        try:
+            page.wait_for_function('Number(vueReserva.reserva.pessoa_id) > 0')
+        except Exception as exc:
+            raise FlowError('cpf_not_resolved') from exc
+        try:
+            modal.locator('#btn-avancar').click()
+        except Exception as exc:
+            raise FlowError('identity_advance_failed') from exc
 
         self.stage = 'dates'
         for selector, value in [('#reserva_data_reserva', r['checkin']),

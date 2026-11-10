@@ -515,3 +515,12 @@
 - Evidência web: o bundle canônico contém `tino-control-api.gadevs2020.workers.dev`; login real retornou usuário `proprietaria`, dashboard HTTP 200 e CORS `https://tino-control.pages.dev`.
 - Evidência local: testes direcionados Go, `go vet`, teste e build web passaram; Wails 0.16.2 abriu responsivo. SHA-256: `Tino.exe` `5CF587DC2F45FBCE42BA6624BB709FC6EB41898C75AC136640A85BE52F83100B`; CLI `8B337037D66DC6AA2F052D278538E2F9274973FDDADA89445DD8C1A8A69477AE`.
 - Evidência de release: commit `c029a04`, tag `v0.16.2` e hashes dos dois assets conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.16.2`.
+
+## Etapa 25 — Diagnóstico do CPF operacional Bitz v0.16.3
+
+- Status: causa externa confirmada e cadastro corrigido pelo operador; diagnóstico do Tino aprimorado.
+- Causa: o CPF operacional configurado havia sido apagado do Bitz. A pesquisa não preenchia `vueReserva.reserva.pessoa_id`, e o runner reduzia o timeout a `identity (browser_or_timeout)`.
+- Correção: a etapa de identidade diferencia formulário, campo, pesquisa, CPF não resolvido e avanço; `cpf_not_resolved` vira a orientação direta para cadastrar o CPF no Bitz.
+- Evidência externa: antes do cadastro, probe real sem salvamento reproduziu `identity (browser_or_timeout)` em 57 segundos; depois do cadastro, a identidade passou e o mesmo probe chegou a `rooms`. Ele não salvou reserva e parou porque a categoria de teste não foi confirmada para 01–05/12/2026.
+- Evidência local: sintaxe Python, teste da mensagem, suíte Go completa, `go vet` e pacote Bitz passaram; runtime empacotado SHA-256 `2D614C6807F658D03FB96017B30E5452B24943DC46C31C557707F3BE08CAD88D`.
+- Build Wails 0.16.3 abriu responsivo. SHA-256: `Tino.exe` `52AD7315E8A336E68CC67E833FBE25123577628D5C47B61B85EFED04464669CA`; CLI `8788EB5EB86013E7BE0FB9DB542C3893F7817490407803F60DD8F578E6C7ECAE`.

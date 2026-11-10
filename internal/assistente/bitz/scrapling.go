@@ -83,11 +83,18 @@ func (r *ScraplingRunner) run(parent context.Context, mode string, cfg Config, p
 		return result, errors.New("Bitz: runtime Scrapling não retornou um resultado válido")
 	}
 	if runErr != nil || !result.OK {
-		return result, fmt.Errorf("Bitz/Scrapling: etapa %s (%s); confira o Bitz antes de repetir", result.Stage, result.Code)
+		return result, scraplingError(result)
 	}
 	expected := map[string]string{"login": "authenticated", "probe": "verified_without_save", "create": "saved"}[mode]
 	if result.Code != expected || (mode == "create" && result.Reference == "") || (mode != "login" && len(result.Rooms) != len(categories)) {
 		return result, errors.New("Bitz: confirmação incompleta; confira o Bitz antes de repetir")
 	}
 	return result, nil
+}
+
+func scraplingError(result ScraplingResult) error {
+	if result.Stage == "identity" && result.Code == "cpf_not_resolved" {
+		return errors.New("Bitz: CPF operacional não localizado; cadastre esse CPF no Bitz e tente novamente")
+	}
+	return fmt.Errorf("Bitz/Scrapling: etapa %s (%s); confira o Bitz antes de repetir", result.Stage, result.Code)
 }
