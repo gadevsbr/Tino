@@ -109,7 +109,10 @@ async function syncBridge(request, env) {
   const instanceId = clean(data.instanceId, 100);
   if (!instanceId || !Array.isArray(data.contacts) || !Array.isArray(data.failures)) return json({ error: "snapshot inválido" }, 400);
   const now = new Date().toISOString();
-  const statements = [env.DB.prepare("INSERT INTO instances(id,version,last_seen) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET version=excluded.version,last_seen=excluded.last_seen").bind(instanceId, clean(data.version, 40), now)];
+  const statements = [
+    env.DB.prepare("INSERT INTO instances(id,version,last_seen) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET version=excluded.version,last_seen=excluded.last_seen").bind(instanceId, clean(data.version, 40), now),
+    env.DB.prepare("DELETE FROM contacts WHERE instance_id=?").bind(instanceId)
+  ];
   for (const item of data.contacts.slice(0, 5000)) {
     const account = clean(item.Account, 150), contact = clean(item.Contact, 150), stage = clean(item.Stage, 40);
     if (!account || !contact || !stage) continue;

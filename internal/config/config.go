@@ -73,14 +73,22 @@ func Load(path string) (Config, error) {
 	return cfg, nil
 }
 
-// LoadDesktop anchors files to the executable, regardless of shortcut working directory.
+// LoadDesktop keeps mutable desktop data outside temporary/download directories.
 func LoadDesktop(base string) (Config, error) {
 	cfg, err := Load(filepath.Join(base, "config", "config.yaml"))
 	if err != nil {
 		return Config{}, err
 	}
 	if !filepath.IsAbs(cfg.DataDir) {
-		cfg.DataDir = filepath.Join(base, cfg.DataDir)
+		if cfg.DataDir == "data" {
+			root, err := os.UserConfigDir()
+			if err != nil {
+				return Config{}, fmt.Errorf("localizar dados do usuário: %w", err)
+			}
+			cfg.DataDir = filepath.Join(root, "Tino", "data")
+		} else {
+			cfg.DataDir = filepath.Join(base, cfg.DataDir)
+		}
 	}
 	if !filepath.IsAbs(cfg.Flow.RulesFile) {
 		cfg.Flow.RulesFile = filepath.Join(base, cfg.Flow.RulesFile)

@@ -141,3 +141,7 @@
 - 2026-09-28 — Valores monetários do orçamento OmniBees usam o padrão brasileiro completo, com ponto de milhar e vírgula decimal (`R$ 2.504,20`).
 - 2026-09-30 — Superseded: casar categorias apenas contra uma lista fixa de nomes podia eliminar toda a disponibilidade quando a OmniBees alterava rótulos.
 - 2026-09-30 — Categorias OmniBees são classificadas semanticamente por capacidade e atributos (`duplo`, `triplo`, `quádruplo`, `família`, `deluxe`, `varanda`, `vista mar`, `superluxo`). A capacidade exata continua obrigatória.
+
+- 2026-11-10 — Superseded: dados desktop padrão ancorados ao diretório do executável podiam se perder ou se dividir quando o Windows/navegador abria o binário em pasta temporária.
+- 2026-11-10 — Sessão, chats, configurações e banco operacional padrão residem em `%APPDATA%\Tino\data`, independentes do local do executável. Um `data_dir` relativo explicitamente configurado continua ancorado ao executável.
+- 2026-11-10 — O painel remoto representa o snapshot atual da instância: contatos ausentes no snapshot são removidos do D1 para não exibir atendimentos fantasmas ou dados obsoletos.

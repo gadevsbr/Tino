@@ -21,13 +21,33 @@ func TestLoad(t *testing.T) {
 		t.Fatalf("config inesperada: %#v", c)
 	}
 }
-func TestDesktopPathsStayWithExecutable(t *testing.T) {
+func TestDesktopDataUsesPersistentUserDirectory(t *testing.T) {
 	base := t.TempDir()
+	userConfig := t.TempDir()
+	t.Setenv("APPDATA", userConfig)
+	t.Setenv("XDG_CONFIG_HOME", userConfig)
 	cfg, err := LoadDesktop(base)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.DataDir != filepath.Join(base, "data") || cfg.Flow.RulesFile != filepath.Join(base, "config", "flows.yaml") {
+	if cfg.DataDir != filepath.Join(userConfig, "Tino", "data") || cfg.Flow.RulesFile != filepath.Join(base, "config", "flows.yaml") {
 		t.Fatalf("wrong paths: %#v", cfg)
+	}
+}
+
+func TestDesktopKeepsConfiguredRelativeDataWithExecutable(t *testing.T) {
+	base := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(base, "config"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(base, "config", "config.yaml"), []byte("data_dir: state\nprofile: default\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadDesktop(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.DataDir != filepath.Join(base, "state") {
+		t.Fatalf("wrong configured data path: %s", cfg.DataDir)
 	}
 }

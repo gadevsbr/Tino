@@ -524,3 +524,15 @@
 - Evidência externa: antes do cadastro, probe real sem salvamento reproduziu `identity (browser_or_timeout)` em 57 segundos; depois do cadastro, a identidade passou e o mesmo probe chegou a `rooms`. Ele não salvou reserva e parou porque a categoria de teste não foi confirmada para 01–05/12/2026.
 - Evidência local: sintaxe Python, teste da mensagem, suíte Go completa, `go vet` e pacote Bitz passaram; runtime empacotado SHA-256 `2D614C6807F658D03FB96017B30E5452B24943DC46C31C557707F3BE08CAD88D`.
 - Build Wails 0.16.3 abriu responsivo. SHA-256: `Tino.exe` `52AD7315E8A336E68CC67E833FBE25123577628D5C47B61B85EFED04464669CA`; CLI `8788EB5EB86013E7BE0FB9DB542C3893F7817490407803F60DD8F578E6C7ECAE`.
+- Evidência de release: commit `c4cf4ed`, tag `v0.16.3` e hashes dos dois assets conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.16.3`.
+
+## Etapa 26 — Dados persistentes e snapshot fiel do painel v0.16.4
+
+- Status: causa confirmada, correção local e Worker publicados; release Windows em preparação.
+- Causa: o processo ativo era o `0.16.1` aberto em uma pasta temporária do navegador. A configuração antiga gravava sessão, chats e banco operacional ao lado do executável; cada download podia iniciar uma base diferente. O D1 também mantinha contatos ausentes nos snapshots seguintes.
+- Correção: dados padrão passam a residir em `%APPDATA%\Tino\data`; caminhos relativos configurados explicitamente continuam compatíveis. A ponte substitui os contatos da instância a cada snapshot, removendo registros fantasmas.
+- Migração: a sessão do processo temporário foi copiada para o diretório persistente, mantendo a origem intacta; `hotel.db`, `chats-default.db` e `sessions/default.db` passaram em `PRAGMA integrity_check`.
+- Evidência remota: Worker `ab26cd55-7ddc-4a64-9122-d0f1a6c15382` publicado; o contato obsoleto foi removido pelo snapshot vazio e o novo executável registrou versão `0.16.4` no D1.
+- Evidência local: `go test -count=1 ./...`, `go vet ./...`, testes Node do Worker e build Vite passaram. O Wails 0.16.4 abriu responsivo usando a configuração persistente.
+- SHA-256 local: `Tino.exe` `52A3A45E8F7A0646E9E18622A76FC9ED6F50E1B532A40D27FDBC7495D6D03333`; CLI `3CCCFE7C09059A0DB561922A30B9DD305286758EDBCACE398FA9B78563D72CE3`.
+- Limite: conversas antigas que nunca geraram estado em `commercial_contacts` não são reconstruídas por inferência; o painel passa a refletir corretamente os atendimentos processados pela base persistente a partir desta versão.
