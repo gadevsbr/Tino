@@ -24,6 +24,12 @@ var version = "dev"
 var assets embed.FS
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--apply-update" {
+		if err := applyUpdate(os.Args[1:]); err != nil {
+			fatal(err)
+		}
+		return
+	}
 	executable, err := os.Executable()
 	if err != nil {
 		fatal(err)

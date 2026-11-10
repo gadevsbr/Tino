@@ -570,3 +570,11 @@
 - Evidência local: sintaxe Python, `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram; Wails 0.17.2 abriu responsivo.
 - SHA-256 local: `Tino.exe` `CC52EA5EC177D68AE6A9231AFFEC572B9E064A57CF2A8D47E95DB57649F60B5A`; CLI `0BC7355F954094BFE608CCA104D354361230D7FEDA7B1C349A075BE154C75915`.
 - Evidência de release: commit `fbf45b3`, tag `v0.17.2` e hashes dos dois assets conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.2`.
+
+## Etapa 30 — Atualização automática v0.17.3
+
+- Status: implementação e validação local concluídas; release em preparação.
+- Fluxo: ao iniciar, consulta a última release estável, baixa o executável oficial em `%APPDATA%\Tino\data\updates`, valida URL, tamanho e SHA-256, fecha, troca o binário e reabre sem configuração manual.
+- Segurança e recuperação: prereleases e drafts são ignorados; download divergente é apagado; falha de gravação restaura o executável anterior.
+- Evidência local: testes do atualizador cobrem comparação semântica, download válido e rejeição de digest incorreto; `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram; Wails 0.17.3 abriu responsivo.
+- SHA-256 local: `Tino.exe` `3E88F9FC3EAC5B7062D05264F5A4C1CA3AE0FCBEA05A864CACA29ED74CA658AA`; CLI `211440BABDA237C6431148B3FACD099497E61FE0AD7693707EE64546FF74E1F9`.

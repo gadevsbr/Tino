@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -93,6 +95,28 @@ func (a *App) startup(ctx context.Context) {
 	if a.mgr.Client.Store.ID != nil && !a.mgr.Client.IsLoggedIn() {
 		go a.connectPersistedSession()
 	}
+	go a.checkForUpdate()
+}
+
+func (a *App) checkForUpdate() {
+	executable, err := os.Executable()
+	if err != nil {
+		return
+	}
+	downloaded, next, err := downloadUpdate(a.ctx, &http.Client{Timeout: 5 * time.Minute}, releaseAPI, a.version, filepath.Join(a.cfg.DataDir, "updates"))
+	if err != nil {
+		a.emitActivity("Atualização", err.Error(), "error")
+		return
+	}
+	if downloaded == "" {
+		return
+	}
+	a.emitActivity("Atualização", "Instalando "+next+" e reiniciando o Tino", "info")
+	if err = launchUpdateHelper(downloaded, executable); err != nil {
+		a.emitActivity("Atualização", err.Error(), "error")
+		return
+	}
+	wailsRuntime.Quit(a.ctx)
 }
 
 func (a *App) connectPersistedSession() {

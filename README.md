@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.17.2
+.\scripts\build.ps1 -Version 0.17.3
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -77,6 +77,8 @@ O Worker em `workers/tino-ai` usa Llama 3.3 70B FP8 Fast com JSON estruturado em
 No Flow Builder ativado, regras explícitas têm prioridade, depois a IA, depois a resposta padrão se a IA falhar. No comercial, a IA interpreta e redige; o motor mantém comandos de operadores, pausas humanas, cotações, criação no Bitz e aprovação. Preços e listas de suítes permanecem literais; áudio continua com encaminhamento humano. A fila por conversa evita bloquear o processamento de eventos do WhatsApp.
 
 O aplicativo mantém os dados e configurações padrão em `%APPDATA%\Tino\data`, independentemente da pasta do executável. A conexão do WhatsApp e o carregamento do motor de comandos aparecem separadamente na interface.
+
+Ao abrir, o Tino consulta a release estável oficial no GitHub. Quando existe versão nova, baixa `Tino.exe` em segundo plano, confere tamanho e SHA-256 publicados, fecha, substitui o executável atual e reabre automaticamente. Falha de rede, permissão ou integridade mantém a versão instalada sem sobrescrevê-la.
 
 ## Central de recursos
 
