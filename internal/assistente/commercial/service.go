@@ -379,6 +379,32 @@ func (s *Service) AwaitingPaymentProof(ctx context.Context, account, contact str
 	return st.AwaitingProof, err
 }
 
+// PendingPreReservation returns the completed selection without consuming it.
+// The transport consumes it only after the proof reaches an operator.
+func (s *Service) PendingPreReservation(ctx context.Context, account, contact string) (*PreReservation, error) {
+	st, err := s.load(ctx, account, contact)
+	if err != nil || !st.AwaitingProof || st.Plan == nil || len(st.SelectedRooms) != len(st.Plan.Rooms) {
+		return nil, err
+	}
+	return &PreReservation{CheckIn: st.Plan.CheckIn, CheckOut: st.Plan.CheckOut, Categories: append([]omnibees.Category(nil), st.SelectedRooms...), Rooms: append([]QuoteRoom(nil), st.Plan.Rooms...)}, nil
+}
+
+func (s *Service) PaymentProofDelivered(ctx context.Context, account, contact string) error {
+	unlock := s.lock(account, contact)
+	defer unlock()
+	st, err := s.load(ctx, account, contact)
+	if err != nil {
+		return err
+	}
+	if !st.AwaitingProof {
+		return errors.New("comprovante não aguardado")
+	}
+	st.AwaitingProof = false
+	st.Paused = true
+	st.Plan, st.Categories, st.SelectedRooms = nil, nil, nil
+	return s.save(ctx, Input{Account: account, Contact: contact}, st)
+}
+
 // Pipeline returns the local operational state used by the optional web control panel.
 func (s *Service) Pipeline(ctx context.Context) ([]PipelineContact, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT account,contact,state FROM commercial_contacts ORDER BY contact`)
@@ -699,20 +725,22 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		r.Categories = q.Categories
 		if len(q.Categories) > 0 {
 			st.QuotedAt = in.Now
-			st.AwaitingProof = strings.TrimSpace(config.FinalMessage3) != ""
+			st.AwaitingProof = false
 			if strings.TrimSpace(config.FinalMessage1) != "" {
 				r.Messages = append(r.Messages, config.FinalMessage1)
 			}
 			if strings.TrimSpace(config.FinalMessage2) != "" {
 				r.Messages = append(r.Messages, config.FinalMessage2)
 			}
-			r.AfterSelection = config.FinalMessage3
 			if q.Plan != nil && len(q.Plan.Rooms) > 0 {
-				r.SelectionPrompt = roomCategorySelectionPrompt(1, len(q.Plan.Rooms), q.Plan.Rooms[0].Categories)
+				r.Text = roomCategorySelectionPrompt(1, len(q.Plan.Rooms), q.Plan.Rooms[0].Categories)
+				r.Messages = r.Messages[len(q.Messages):]
 			} else {
-				r.SelectionPrompt = categorySelectionPrompt(q.Categories)
+				r.Text = categorySelectionPrompt(q.Categories)
 			}
 		}
+	} else if st.AwaitingProof {
+		r.Text = config.FinalMessage3
 	} else if st.Plan != nil && len(st.Plan.Rooms) > 0 {
 		if in.Now.Sub(st.QuotedAt) >= 24*time.Hour {
 			st.Categories, st.Plan, st.SelectedRooms = nil, nil, nil
@@ -737,10 +765,9 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 					next := len(st.SelectedRooms)
 					r.Text = "Categoria do quarto confirmada.\n\n" + roomCategorySelectionPrompt(next+1, len(st.Plan.Rooms), st.Plan.Rooms[next].Categories)
 				} else {
-					r.PreReservation = &PreReservation{CheckIn: st.Plan.CheckIn, CheckOut: st.Plan.CheckOut, Categories: append([]omnibees.Category(nil), st.SelectedRooms...), Rooms: append([]QuoteRoom(nil), st.Plan.Rooms...)}
-					r.Text = "Tudo certo com as categorias. Agora vou criar sua pré-reserva e avisar nossa equipe para concluir o atendimento."
-					st.Paused = true
-					st.Plan, st.Categories, st.SelectedRooms = nil, nil, nil
+					r.Text = "Categoria escolhida."
+					r.AfterSelection = config.FinalMessage3
+					st.AwaitingProof = true
 				}
 			}
 		}
@@ -779,8 +806,16 @@ func categorySelectionPrompt(categories []omnibees.Category) string {
 	var b strings.Builder
 	b.WriteString("Escolha uma categoria pelo número:\n")
 	for i, category := range categories {
-		fmt.Fprintf(&b, "%d — %s\n", i+1, category.Name)
+		fmt.Fprintf(&b, "%d — %s — %s\n", i+1, category.Name, formatBRL(category.TotalCents))
 	}
 	b.WriteString("\nOu envie *atendente* para falar com nossa equipe. Para encerrar, envie *sair*.")
 	return b.String()
+}
+
+func formatBRL(cents int64) string {
+	whole := strconv.FormatInt(cents/100, 10)
+	for i := len(whole) - 3; i > 0; i -= 3 {
+		whole = whole[:i] + "." + whole[i:]
+	}
+	return fmt.Sprintf("R$ %s,%02d", whole, cents%100)
 }

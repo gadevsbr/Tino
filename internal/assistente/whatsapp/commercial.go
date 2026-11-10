@@ -672,20 +672,32 @@ func (s *Service) applyRoomAllocationPolicy(ctx context.Context, categories []bi
 }
 
 func preReservationNotice(code, contact string, request commercial.PreReservation) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "✅ *Pré-reserva criada no Bitz*\n\nCódigo: *%s*\n%s", code, reservationSummary(contact, request))
+	fmt.Fprintf(&b, "\n\nComprovante: *recebido e encaminhado para validação*\n")
+	fmt.Fprintf(&b, "\nFinalize o atendimento e, quando estiver tudo certo, responda:\n*aprovar pre-reserva %s*", code)
+	return b.String()
+}
+
+func reservationSummary(contact string, request commercial.PreReservation) string {
 	guest := strings.TrimSpace(contact)
 	if _, ok := phoneArgument(guest); ok {
 		guest = "+" + guest
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "✅ *Pré-reserva criada no Bitz*\n\nCódigo: *%s*\nWhatsApp do hóspede: *%s*\nPeríodo: *%s a %s*\n", code, guest, request.CheckIn, request.CheckOut)
+	fmt.Fprintf(&b, "WhatsApp do hóspede: *%s*\nPeríodo: *%s a %s*\n", guest, request.CheckIn, request.CheckOut)
+	var total int64
 	if len(request.Rooms) > 0 {
 		b.WriteString("\n*Resumo da hospedagem*\n")
 		for i, room := range request.Rooms {
 			category := "Categoria não informada"
+			var value int64
 			if i < len(request.Categories) && strings.TrimSpace(request.Categories[i].Name) != "" {
 				category = request.Categories[i].Name
+				value = request.Categories[i].TotalCents
+				total += value
 			}
-			fmt.Fprintf(&b, "\n*Quarto %d — %s*\n%d adulto(s)", i+1, category, room.Adults)
+			fmt.Fprintf(&b, "\n*Quarto %d — %s*\nValor: *%s*\n%d adulto(s)", i+1, category, formatCommercialBRL(value), room.Adults)
 			if len(room.Ages) == 0 {
 				b.WriteString("\nSem crianças")
 			} else {
@@ -695,9 +707,20 @@ func preReservationNotice(code, contact string, request commercial.PreReservatio
 		}
 	} else {
 		fmt.Fprintf(&b, "\nQuartos: *%d*\n", len(request.Categories))
+		for _, category := range request.Categories {
+			total += category.TotalCents
+		}
 	}
-	fmt.Fprintf(&b, "\nFinalize o atendimento e, quando estiver tudo certo, responda:\n*aprovar pre-reserva %s*", code)
+	fmt.Fprintf(&b, "\n*Valor total: %s*", formatCommercialBRL(total))
 	return b.String()
+}
+
+func formatCommercialBRL(cents int64) string {
+	whole := strconv.FormatInt(cents/100, 10)
+	for i := len(whole) - 3; i > 0; i -= 3 {
+		whole = whole[:i] + "." + whole[i:]
+	}
+	return fmt.Sprintf("R$ %s,%02d", whole, cents%100)
 }
 
 func formatChildAges(ages []int) string {

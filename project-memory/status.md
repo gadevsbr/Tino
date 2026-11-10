@@ -549,3 +549,13 @@
 - SHA-256 local: `Tino.exe` `72661026F523D5AD568136B8DA62717421EA1A8E8D3536AD19755C81E301ACB9`; CLI `785132C01C3B0AA61A217EAEA48F8648824446D8D85E627F064BA3DD48A6BB24`.
 - Limite: não foi criada pré-reserva real nem enviado comprovante real pelo WhatsApp nesta validação; esses dois efeitos externos exigem teste operacional controlado.
 - Evidência de release: commit `1cbbac0`, tag `v0.17.0` e hashes dos dois assets conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.0`.
+
+## Etapa 28 — Ordem de escolha, comprovante e Bitz v0.17.1
+
+- Status: correção implementada e validada; release em preparação.
+- Causa: `AwaitingProof` e a mensagem 3 eram ativados no fim da consulta, enquanto a pré-reserva Bitz era iniciada na escolha da categoria. Isso invertia o fluxo operacional e o aviso manual não apresentava valores nem a situação do comprovante.
+- Correção: o orçamento numerado inclui valores e recebe a escolha; somente a escolha final libera a mensagem 3. A pré-reserva e os avisos aos aprovadores só começam depois que o comprovante foi persistido e entregue a um operador.
+- Aviso operacional: comprovante anexado, valor por quarto e valor total em reais acompanham o resumo. A contingência manual do Bitz usa o mesmo resumo completo.
+- Evidência local: testes direcionados de comercial e WhatsApp passaram; `go test -count=1 ./...` e `go vet ./...` passaram.
+- Build: testes e build React passaram; Wails 0.17.1 abriu responsivo e o banco persistente retornou `integrity=ok` com a tabela de comprovantes presente.
+- SHA-256 local: `Tino.exe` `0884445DA323C16CA2BA514A4A3387CDD7AAF0ED68B154DDEC147CD95E210443`; CLI `1CCCFA2D5A50C6EA49FAF1436A80F65159C27CF64C0175864DD0999710DB78FB`.

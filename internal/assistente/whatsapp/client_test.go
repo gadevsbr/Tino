@@ -124,12 +124,18 @@ func TestCashReportRangeDefaultsToCurrentMonth(t *testing.T) {
 func TestPreReservationNoticeIncludesGuestAndRoomSummary(t *testing.T) {
 	notice := preReservationNotice("ABC123", "5573999999999", commercial.PreReservation{
 		CheckIn: "10/10/2026", CheckOut: "12/10/2026",
-		Categories: []omnibees.Category{{Name: "Suíte Deluxe"}, {Name: "Suíte Interna"}},
+		Categories: []omnibees.Category{{Name: "Suíte Deluxe", TotalCents: 250420}, {Name: "Suíte Interna", TotalCents: 100000}},
 		Rooms:      []commercial.QuoteRoom{{Adults: 2, Ages: []int{1, 7}}, {Adults: 1}},
 	})
-	for _, expected := range []string{"*+5573999999999*", "*Quarto 1 — Suíte Deluxe*", "2 adulto(s)", "2 criança(s): 1 ano, 7 anos", "*Quarto 2 — Suíte Interna*", "*aprovar pre-reserva ABC123*"} {
+	for _, expected := range []string{"*+5573999999999*", "*Quarto 1 — Suíte Deluxe*", "Valor: *R$ 2.504,20*", "2 adulto(s)", "2 criança(s): 1 ano, 7 anos", "*Quarto 2 — Suíte Interna*", "*Valor total: R$ 3.504,20*", "Comprovante: *recebido", "*aprovar pre-reserva ABC123*"} {
 		if !strings.Contains(notice, expected) {
 			t.Fatalf("notice missing %q:\n%s", expected, notice)
+		}
+	}
+	proofNotice := proofValidationNotice("5573999999999", commercial.PreReservation{CheckIn: "10/10/2026", CheckOut: "12/10/2026", Categories: []omnibees.Category{{Name: "Suíte Deluxe", TotalCents: 250420}}, Rooms: []commercial.QuoteRoom{{Adults: 2}}})
+	for _, expected := range []string{"Comprovante aguardando validação", "Suíte Deluxe", "R$ 2.504,20", "arquivo recebido está anexado"} {
+		if !strings.Contains(proofNotice, expected) {
+			t.Fatalf("proof notice missing %q:\n%s", expected, proofNotice)
 		}
 	}
 }

@@ -4,12 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gadevsbr/tino/internal/assistente/bitz"
+	"github.com/gadevsbr/tino/internal/assistente/commercial"
 	"go.mau.fi/whatsmeow"
 	waE2E "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
@@ -27,6 +27,10 @@ func (s *Service) handleCommercialProof(ctx context.Context, account, contact, m
 	waiting, err := s.commercial.AwaitingPaymentProof(ctx, account, contact)
 	if err != nil || !waiting || (image == nil && document == nil) {
 		return false, err
+	}
+	request, err := s.commercial.PendingPreReservation(ctx, account, contact)
+	if err != nil || request == nil {
+		return true, errors.New("seleção da hospedagem incompleta")
 	}
 	var downloadable whatsmeow.DownloadableMessage
 	proof := commercialProof{ID: transportMessageKey("proof", account, contact, messageID), Account: account, Contact: contact, ChatJID: chat.ToNonAD().String()}
@@ -68,14 +72,7 @@ func (s *Service) handleCommercialProof(ctx context.Context, account, contact, m
 	if err != nil {
 		return true, err
 	}
-	code := ""
-	if job, jobErr := s.bitzJobs.LatestForContact(ctx, account, contact); jobErr == nil {
-		code = job.Code
-	}
-	notice := fmt.Sprintf("🧾 *Comprovante aguardando validação*\nHóspede: +%s\nO hóspede ainda precisa concluir a escolha da categoria antes da aprovação.", contact)
-	if code != "" {
-		notice = fmt.Sprintf("🧾 *Comprovante aguardando validação*\nHóspede: +%s\nPré-reserva: *%s*\nValide o arquivo e responda *aprovar pre-reserva %s* após conferir.", contact, code, code)
-	}
+	notice := proofValidationNotice(contact, *request)
 	destinations := append([]string(nil), s.auth.Numbers()...)
 	if cfg, cfgErr := s.bitzStore.Public(ctx); cfgErr == nil && cfg.ApproverPhone != "" {
 		destinations = append(destinations, cfg.ApproverPhone)
@@ -97,8 +94,16 @@ func (s *Service) handleCommercialProof(ctx context.Context, account, contact, m
 	if delivered == 0 {
 		return true, errors.New("nenhum operador recebeu o comprovante")
 	}
+	if err := s.commercial.PaymentProofDelivered(ctx, account, contact); err != nil {
+		return true, err
+	}
+	s.startPreReservation(account, contact, messageID, chat, *request)
 	s.replyText(ctx, chat, "Recebi seu comprovante e encaminhei para validação. Nossa equipe confirmará a reserva por aqui.")
 	return true, nil
+}
+
+func proofValidationNotice(contact string, request commercial.PreReservation) string {
+	return "🧾 *Comprovante aguardando validação*\n\n" + reservationSummary(contact, request) + "\n\nO arquivo recebido está anexado a esta mensagem."
 }
 
 func (s *Service) sendProofToPhone(ctx context.Context, phone, caption string, proof commercialProof) error {

@@ -109,15 +109,15 @@ func TestOperatorTestSessionUsesIsolatedSyntheticContact(t *testing.T) {
 	}
 }
 
-func TestBudgetSequenceAddsConfiguredMessagesAndAwaitsProof(t *testing.T) {
-	categories := []omnibees.Category{{Key: "interna", Name: "Interna"}}
+func TestBudgetSequenceWaitsForSelectionBeforePaymentInstruction(t *testing.T) {
+	categories := []omnibees.Category{{Key: "interna", Name: "Interna", TotalCents: 250420}}
 	calls := 0
 	s := fixture(t, func(_ context.Context, _, _, text string) (QuoteReply, error) {
 		calls++
 		if text == "orçamento" {
 			return QuoteReply{Text: "quantos quartos", Active: true}, nil
 		}
-		return QuoteReply{Messages: []string{"*Quarto 1*\nvalores"}, Categories: categories}, nil
+		return QuoteReply{Messages: []string{"mensagem duplicada"}, Categories: categories, Plan: &QuotePlan{CheckIn: "20/11/2026", CheckOut: "22/11/2026", Rooms: []QuoteRoom{{Adults: 2, Ages: []int{3}, Categories: categories}}}}, nil
 	})
 	configure(t, s, Config{Mode: Public, GroupPhone: "5573988240413", FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois", FinalMessage3: "envie o comprovante"})
 	now := time.Now()
@@ -127,22 +127,30 @@ func TestBudgetSequenceAddsConfiguredMessagesAndAwaitsProof(t *testing.T) {
 		t.Fatal(r)
 	}
 	r = handle(t, s, "3", "fim", now.Add(2*time.Minute))
-	if calls != 2 || len(r.Messages) != 3 || r.Messages[1] != "mensagem um" || r.Messages[2] != "mensagem dois" || len(r.Categories) != 1 {
+	if calls != 2 || len(r.Messages) != 2 || r.Messages[0] != "mensagem um" || r.Messages[1] != "mensagem dois" || len(r.Categories) != 1 {
 		t.Fatal(r)
 	}
-	if !strings.Contains(r.SelectionPrompt, "1 — Interna") || !strings.Contains(r.SelectionPrompt, "*atendente*") {
-		t.Fatal(r.SelectionPrompt)
+	if !strings.Contains(r.Text, "1 — Interna — R$ 2.504,20") || !strings.Contains(r.Text, "*atendente*") || r.SelectionPrompt != "" {
+		t.Fatal(r)
 	}
-	if r.AfterSelection != "envie o comprovante" {
+	if r.AfterSelection != "" {
 		t.Fatal(r.AfterSelection)
 	}
 	waits, err := s.AwaitingPaymentProof(context.Background(), "a", "guest")
-	if err != nil || !waits {
+	if err != nil || waits {
 		t.Fatalf("proof state=%t err=%v", waits, err)
 	}
 	r = handle(t, s, "4", "1", now.Add(3*time.Minute))
-	if !r.Handoff || !strings.Contains(r.Text, "*Interna*, disponível para o período consultado") || !strings.Contains(r.Text, "*atendente* concluir sua reserva") || strings.Contains(r.Text, "confirmar disponibilidade") {
+	if r.PreReservation != nil || r.AfterSelection != "envie o comprovante" {
 		t.Fatal(r)
+	}
+	waits, err = s.AwaitingPaymentProof(context.Background(), "a", "guest")
+	if err != nil || !waits {
+		t.Fatalf("proof state after selection=%t err=%v", waits, err)
+	}
+	pending, err := s.PendingPreReservation(context.Background(), "a", "guest")
+	if err != nil || pending == nil || pending.Categories[0].TotalCents != 250420 {
+		t.Fatalf("pending=%+v err=%v", pending, err)
 	}
 }
 
@@ -237,7 +245,7 @@ func TestMultiRoomCategoriesAreSelectedPerRoomBeforePreReservation(t *testing.T)
 		}
 		return QuoteReply{Categories: append(first, second...), Plan: &QuotePlan{CheckIn: "10/10/2026", CheckOut: "12/10/2026", Rooms: []QuoteRoom{{Adults: 2, Ages: []int{3}, Categories: first}, {Adults: 3, Categories: second}}}}, nil
 	})
-	configure(t, s, Config{Mode: Public, FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois"})
+	configure(t, s, Config{Mode: Public, FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois", FinalMessage3: "envie o comprovante"})
 	now := time.Now()
 	handle(t, s, "m1", "oi", now)
 	handle(t, s, "m2", "1", now.Add(time.Minute))
@@ -245,7 +253,7 @@ func TestMultiRoomCategoriesAreSelectedPerRoomBeforePreReservation(t *testing.T)
 	if len(r.Messages) != 2 || r.Messages[0] != "mensagem um" || r.Messages[1] != "mensagem dois" {
 		t.Fatal(r.Messages)
 	}
-	if !strings.Contains(r.SelectionPrompt, "Quarto 1 de 2") || !strings.Contains(r.SelectionPrompt, "Quarto Triplo") {
+	if !strings.Contains(r.Text, "Quarto 1 de 2") || !strings.Contains(r.Text, "Quarto Triplo") {
 		t.Fatal(r)
 	}
 	r = handle(t, s, "m4", "1", now.Add(3*time.Minute))
@@ -253,8 +261,12 @@ func TestMultiRoomCategoriesAreSelectedPerRoomBeforePreReservation(t *testing.T)
 		t.Fatal(r)
 	}
 	r = handle(t, s, "m5", "1", now.Add(4*time.Minute))
-	if r.PreReservation == nil || len(r.PreReservation.Categories) != 2 || r.PreReservation.Categories[1].Key != "quadruplo" || len(r.PreReservation.Rooms) != 2 || r.PreReservation.Rooms[0].Adults != 2 || len(r.PreReservation.Rooms[0].Ages) != 1 {
+	if r.PreReservation != nil || r.AfterSelection != "envie o comprovante" {
 		t.Fatal(r)
+	}
+	pending, err := s.PendingPreReservation(context.Background(), "a", "guest")
+	if err != nil || pending == nil || len(pending.Categories) != 2 || pending.Categories[1].Key != "quadruplo" || len(pending.Rooms) != 2 || pending.Rooms[0].Adults != 2 || len(pending.Rooms[0].Ages) != 1 {
+		t.Fatalf("pending=%+v err=%v", pending, err)
 	}
 }
 

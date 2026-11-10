@@ -30,7 +30,8 @@ func TestCommercialProofIsAcceptedOnlyAfterPaymentInstruction(t *testing.T) {
 		if text == "orçamento" {
 			return commercial.QuoteReply{Text: "check-in", Active: true}, nil
 		}
-		return commercial.QuoteReply{Categories: []omnibees.Category{{Key: "duplo", Name: "Duplo"}}}, nil
+		categories := []omnibees.Category{{Key: "duplo", Name: "Duplo", TotalCents: 250420}}
+		return commercial.QuoteReply{Categories: categories, Plan: &commercial.QuotePlan{CheckIn: "20/11/2026", CheckOut: "22/11/2026", Rooms: []commercial.QuoteRoom{{Adults: 2, Ages: []int{3}, Categories: categories}}}}, nil
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -39,7 +40,7 @@ func TestCommercialProofIsAcceptedOnlyAfterPaymentInstruction(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Now()
-	for i, text := range []string{"oi", "1", "fim"} {
+	for i, text := range []string{"oi", "1", "fim", "1"} {
 		if _, err = commercialService.Handle(ctx, commercial.Input{Account: "account", Contact: "5573999999999", MessageID: string(rune('a' + i)), Text: text, Now: now.Add(time.Duration(i) * time.Minute)}); err != nil {
 			t.Fatal(err)
 		}
