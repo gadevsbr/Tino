@@ -560,3 +560,12 @@
 - Build: testes e build React passaram; Wails 0.17.1 abriu responsivo e o banco persistente retornou `integrity=ok` com a tabela de comprovantes presente.
 - SHA-256 local: `Tino.exe` `0884445DA323C16CA2BA514A4A3387CDD7AAF0ED68B154DDEC147CD95E210443`; CLI `1CCCFA2D5A50C6EA49FAF1436A80F65159C27CF64C0175864DD0999710DB78FB`.
 - Evidência de release: commit `3ad9fed`, tag `v0.17.1` e hashes dos dois assets conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.1`.
+
+## Etapa 29 — Seleção de UH no Bitz v0.17.2
+
+- Status: causa reproduzida no Bitz real e correção validada; release em preparação.
+- Causa: categorias sem restrição local chegavam ao Scrapling como `allowed_rooms: [null]`; o Python tentava iterar o `null` e convertia a exceção em `rooms (browser_or_timeout)`. A leitura da tabela também podia ocorrer quando somente o cabeçalho estava visível.
+- Correção: `null` passa a representar corretamente lista vazia, e o runner aguarda a primeira célula real de categoria antes de procurar a UH. Ausência real recebe diagnóstico específico de indisponibilidade.
+- Evidência externa sem gravação: probe real de 20/11/2026 a 22/11/2026 para `triploDeluxe` chegou a `review` e retornou `verified_without_save`; nenhuma pré-reserva foi salva.
+- Evidência local: sintaxe Python, `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram; Wails 0.17.2 abriu responsivo.
+- SHA-256 local: `Tino.exe` `CC52EA5EC177D68AE6A9231AFFEC572B9E064A57CF2A8D47E95DB57649F60B5A`; CLI `0BC7355F954094BFE608CCA104D354361230D7FEDA7B1C349A075BE154C75915`.

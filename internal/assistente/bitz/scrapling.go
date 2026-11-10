@@ -96,5 +96,8 @@ func scraplingError(result ScraplingResult) error {
 	if result.Stage == "identity" && result.Code == "cpf_not_resolved" {
 		return errors.New("Bitz: CPF operacional não localizado; cadastre esse CPF no Bitz e tente novamente")
 	}
+	if result.Code == "no_rooms_available" || result.Code == "category_unavailable" {
+		return errors.New("Bitz: nenhuma UH compatível ficou disponível para a categoria e o período selecionados")
+	}
 	return fmt.Errorf("Bitz/Scrapling: etapa %s (%s); confira o Bitz antes de repetir", result.Stage, result.Code)
 }

@@ -152,3 +152,5 @@
 - 2026-11-10 — A aprovação envia ao hóspede a mensagem configurada e o comprovante validado. O comprovante fica localmente no SQLite apenas até o envio confirmado e então é removido.
 - 2026-11-10 — Superseded: a v0.17.0 ativava o estado de comprovante e enviava a mensagem 3 ao concluir a consulta, antes de o hóspede escolher a categoria; também iniciava o Bitz imediatamente após a escolha.
 - 2026-11-10 — O orçamento com valores é a própria lista numerada de escolha. A mensagem 3 nasce somente após a última categoria escolhida; Bitz e aprovadores aguardam o comprovante ser recebido e entregue a pelo menos um operador. Avisos manuais incluem valores por quarto, total e situação do comprovante.
+- 2026-11-10 — Superseded: o seletor Scrapling de linhas de UHs exigia a classe Bootstrap antiga `.in` no modal do Bitz; a tela atual abre o modal sem essa classe e causava falso timeout na etapa `rooms`.
+- 2026-11-10 — A busca de UHs fica ancorada nos IDs estáveis do modal e da tabela, sem classe visual de transição. Ausência real da categoria passa a retornar `category_unavailable`, não `browser_or_timeout`.

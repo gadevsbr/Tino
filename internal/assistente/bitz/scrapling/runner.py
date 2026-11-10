@@ -104,39 +104,48 @@ class Flow:
         modal.locator('#btn-avancar').click()
         modal.locator('#btn-add-quarto-reserva').wait_for(state='visible')
 
-        self.stage = 'rooms'
+        self.stage = 'rooms_open'
         modal.locator('#btn-add-quarto-reserva').click()
         picker = page.locator('#modal-quarto-reserva')
         picker.wait_for(state='visible')
+        self.stage = 'rooms_table'
         rows = picker.locator('#table-quartos-disponiveis-reserva tr')
         rows.first.wait_for(state='visible')
+        try:
+            picker.locator('#table-quartos-disponiveis-reserva tr td:nth-child(3)').first.wait_for(
+                state='visible', timeout=15000)
+        except Exception as exc:
+            raise FlowError('no_rooms_available') from exc
         selected = []
         allowed_by_category = r.get('allowed_rooms') or [[] for _ in r['categories']]
         for category_index, category in enumerate(r['categories']):
-            allowed = {str(number) for number in allowed_by_category[category_index]}
-            page.wait_for_function('''needle=>[...document.querySelectorAll('#modal-quarto-reserva.in #table-quartos-disponiveis-reserva tr')]
-                .some(row=>{const cell=row.children[2];const text=(cell?.innerText||'').normalize('NFD')
-                .replace(/[\\u0300-\\u036f]/g,'').toLowerCase().trim().replace(/\\s+/g,' ');return text===needle})''',
-                arg=normalized(category), timeout=15000)
+            self.stage = 'rooms_category'
+            allowed = {str(number) for number in (allowed_by_category[category_index] or [])}
             chosen = None
+            self.stage = 'rooms_scan'
             for row in rows.all():
                 cells = row.locator('td')
                 if cells.count() < 3:
                     continue
+                self.stage = 'rooms_read_number'
                 number = re.match(r'\s*(\d+)', cells.nth(1).inner_text())
                 if not number or number[1] in selected or (allowed and number[1] not in allowed):
                     continue
+                self.stage = 'rooms_read_category'
                 if normalized(cells.nth(2).inner_text()) == normalized(category):
                     chosen = (row, number[1])
                     break
             if chosen is None:
                 raise FlowError('category_unavailable')
             row, number = chosen
+            self.stage = 'rooms_select'
             row.locator('td').first.click()
             row.locator('td:first-child i.fa-check-square').wait_for(state='visible')
             selected.append(number)
+        self.stage = 'rooms_save'
         picker.locator('#btn-salvar-quarto-reserva').click()
         picker.wait_for(state='hidden')
+        self.stage = 'rooms_verify'
         page.wait_for_function('(n)=>vueReserva.reserva.quartosSelecionados.length===n', arg=len(selected))
         self.verify_model(page, selected, r['categories'])
 
