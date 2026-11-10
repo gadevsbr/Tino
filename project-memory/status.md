@@ -601,3 +601,4 @@
 - Evidência: testes direcionados dos pacotes `whatsapp`, `commercial` e `tino-modern`, `go test -count=1 ./...`, `go vet ./...`, testes e build do frontend e `git diff --check` passaram.
 - Build Windows `0.17.5` abriu e permaneceu responsivo; SHA-256 `F1622C931550763F29D83E541011DC89150DD75CBF4A82DD97FFAB9F7C141002`, igual ao checksum gerado.
 - Limite da validação: não foi enviado um comprovante real pelo WhatsApp para evitar disparo operacional; a entrega externa ao aprovador ainda requer confirmação no uso real.
+- Evidência de release: tag `v0.17.5` aponta para `cdb8f52`; executável, CLI e checksum foram publicados e os hashes remotos conferem em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.5`.
