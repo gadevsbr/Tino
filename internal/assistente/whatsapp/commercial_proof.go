@@ -23,17 +23,17 @@ type commercialProof struct {
 	Data                                               []byte
 }
 
-func (s *Service) handleCommercialProof(ctx context.Context, account, contact, messageID string, chat types.JID, image *waE2E.ImageMessage, document *waE2E.DocumentMessage) (bool, error) {
-	waiting, err := s.commercial.AwaitingPaymentProof(ctx, account, contact)
+func (s *Service) handleCommercialProof(ctx context.Context, account, stateContact, displayContact, messageID string, chat types.JID, image *waE2E.ImageMessage, document *waE2E.DocumentMessage) (bool, error) {
+	waiting, err := s.commercial.AwaitingPaymentProof(ctx, account, stateContact)
 	if err != nil || !waiting || (image == nil && document == nil) {
 		return false, err
 	}
-	request, err := s.commercial.PendingPreReservation(ctx, account, contact)
+	request, err := s.commercial.PendingPreReservation(ctx, account, stateContact)
 	if err != nil || request == nil {
 		return true, errors.New("seleção da hospedagem incompleta")
 	}
 	var downloadable whatsmeow.DownloadableMessage
-	proof := commercialProof{ID: transportMessageKey("proof", account, contact, messageID), Account: account, Contact: contact, ChatJID: chat.ToNonAD().String()}
+	proof := commercialProof{ID: transportMessageKey("proof", account, displayContact, messageID), Account: account, Contact: displayContact, ChatJID: chat.ToNonAD().String()}
 	if image != nil {
 		downloadable = image
 		proof.MediaType = image.GetMimetype()
@@ -68,15 +68,16 @@ func (s *Service) handleCommercialProof(ctx context.Context, account, contact, m
 	if strings.HasPrefix(proof.MediaType, "image/") && !strings.HasPrefix(http.DetectContentType(proof.Data), "image/") {
 		return true, errors.New("imagem de comprovante inválida")
 	}
-	_, err = s.domainDB.ExecContext(ctx, `INSERT OR IGNORE INTO commercial_payment_proofs(id,account,contact,chat_jid,media_type,file_name,data,created_at) VALUES(?,?,?,?,?,?,?,?)`, proof.ID, account, contact, proof.ChatJID, proof.MediaType, proof.FileName, proof.Data, time.Now().UTC().Format(time.RFC3339Nano))
+	_, err = s.domainDB.ExecContext(ctx, `INSERT OR IGNORE INTO commercial_payment_proofs(id,account,contact,chat_jid,media_type,file_name,data,created_at) VALUES(?,?,?,?,?,?,?,?)`, proof.ID, account, displayContact, proof.ChatJID, proof.MediaType, proof.FileName, proof.Data, time.Now().UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return true, err
 	}
-	notice := proofValidationNotice(contact, *request)
-	destinations := append([]string(nil), s.auth.Numbers()...)
-	if cfg, cfgErr := s.bitzStore.Public(ctx); cfgErr == nil && cfg.ApproverPhone != "" {
-		destinations = append(destinations, cfg.ApproverPhone)
+	notice := proofValidationNotice(displayContact, *request)
+	cfg, cfgErr := s.bitzStore.Public(ctx)
+	if cfgErr != nil {
+		return true, cfgErr
 	}
+	destinations := proofDestinations(cfg.ApproverPhone, s.auth.Numbers())
 	sent := map[string]bool{}
 	delivered := 0
 	for _, phone := range destinations {
@@ -86,20 +87,35 @@ func (s *Service) handleCommercialProof(ctx context.Context, account, contact, m
 		}
 		sent[phone] = true
 		if err := s.sendProofToPhone(ctx, phone, notice, proof); err != nil {
-			s.commercial.RecordFailure(ctx, "whatsapp", account, contact, err)
+			s.commercial.RecordFailure(ctx, "whatsapp", account, displayContact, err)
 		} else {
 			delivered++
 		}
 	}
 	if delivered == 0 {
-		return true, errors.New("nenhum operador recebeu o comprovante")
+		return true, errors.New("o aprovador configurado não recebeu o comprovante")
 	}
-	if err := s.commercial.PaymentProofDelivered(ctx, account, contact); err != nil {
+	if err := s.commercial.PaymentProofDelivered(ctx, account, stateContact); err != nil {
 		return true, err
 	}
-	s.startPreReservation(account, contact, messageID, chat, *request)
+	s.startPreReservation(account, displayContact, messageID, chat, *request)
 	s.replyText(ctx, chat, "Recebi seu comprovante e encaminhei para validação. Nossa equipe confirmará a reserva por aqui.")
 	return true, nil
+}
+
+func proofDestinations(approver string, operators []string) []string {
+	if phone, ok := phoneArgument(approver); ok {
+		return []string{phone}
+	}
+	result := []string{}
+	seen := map[string]bool{}
+	for _, raw := range operators {
+		if phone, ok := phoneArgument(raw); ok && !seen[phone] {
+			seen[phone] = true
+			result = append(result, phone)
+		}
+	}
+	return result
 }
 
 func proofValidationNotice(contact string, request commercial.PreReservation) string {

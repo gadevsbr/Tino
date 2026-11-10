@@ -592,3 +592,12 @@
 - SHA-256 local: `Tino.exe` `8E1A370E6AB1CA1AF4F852C93DD23A433758C059AA59A0E8E70FA5128453E715`; CLI `5206CB6EAC31761B29A6D0B6487C669EF17FCC7F36F2CF96E89EDCBB94CF874E`.
 - Evidência E2E do atualizador: com outras instâncias encerradas, uma cópia marcada `0.17.3` baixou a release, substituiu o próprio executável pelo hash oficial `8E1A370E...` da `0.17.4` e reabriu. O teste opcional `TINO_LIVE_UPDATE=1` também validou download e checksum reais.
 - Evidência de release: tag `v0.17.4` com executável, CLI e checksum publicada em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.4`.
+
+## Etapa 32 — Comprovante da simulação para o aprovador v0.17.5
+
+- Status: implementado e validado localmente; release em andamento.
+- Causa: texto de `testar atendimento` usava `operator-test:TELEFONE`, mas mídia do mesmo operador seguia o ramo administrativo. Além disso, o envio aceitava sucesso de qualquer operador autorizado mesmo se o aprovador configurado não recebesse.
+- Correção: imagem/PDF reconhece a sessão comercial simulada e preserva o telefone real no resumo. O aprovador configurado é o único destino obrigatório; fallback para operadores existe apenas sem aprovador.
+- Evidência: testes direcionados dos pacotes `whatsapp`, `commercial` e `tino-modern`, `go test -count=1 ./...`, `go vet ./...`, testes e build do frontend e `git diff --check` passaram.
+- Build Windows `0.17.5` abriu e permaneceu responsivo; SHA-256 `F1622C931550763F29D83E541011DC89150DD75CBF4A82DD97FFAB9F7C141002`, igual ao checksum gerado.
+- Limite da validação: não foi enviado um comprovante real pelo WhatsApp para evitar disparo operacional; a entrega externa ao aprovador ainda requer confirmação no uso real.

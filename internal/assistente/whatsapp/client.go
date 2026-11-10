@@ -385,7 +385,7 @@ func (s *Service) onEvent(raw any) {
 		}
 		if !operator {
 			if imageMessage != nil || document != nil {
-				handled, proofErr := s.handleCommercialProof(ctx, account, contact, string(evt.Info.ID), evt.Info.Chat, imageMessage, document)
+				handled, proofErr := s.handleCommercialProof(ctx, account, contact, contact, string(evt.Info.ID), evt.Info.Chat, imageMessage, document)
 				if proofErr != nil {
 					s.commercial.RecordFailure(ctx, "whatsapp", account, contact, proofErr)
 					s.replyText(ctx, evt.Info.Chat, "Não consegui receber esse comprovante. Envie novamente uma imagem ou PDF de até 15 MB.")
@@ -396,6 +396,16 @@ func (s *Service) onEvent(raw any) {
 			}
 			s.handleGuest(ctx, account, contact, string(evt.Info.ID), text, evt.Info.Chat, evt.Message.GetAudioMessage() != nil)
 			return
+		}
+		if (imageMessage != nil || document != nil) && s.commercialTestActive(ctx, account, contact) {
+			handled, proofErr := s.handleCommercialProof(ctx, account, commercialTestContact(contact), contact, string(evt.Info.ID), evt.Info.Chat, imageMessage, document)
+			if proofErr != nil {
+				s.commercial.RecordFailure(ctx, "whatsapp", account, contact, proofErr)
+				s.replyText(ctx, evt.Info.Chat, "Não consegui encaminhar o comprovante ao aprovador configurado. Confira o WhatsApp aprovador e tente novamente.")
+			}
+			if handled {
+				return
+			}
 		}
 		if s.handleCommercialOperator(ctx, account, sender, string(evt.Info.ID), text, product, evt.Info.Chat) {
 			return

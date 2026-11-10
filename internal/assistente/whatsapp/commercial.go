@@ -452,6 +452,11 @@ func commercialTestContact(operator string) string {
 	return "operator-test:" + operator
 }
 
+func (s *Service) commercialTestActive(ctx context.Context, account, operator string) bool {
+	var testing int
+	return s.domainDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM whatsapp_commercial_tests WHERE account=? AND operator=?`, account, operator).Scan(&testing) == nil && testing > 0
+}
+
 func (s *Service) handleGuestAs(ctx context.Context, account, stateContact, displayContact, messageID, text string, chat types.JID, testSession, audio bool) {
 	if s.commercial == nil {
 		return

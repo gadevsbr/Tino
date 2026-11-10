@@ -63,7 +63,10 @@ func TestCommercialProofIsAcceptedOnlyAfterPaymentInstruction(t *testing.T) {
 	if err = s.ensureTransportSchema(ctx); err != nil {
 		t.Fatal(err)
 	}
-	handled, err := s.handleCommercialProof(ctx, "account", "5573999999999", "proof-1", types.NewJID("5573999999999", types.DefaultUserServer), nil, &waE2E.DocumentMessage{Mimetype: proto.String("application/pdf"), FileName: proto.String("pix.pdf")})
+	if _, err = db.ExecContext(ctx, `INSERT INTO whatsapp_commercial_tests(account,operator) VALUES (?,?)`, "account", "5573999999999"); err != nil || !s.commercialTestActive(ctx, "account", "5573999999999") {
+		t.Fatalf("commercial test media was not recognized: %v", err)
+	}
+	handled, err := s.handleCommercialProof(ctx, "account", "5573999999999", "5573999999999", "proof-1", types.NewJID("5573999999999", types.DefaultUserServer), nil, &waE2E.DocumentMessage{Mimetype: proto.String("application/pdf"), FileName: proto.String("pix.pdf")})
 	if err == nil || !handled || sent != 0 {
 		t.Fatalf("handled=%t sent=%d err=%v", handled, sent, err)
 	}
@@ -76,5 +79,16 @@ func TestCommercialProofIsAcceptedOnlyAfterPaymentInstruction(t *testing.T) {
 	}
 	if err = s.sendCommercialProof(ctx, types.NewJID("5573999999999", types.DefaultUserServer), "validado", commercialProof{MediaType: "application/pdf", FileName: "pix.pdf", Data: []byte("%PDF-1.4 proof")}); err != nil || sent != 1 {
 		t.Fatalf("confirmation proof sent=%d err=%v", sent, err)
+	}
+}
+
+func TestProofDestinationRequiresConfiguredApprover(t *testing.T) {
+	got := proofDestinations("5573988240413", []string{"557388333657", "5573999999999"})
+	if len(got) != 1 || got[0] != "5573988240413" {
+		t.Fatalf("proof leaked to ordinary operators: %v", got)
+	}
+	got = proofDestinations("", []string{"557388333657", "557388333657"})
+	if len(got) != 1 || got[0] != "557388333657" {
+		t.Fatalf("operator fallback=%v", got)
 	}
 }
