@@ -573,8 +573,11 @@
 
 ## Etapa 30 — Atualização automática v0.17.3
 
-- Status: implementação e validação local concluídas; release em preparação.
+- Status: implementado, validado de ponta a ponta e publicado.
 - Fluxo: ao iniciar, consulta a última release estável, baixa o executável oficial em `%APPDATA%\Tino\data\updates`, valida URL, tamanho e SHA-256, fecha, troca o binário e reabre sem configuração manual.
 - Segurança e recuperação: prereleases e drafts são ignorados; download divergente é apagado; falha de gravação restaura o executável anterior.
 - Evidência local: testes do atualizador cobrem comparação semântica, download válido e rejeição de digest incorreto; `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram; Wails 0.17.3 abriu responsivo.
-- SHA-256 local: `Tino.exe` `3E88F9FC3EAC5B7062D05264F5A4C1CA3AE0FCBEA05A864CACA29ED74CA658AA`; CLI `211440BABDA237C6431148B3FACD099497E61FE0AD7693707EE64546FF74E1F9`.
+- A API do GitHub foi removida do fluxo depois de reproduzir limite público compartilhado; a descoberta usa `releases/latest` e o checksum é um asset pequeno da própria release.
+- Evidência E2E: uma cópia de teste marcada `0.17.2` atualizou automaticamente para o hash oficial da `0.17.3`, substituiu o próprio arquivo e reabriu responsiva. Hash anterior `BC5A099A...`; posterior `CEE3578E70ACF83DCDB0EBD8E19503E344433D6DC2B3A40F544C89DBA9E11654`.
+- SHA-256 final: `Tino.exe` `CEE3578E70ACF83DCDB0EBD8E19503E344433D6DC2B3A40F544C89DBA9E11654`; CLI `1B117260944A87D55BB71FF774A7D95E31DC5FD7CA5BA8C663F9996DAB4EC3D6`.
+- Evidência de release: commit `956fcdb`, tag `v0.17.3` e assets `Tino.exe`, CLI e `Tino.exe.sha256` publicados em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.3`.
