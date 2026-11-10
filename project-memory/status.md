@@ -514,3 +514,4 @@
 - Correção: o Worker oficial passa a ser o endereço padrão compilado no frontend; `.env` continua podendo sobrescrevê-lo em desenvolvimento.
 - Evidência web: o bundle canônico contém `tino-control-api.gadevs2020.workers.dev`; login real retornou usuário `proprietaria`, dashboard HTTP 200 e CORS `https://tino-control.pages.dev`.
 - Evidência local: testes direcionados Go, `go vet`, teste e build web passaram; Wails 0.16.2 abriu responsivo. SHA-256: `Tino.exe` `5CF587DC2F45FBCE42BA6624BB709FC6EB41898C75AC136640A85BE52F83100B`; CLI `8B337037D66DC6AA2F052D278538E2F9274973FDDADA89445DD8C1A8A69477AE`.
+- Evidência de release: commit `c029a04`, tag `v0.16.2` e hashes dos dois assets conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.16.2`.
