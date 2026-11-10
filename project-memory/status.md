@@ -590,3 +590,5 @@
 - Mensagem 4: novo campo na configuração comercial; somente `aprovar pre-reserva CODIGO` por operador autorizado libera o texto final e o comprovante validado ao hóspede.
 - Evidência: regressões cobrem mídia vazia antes e depois da confirmação do comprovante, preferência da mensagem 4 e preservação da configuração; `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram. Wails 0.17.4 abriu responsivo e o checksum automático conferiu.
 - SHA-256 local: `Tino.exe` `8E1A370E6AB1CA1AF4F852C93DD23A433758C059AA59A0E8E70FA5128453E715`; CLI `5206CB6EAC31761B29A6D0B6487C669EF17FCC7F36F2CF96E89EDCBB94CF874E`.
+- Evidência E2E do atualizador: com outras instâncias encerradas, uma cópia marcada `0.17.3` baixou a release, substituiu o próprio executável pelo hash oficial `8E1A370E...` da `0.17.4` e reabriu. O teste opcional `TINO_LIVE_UPDATE=1` também validou download e checksum reais.
+- Evidência de release: tag `v0.17.4` com executável, CLI e checksum publicada em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.4`.

@@ -8,8 +8,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 type updateTransport func(*http.Request) (*http.Response, error)
@@ -26,6 +28,16 @@ func TestCompareVersions(t *testing.T) {
 		if got := compareVersions(tc.a, tc.b); got != tc.want {
 			t.Fatalf("compareVersions(%q,%q)=%d want %d", tc.a, tc.b, got, tc.want)
 		}
+	}
+}
+
+func TestLiveDownloadUpdate(t *testing.T) {
+	if os.Getenv("TINO_LIVE_UPDATE") != "1" {
+		t.Skip("set TINO_LIVE_UPDATE=1 to download the current release")
+	}
+	path, version, err := downloadUpdate(context.Background(), &http.Client{Timeout: 5 * time.Minute}, releaseAPI, "0.17.3", t.TempDir())
+	if err != nil || path == "" || version != "v0.17.4" {
+		t.Fatalf("path=%q version=%q err=%v", path, version, err)
 	}
 }
 
