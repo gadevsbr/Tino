@@ -581,3 +581,4 @@
 - Evidência E2E: uma cópia de teste marcada `0.17.2` atualizou automaticamente para o hash oficial da `0.17.3`, substituiu o próprio arquivo e reabriu responsiva. Hash anterior `BC5A099A...`; posterior `CEE3578E70ACF83DCDB0EBD8E19503E344433D6DC2B3A40F544C89DBA9E11654`.
 - SHA-256 final: `Tino.exe` `CEE3578E70ACF83DCDB0EBD8E19503E344433D6DC2B3A40F544C89DBA9E11654`; CLI `1B117260944A87D55BB71FF774A7D95E31DC5FD7CA5BA8C663F9996DAB4EC3D6`.
 - Evidência de release: commit `956fcdb`, tag `v0.17.3` e assets `Tino.exe`, CLI e `Tino.exe.sha256` publicados em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.3`.
+- O build passa a gerar `dist/Tino.exe.sha256` automaticamente para que releases futuras mantenham o contrato do atualizador.

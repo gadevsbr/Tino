@@ -27,6 +27,8 @@ try {
     $env:GOARCH = "amd64"
     go build -tags bitzpackaged -trimpath -ldflags "-s -w -X main.version=$Version" -o (Join-Path $distDir "tino-cli-windows-amd64.exe") ./cmd/tino
 	if ($LASTEXITCODE -ne 0) { throw "go build falhou" }
+	$desktopHash = (Get-FileHash -Algorithm SHA256 (Join-Path $distDir "Tino.exe")).Hash.ToLowerInvariant()
+	[IO.File]::WriteAllText((Join-Path $distDir "Tino.exe.sha256"), $desktopHash + "`n", [Text.UTF8Encoding]::new($false))
     Get-FileHash -Algorithm SHA256 (Join-Path $distDir "Tino.exe"), (Join-Path $distDir "tino-cli-windows-amd64.exe") | Format-Table -AutoSize
 } finally {
     Pop-Location
