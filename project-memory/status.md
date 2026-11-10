@@ -540,7 +540,7 @@
 
 ## Etapa 27 — Fechamento comercial com comprovante v0.17.0
 
-- Status: implementado e validado localmente; release em preparação.
+- Status: implementado, validado e publicado.
 - Fluxo: check-in, check-out, quartos, adultos, crianças/idades, orçamento, mensagens 1 e 2, categorias numeradas e mensagem 3 configurável na UI.
 - Comprovante: após a mensagem 3, imagem ou PDF válido de até 15 MB é persistido localmente e encaminhado ao aprovador Bitz e operadores autorizados. A aprovação envia a mensagem final e o arquivo validado ao hóspede e remove o BLOB local.
 - Contingência Bitz: falhas entram em `manual_review`; o hóspede recebe texto neutro e os operadores recebem contato, período, ocupação, categorias, código de aprovação e motivo técnico para conclusão manual.
@@ -548,3 +548,4 @@
 - Build: Wails 0.17.0 abriu responsivo, criou `commercial_payment_proofs` no banco real sem falha de integridade e sincronizou `0.17.0` no D1.
 - SHA-256 local: `Tino.exe` `72661026F523D5AD568136B8DA62717421EA1A8E8D3536AD19755C81E301ACB9`; CLI `785132C01C3B0AA61A217EAEA48F8648824446D8D85E627F064BA3DD48A6BB24`.
 - Limite: não foi criada pré-reserva real nem enviado comprovante real pelo WhatsApp nesta validação; esses dois efeitos externos exigem teste operacional controlado.
+- Evidência de release: commit `1cbbac0`, tag `v0.17.0` e hashes dos dois assets conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.0`.
