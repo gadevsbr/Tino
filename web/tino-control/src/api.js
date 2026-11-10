@@ -19,6 +19,18 @@ async function request(path, options = {}) {
   return data;
 }
 
+export async function login(username, password) {
+  const response = await fetch(base + "/api/auth/login", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+  saveToken(data.token);
+  return data;
+}
+
 export function loadDashboard() { return request("/api/dashboard"); }
 export function sendCommand(contact, action, instanceId) {
   return request("/api/commands", { method: "POST", body: JSON.stringify({ instanceId, account: contact.account, contact: contact.contact, action }) });

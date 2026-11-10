@@ -26,10 +26,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		dashboardToken, err := source.DashboardToken()
-		if err != nil {
-			panic(err)
-		}
+		dashboardToken, _ := source.DashboardToken()
 		if err := store.Save(cfg, token, dashboardToken); err != nil {
 			panic(err)
 		}
@@ -45,14 +42,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		dashboardToken, err := store.DashboardToken()
-		if err != nil {
-			panic(err)
-		}
-		if err := (controlpanel.Client{Endpoint: cfg.Endpoint, Token: dashboardToken, InstanceID: cfg.InstanceID}).CheckDashboard(context.Background()); err != nil {
-			panic(err)
-		}
-		fmt.Println("ponte sincronizada e dashboard autenticado")
+		fmt.Println("ponte autenticada e sincronizada")
 		return
 	}
 	tokens, err := io.ReadAll(io.LimitReader(os.Stdin, 8192))

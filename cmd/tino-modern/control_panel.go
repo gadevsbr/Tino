@@ -1,8 +1,8 @@
 package main
 
 import (
+	"context"
 	"errors"
-	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -10,14 +10,15 @@ import (
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-type ControlPanelDTO struct {
-	Enabled, TokenSet, DashboardTokenSet       bool
-	Endpoint, DashboardURL, InstanceID, Status string
-}
+const (
+	controlPanelEndpoint  = "https://tino-control-api.gadevs2020.workers.dev"
+	controlPanelDashboard = "https://tino-control.pages.dev"
+	controlPanelInstance  = "hotel-paraiso-recepcao"
+)
 
-type ControlPanelInput struct {
-	Enabled                                                   bool
-	Endpoint, DashboardURL, InstanceID, Token, DashboardToken string
+type ControlPanelDTO struct {
+	Enabled          bool
+	Username, Status string
 }
 
 func (a *App) GetControlPanel() (ControlPanelDTO, error) {
@@ -32,31 +33,39 @@ func (a *App) GetControlPanel() (ControlPanelDTO, error) {
 		status = a.hotel.controlPanelState()
 	}
 	a.hotelMu.Unlock()
-	return ControlPanelDTO{Enabled: cfg.Enabled, TokenSet: cfg.PasswordSet, DashboardTokenSet: cfg.DashboardTokenSet, Endpoint: cfg.Endpoint, DashboardURL: cfg.DashboardURL, InstanceID: cfg.InstanceID, Status: status}, nil
+	return ControlPanelDTO{Enabled: cfg.Enabled, Username: cfg.Username, Status: status}, nil
 }
 
-func (a *App) ConfigureControlPanel(input ControlPanelInput) error {
-	input.Endpoint, input.InstanceID = strings.TrimSpace(input.Endpoint), strings.TrimSpace(input.InstanceID)
-	if input.Enabled && (!strings.HasPrefix(input.Endpoint, "https://") || !strings.HasPrefix(input.DashboardURL, "https://") || input.InstanceID == "") {
-		return errors.New("informe um endereço HTTPS e um identificador para ativar o painel")
+func (a *App) LoginControlPanel(username, password string) error {
+	username = strings.TrimSpace(username)
+	if username == "" || password == "" {
+		return errors.New("informe usuário e senha")
+	}
+	token, err := (controlpanel.Client{Endpoint: controlPanelEndpoint, InstanceID: controlPanelInstance}).Login(context.Background(), username, password)
+	if err != nil {
+		return err
 	}
 	store := controlpanel.NewStore(filepath.Join(a.cfg.DataDir, "control-panel.json"))
-	if err := store.Save(controlpanel.Config{Enabled: input.Enabled, Endpoint: input.Endpoint, DashboardURL: input.DashboardURL, InstanceID: input.InstanceID}, input.Token, input.DashboardToken); err != nil {
+	if err := store.Save(controlpanel.Config{Enabled: true, Endpoint: controlPanelEndpoint, DashboardURL: controlPanelDashboard, InstanceID: controlPanelInstance, Username: username}, token, ""); err != nil {
+		return err
+	}
+	return a.restartHotelRuntime()
+}
+
+func (a *App) DisconnectControlPanel() error {
+	store := controlpanel.NewStore(filepath.Join(a.cfg.DataDir, "control-panel.json"))
+	cfg, _, err := store.Load()
+	if err != nil {
+		return err
+	}
+	cfg.Enabled = false
+	if err := store.Save(cfg, "", ""); err != nil {
 		return err
 	}
 	return a.restartHotelRuntime()
 }
 
 func (a *App) OpenControlPanel() error {
-	store := controlpanel.NewStore(filepath.Join(a.cfg.DataDir, "control-panel.json"))
-	cfg, _, err := store.Load()
-	if err != nil {
-		return err
-	}
-	token, tokenErr := store.DashboardToken()
-	if !cfg.Enabled || cfg.DashboardURL == "" || tokenErr != nil || token == "" {
-		return errors.New("configure e ative o painel web primeiro")
-	}
-	wailsRuntime.BrowserOpenURL(a.ctx, strings.TrimRight(cfg.DashboardURL, "/")+"/#token="+url.QueryEscape(token))
+	wailsRuntime.BrowserOpenURL(a.ctx, controlPanelDashboard)
 	return nil
 }

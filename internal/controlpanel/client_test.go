@@ -39,3 +39,18 @@ func TestSyncAndAckUseAuthenticatedContract(t *testing.T) {
 		t.Fatalf("chamadas=%d", calls)
 	}
 }
+
+func TestLoginCreatesBridgeSession(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var input map[string]string
+		if r.URL.Path != "/api/auth/login" || json.NewDecoder(r.Body).Decode(&input) != nil || input["username"] != "dona" || input["password"] != "senha" || input["purpose"] != "bridge" {
+			t.Fatalf("login inválido: path=%s input=%+v", r.URL.Path, input)
+		}
+		_, _ = w.Write([]byte(`{"token":"session-token"}`))
+	}))
+	defer server.Close()
+	token, err := (Client{Endpoint: server.URL, HTTP: server.Client()}).Login(context.Background(), "dona", "senha")
+	if err != nil || token != "session-token" {
+		t.Fatalf("token=%q err=%v", token, err)
+	}
+}

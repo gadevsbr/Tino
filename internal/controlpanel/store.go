@@ -13,6 +13,7 @@ type storedConfig struct {
 	Endpoint             string `json:"endpoint"`
 	DashboardURL         string `json:"dashboard_url"`
 	InstanceID           string `json:"instance_id"`
+	Username             string `json:"username,omitempty"`
 	TokenCipher          string `json:"token_cipher,omitempty"`
 	DashboardTokenCipher string `json:"dashboard_token_cipher,omitempty"`
 }
@@ -40,7 +41,7 @@ func (s *Store) Load() (Config, string, error) {
 			return Config{}, "", err
 		}
 	}
-	return Config{Enabled: stored.Enabled, Endpoint: stored.Endpoint, DashboardURL: stored.DashboardURL, InstanceID: stored.InstanceID, PasswordSet: token != "", DashboardTokenSet: stored.DashboardTokenCipher != ""}, token, nil
+	return Config{Enabled: stored.Enabled, Endpoint: stored.Endpoint, DashboardURL: stored.DashboardURL, InstanceID: stored.InstanceID, Username: stored.Username, PasswordSet: token != "", DashboardTokenSet: stored.DashboardTokenCipher != ""}, token, nil
 }
 
 func (s *Store) DashboardToken() (string, error) {
@@ -59,7 +60,7 @@ func (s *Store) DashboardToken() (string, error) {
 }
 
 func (s *Store) Save(cfg Config, token, dashboardToken string) error {
-	cfg.Endpoint, cfg.DashboardURL, cfg.InstanceID, token, dashboardToken = strings.TrimSpace(cfg.Endpoint), strings.TrimSpace(cfg.DashboardURL), strings.TrimSpace(cfg.InstanceID), strings.TrimSpace(token), strings.TrimSpace(dashboardToken)
+	cfg.Endpoint, cfg.DashboardURL, cfg.InstanceID, cfg.Username, token, dashboardToken = strings.TrimSpace(cfg.Endpoint), strings.TrimSpace(cfg.DashboardURL), strings.TrimSpace(cfg.InstanceID), strings.TrimSpace(cfg.Username), strings.TrimSpace(token), strings.TrimSpace(dashboardToken)
 	previous, oldToken, err := s.Load()
 	if err != nil {
 		return err
@@ -71,8 +72,8 @@ func (s *Store) Save(cfg Config, token, dashboardToken string) error {
 	if dashboardToken == "" {
 		dashboardToken = oldDashboardToken
 	}
-	if cfg.Enabled && (cfg.Endpoint == "" || cfg.InstanceID == "" || token == "" || dashboardToken == "") {
-		return errors.New("endereço, instalação e os dois tokens são obrigatórios para ativar o painel")
+	if cfg.Enabled && (cfg.Endpoint == "" || cfg.InstanceID == "" || token == "") {
+		return errors.New("endereço, instalação e sessão são obrigatórios para ativar o painel")
 	}
 	if cfg.Endpoint == "" {
 		cfg.Endpoint = previous.Endpoint
@@ -82,6 +83,9 @@ func (s *Store) Save(cfg Config, token, dashboardToken string) error {
 	}
 	if cfg.InstanceID == "" {
 		cfg.InstanceID = previous.InstanceID
+	}
+	if cfg.Username == "" {
+		cfg.Username = previous.Username
 	}
 	cipher := ""
 	if token != "" {
@@ -97,7 +101,7 @@ func (s *Store) Save(cfg Config, token, dashboardToken string) error {
 			return err
 		}
 	}
-	data, err := json.MarshalIndent(storedConfig{Enabled: cfg.Enabled, Endpoint: cfg.Endpoint, DashboardURL: cfg.DashboardURL, InstanceID: cfg.InstanceID, TokenCipher: cipher, DashboardTokenCipher: dashboardCipher}, "", "  ")
+	data, err := json.MarshalIndent(storedConfig{Enabled: cfg.Enabled, Endpoint: cfg.Endpoint, DashboardURL: cfg.DashboardURL, InstanceID: cfg.InstanceID, Username: cfg.Username, TokenCipher: cipher, DashboardTokenCipher: dashboardCipher}, "", "  ")
 	if err != nil {
 		return err
 	}

@@ -1,21 +1,24 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Activity, AlertTriangle, Bot, Building2, CheckCircle2, ChevronRight, CirclePause, CirclePlay, Clock3, LogOut, RefreshCw, RotateCcw, Search, ShieldCheck, UserRoundCheck, UsersRound, X } from "lucide-react";
-import { clearToken, loadDashboard, savedToken, saveToken, sendCommand } from "./api.js";
+import { clearToken, loadDashboard, login, savedToken, sendCommand } from "./api.js";
 import { isOnline, stageLabel, stages } from "./stages.js";
 import "./styles.css";
+import "./auth.css";
 
 const fmt = (value) => value ? new Date(value).toLocaleString("pt-BR") : "—";
 const phone = (value) => value ? `+${String(value).replace(/\D/g, "")}` : "Sem telefone";
 
 function Login({ onReady }) {
-  const [token, setToken] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function submit(event) {
-    event.preventDefault(); saveToken(token); setError("");
-    try { await loadDashboard(); onReady(); } catch (err) { clearToken(); setError(err.message); }
+    event.preventDefault(); setError(""); setBusy(true);
+    try { await login(username, password); await loadDashboard(); onReady(); } catch (err) { clearToken(); setError(err.message); } finally { setBusy(false); }
   }
-  return <main className="login-shell"><section className="login-card"><Brand/><div className="login-copy"><span className="eyebrow">CENTRAL COMERCIAL</span><h1>Controle o atendimento sem perder o contexto.</h1><p>Entre com a chave do painel para visualizar o funil e operar o Tino.</p></div><form onSubmit={submit}><label>Chave de acesso<input type="password" autoComplete="current-password" value={token} onChange={e=>setToken(e.target.value)} autoFocus required/></label>{error&&<div className="error-line"><AlertTriangle/>{error}</div>}<button className="primary" type="submit"><ShieldCheck/>Entrar com segurança</button></form></section></main>;
+  return <main className="login-shell"><section className="login-card"><Brand/><div className="login-copy"><span className="eyebrow">CENTRAL COMERCIAL</span><h1>Controle o atendimento sem perder o contexto.</h1><p>Entre com sua conta para visualizar o funil e operar o Tino de qualquer computador.</p></div><form onSubmit={submit}><label>Usuário<input autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)} autoFocus required/></label><label>Senha<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{error&&<div className="error-line"><AlertTriangle/>{error}</div>}<button className="primary" type="submit" disabled={busy}><ShieldCheck/>{busy?"Entrando…":"Entrar com segurança"}</button></form></section></main>;
 }
 
 function Brand() { return <div className="brand"><span className="brand-mark"><Bot/></span><div><b>TINO</b><small>Inteligência comercial</small></div></div>; }

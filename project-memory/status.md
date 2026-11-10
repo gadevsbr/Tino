@@ -496,3 +496,12 @@
 - Executável: build Wails 0.16.0 passou, abriu responsivo e sincronizou a versão `0.16.0` no D1 remoto; SHA-256 final `D7A3245F169B590F2CFEF7FFE5E5893ED418B446DDB14F8DCE8A06B3493277D0`.
 - Limite: o host de inspeção visual automatizada estava indisponível. A publicação e a estrutura foram verificadas por HTTP/build, mas a revisão pixel a pixel no navegador não foi comprovada nesta etapa.
 - Evidência de release: commit funcional e de segurança `5089d04` enviado à branch `codex/native-ai-bot-recovery`; tag `v0.16.0` aponta para esse commit. Release republicada com os hashes locais conferidos nos dois assets em `https://github.com/gadevsbr/Tino/releases/tag/v0.16.0`.
+
+## Etapa 23 — Login humano e configuração automática v0.16.1
+
+- Status: implementação, migração D1 e publicação Cloudflare concluídas; release Windows pendente neste registro até commit e conferência dos assets.
+- Experiência: o painel web agora pede usuário e senha. No desktop, **Central de recursos > Painel web** pede as mesmas duas informações uma única vez; URL, identificador e sessão da ponte são definidos automaticamente, e a senha não é salva.
+- Segurança: sessão humana assinada por 12 horas, sessão técnica da ponte por 90 dias, papéis separados e limite de oito tentativas por IP em 15 minutos. O token estático antigo do dashboard foi removido do Worker.
+- Cloudflare: migração `0002_auth.sql` aplicada no D1, novos segredos armazenados pelo Worker, Pages e Worker republicados. Login real retornou a instância `hotel-paraiso-recepcao`; sessão da ponte foi rejeitada pelo dashboard com HTTP 401.
+- Evidência: `go test -count=1 ./...`, `go vet ./...`, testes Node dos três pacotes e auditorias npm passaram; build Wails 0.16.1 passou, abriu responsivo e registrou `0.16.1` no D1 remoto.
+- SHA-256 local: `Tino.exe` `D2CF32786E6E2DBB53C72C1C5AD47AB4EFCEB751D69746AB39341302B510D28D`; CLI `524B2B5002AD90598D48E70FAA84E0E0488BECC8E9121F021857013B4AC387B9`.

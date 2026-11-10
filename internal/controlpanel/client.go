@@ -38,8 +38,8 @@ type Command struct {
 }
 
 type Config struct {
-	Enabled, PasswordSet, DashboardTokenSet bool
-	Endpoint, DashboardURL, InstanceID      string
+	Enabled, PasswordSet, DashboardTokenSet      bool
+	Endpoint, DashboardURL, InstanceID, Username string
 }
 
 type Client struct {
@@ -94,6 +94,44 @@ func (c Client) request(ctx context.Context, method, path string, body any, out 
 	return nil
 }
 
+func (c Client) Login(ctx context.Context, username, password string) (string, error) {
+	if !strings.HasPrefix(c.Endpoint, "https://") && !strings.HasPrefix(c.Endpoint, "http://127.0.0.1") && !strings.HasPrefix(c.Endpoint, "http://localhost") {
+		return "", errors.New("o painel exige HTTPS")
+	}
+	data, err := json.Marshal(map[string]string{"username": strings.TrimSpace(username), "password": password, "purpose": "bridge"})
+	if err != nil {
+		return "", err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(c.Endpoint, "/")+"/api/auth/login", bytes.NewReader(data))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	httpClient := c.HTTP
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 15 * time.Second}
+	}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	var result struct {
+		Token string `json:"token"`
+		Error string `json:"error"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 64<<10)).Decode(&result); err != nil {
+		return "", err
+	}
+	if resp.StatusCode != http.StatusOK || result.Token == "" {
+		if result.Error == "" {
+			result.Error = fmt.Sprintf("HTTP %d", resp.StatusCode)
+		}
+		return "", errors.New(result.Error)
+	}
+	return result.Token, nil
+}
+
 func (c Client) Sync(ctx context.Context, snapshot Snapshot) ([]Command, error) {
 	snapshot.InstanceID = c.InstanceID
 	snapshot.OnlineAt = time.Now().UTC().Format(time.RFC3339)
@@ -104,10 +142,6 @@ func (c Client) Sync(ctx context.Context, snapshot Snapshot) ([]Command, error) 
 		return nil, err
 	}
 	return result.Commands, nil
-}
-
-func (c Client) CheckDashboard(ctx context.Context) error {
-	return c.request(ctx, http.MethodGet, "/api/dashboard", nil, nil)
 }
 
 func (c Client) Ack(ctx context.Context, id string, runErr error) error {

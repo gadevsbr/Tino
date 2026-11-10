@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.16.0
+.\scripts\build.ps1 -Version 0.16.1
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -126,6 +126,6 @@ Build e testes locais validam apenas código/artefato. Pareamento QR, estabilida
 
 O painel publicado em `https://tino-control.pages.dev` apresenta o funil comercial em oito etapas, os dados coletados, falhas de OmniBees, catálogo, IA e Bitz e o histórico de comandos. Pausar, retomar, assumir ou reiniciar um orçamento cria um comando auditado; a ação só aparece como executada depois da confirmação do Tino.
 
-O desktop permanece como autoridade operacional e abre apenas conexões HTTPS de saída. Em **Central de recursos > Painel web**, a instalação consulta a sincronização e abre o painel já autenticado. Os tokens exclusivos da ponte e do dashboard ficam protegidos pelo Windows em `data/control-panel.json`; sessão WhatsApp, credenciais do Bitz e arquivos não são enviados ao Cloudflare.
+O desktop permanece como autoridade operacional e abre apenas conexões HTTPS de saída. Em **Central de recursos > Painel web**, basta entrar com o mesmo usuário e senha do painel; endereço, instalação e sessão da ponte são configurados automaticamente. A senha não é salva, e a sessão técnica fica protegida pelo Windows em `data/control-panel.json`; sessão WhatsApp, credenciais do Bitz e arquivos não são enviados ao Cloudflare.
 
 Infraestrutura: frontend React em `web/tino-control`, API Worker e migrações D1 em `workers/tino-control-api`. Segredos são configurados com `wrangler secret put` e nunca pertencem ao repositório.

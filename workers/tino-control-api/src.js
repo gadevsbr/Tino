@@ -1,5 +1,6 @@
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
 const ACTIONS = new Set(["pause", "resume", "takeover", "restart_quote"]);
+const encoder = new TextEncoder();
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: JSON_HEADERS });
@@ -43,8 +44,67 @@ function requireToken(request, token) {
   return constantTimeEqual(bearer(request), token);
 }
 
+function base64url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+function unbase64url(value) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(normalized + "=".repeat((4 - normalized.length % 4) % 4));
+  return Uint8Array.from(binary, character => character.charCodeAt(0));
+}
+
+async function sessionKey(secret) {
+  return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
+}
+
+async function signSession(secret, username, role, lifetimeSeconds) {
+  const payload = base64url(encoder.encode(JSON.stringify({ sub: username, role, exp: Math.floor(Date.now() / 1000) + lifetimeSeconds })));
+  const signature = await crypto.subtle.sign("HMAC", await sessionKey(secret), encoder.encode(payload));
+  return `${payload}.${base64url(new Uint8Array(signature))}`;
+}
+
+async function verifySession(secret, token, role) {
+  try {
+    const [payload, signature, extra] = token.split(".");
+    if (!payload || !signature || extra) return null;
+    const valid = await crypto.subtle.verify("HMAC", await sessionKey(secret), unbase64url(signature), encoder.encode(payload));
+    if (!valid) return null;
+    const session = JSON.parse(new TextDecoder().decode(unbase64url(payload)));
+    return session.role === role && session.exp > Math.floor(Date.now() / 1000) ? session : null;
+  } catch {
+    return null;
+  }
+}
+
+async function authorizeBridge(request, env) {
+  return requireToken(request, env.BRIDGE_TOKEN) || Boolean(await verifySession(env.SESSION_SECRET, bearer(request), "bridge"));
+}
+
+async function authorizeDashboard(request, env) {
+  return verifySession(env.SESSION_SECRET, bearer(request), "dashboard");
+}
+
+async function login(request, env) {
+  const data = await body(request);
+  const username = clean(data.username, 100), password = String(data.password || "").slice(0, 200);
+  const address = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown";
+  const attemptID = base64url(new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(address))));
+  const windowStart = Math.floor(Date.now() / 900000) * 900000;
+  const attempt = await env.DB.prepare("SELECT attempts FROM auth_attempts WHERE id=? AND window_start=?").bind(attemptID, windowStart).first();
+  if ((attempt?.attempts || 0) >= 8) return json({ error: "muitas tentativas; aguarde 15 minutos" }, 429);
+  await env.DB.prepare("INSERT INTO auth_attempts(id,window_start,attempts) VALUES(?,?,1) ON CONFLICT(id) DO UPDATE SET window_start=excluded.window_start,attempts=CASE WHEN auth_attempts.window_start=excluded.window_start THEN auth_attempts.attempts+1 ELSE 1 END").bind(attemptID, windowStart).run();
+  if (!constantTimeEqual(username, env.DASHBOARD_USERNAME) || !constantTimeEqual(password, env.DASHBOARD_PASSWORD)) return json({ error: "usuário ou senha inválidos" }, 401);
+  await env.DB.prepare("DELETE FROM auth_attempts WHERE id=?").bind(attemptID).run();
+  const role = data.purpose === "bridge" ? "bridge" : "dashboard";
+  const lifetime = role === "bridge" ? 90 * 86400 : 12 * 3600;
+  return json({ token: await signSession(env.SESSION_SECRET, username, role, lifetime), username, expiresIn: lifetime });
+}
+
 async function syncBridge(request, env) {
-  if (!requireToken(request, env.BRIDGE_TOKEN)) return json({ error: "não autorizado" }, 401);
+  if (!await authorizeBridge(request, env)) return json({ error: "não autorizado" }, 401);
   const data = await body(request);
   const instanceId = clean(data.instanceId, 100);
   if (!instanceId || !Array.isArray(data.contacts) || !Array.isArray(data.failures)) return json({ error: "snapshot inválido" }, 400);
@@ -70,7 +130,7 @@ async function syncBridge(request, env) {
 }
 
 async function ackCommand(request, env, id) {
-  if (!requireToken(request, env.BRIDGE_TOKEN)) return json({ error: "não autorizado" }, 401);
+  if (!await authorizeBridge(request, env)) return json({ error: "não autorizado" }, 401);
   const data = await body(request);
   const status = data.status === "executed" ? "executed" : "failed";
   const result = await env.DB.prepare("UPDATE commands SET status=?,message=?,updated_at=? WHERE id=? AND instance_id=? AND status IN ('pending','delivered')")
@@ -79,7 +139,7 @@ async function ackCommand(request, env, id) {
 }
 
 async function dashboard(request, env) {
-  if (!requireToken(request, env.DASHBOARD_TOKEN)) return json({ error: "não autorizado" }, 401);
+  if (!await authorizeDashboard(request, env)) return json({ error: "não autorizado" }, 401);
   const url = new URL(request.url), instance = clean(url.searchParams.get("instance"), 100);
   const selected = instance || (await env.DB.prepare("SELECT id FROM instances ORDER BY last_seen DESC LIMIT 1").first())?.id;
   if (!selected) return json({ instance: null, contacts: [], failures: [], commands: [] });
@@ -93,7 +153,8 @@ async function dashboard(request, env) {
 }
 
 async function createCommand(request, env) {
-  if (!requireToken(request, env.DASHBOARD_TOKEN)) return json({ error: "não autorizado" }, 401);
+  const session = await authorizeDashboard(request, env);
+  if (!session) return json({ error: "não autorizado" }, 401);
   const data = await body(request), action = clean(data.action, 40);
   if (!ACTIONS.has(action)) return json({ error: "ação inválida" }, 400);
   const instanceId = clean(data.instanceId, 100), account = clean(data.account, 150), contact = clean(data.contact, 150);
@@ -103,12 +164,12 @@ async function createCommand(request, env) {
   const id = crypto.randomUUID(), now = new Date().toISOString();
   await env.DB.batch([
     env.DB.prepare("INSERT INTO commands(id,instance_id,account,contact,action,status,created_at,updated_at) VALUES(?,?,?,?,?,'pending',?,?)").bind(id, instanceId, account, contact, action, now, now),
-    env.DB.prepare("INSERT INTO audit_log(instance_id,actor,action,account,contact,created_at) VALUES(?,?,?,?,?,?)").bind(instanceId, clean(request.headers.get("cf-access-authenticated-user-email") || "painel", 200), action, account, contact, now)
+    env.DB.prepare("INSERT INTO audit_log(instance_id,actor,action,account,contact,created_at) VALUES(?,?,?,?,?,?)").bind(instanceId, clean(session.sub, 200), action, account, contact, now)
   ]);
   return json({ id, status: "pending" }, 202);
 }
 
-export { constantTimeEqual };
+export { constantTimeEqual, signSession, verifySession };
 
 export default {
   async fetch(request, env) {
@@ -117,6 +178,7 @@ export default {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }), request, env);
       let response;
       if (request.method === "GET" && url.pathname === "/api/health") response = json({ ok: true });
+      else if (request.method === "POST" && url.pathname === "/api/auth/login") response = await login(request, env);
       else if (request.method === "POST" && url.pathname === "/api/bridge/sync") response = await syncBridge(request, env);
       const ack = url.pathname.match(/^\/api\/bridge\/commands\/([^/]+)\/ack$/);
       if (!response && request.method === "POST" && ack) response = await ackCommand(request, env, ack[1]);
