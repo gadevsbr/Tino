@@ -24,7 +24,7 @@ func TestNaturalQuoteUsesValidatedDataAndDoesNotExecuteOperatorCommands(t *testi
 		return omnibees.Result{Text: "Preço confirmado: R$ 2.290,36", Categories: []omnibees.Category{{Key: "verified", Name: "Suíte verificada"}}}, nil
 	}
 	var result commercial.QuoteReply
-	for _, input := range []string{"orçamento", "para 01", "dia dez de dezembro", "até dia doze", "somos um casal", "uma criança", "minha filha tem três anos"} {
+	for _, input := range []string{"orçamento", "dia dez de dezembro", "até dia doze", "para 01", "somos um casal", "uma criança", "minha filha tem três anos"} {
 		var err error
 		result, err = a.publicQuote(ctx, "a", "g", input, fetch)
 		if err != nil {
@@ -43,6 +43,12 @@ func TestNaturalQuoteStillRejectsBadDatesAndOverCapacity(t *testing.T) {
 		return commercial.DialogueAnswer{Value: "99", Understood: true}, nil
 	})
 	if _, err := a.PublicQuote(ctx, "a", "g", "orçamento"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.PublicQuote(ctx, "a", "g", "10/12/2099"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.PublicQuote(ctx, "a", "g", "12/12/2099"); err != nil {
 		t.Fatal(err)
 	}
 	result, err := a.PublicQuote(ctx, "a", "g", "quero muitos quartos")

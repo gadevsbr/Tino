@@ -30,6 +30,7 @@ type CommercialConfigDTO struct {
 	GroupPhone    string
 	FinalMessage1 string
 	FinalMessage2 string
+	FinalMessage3 string
 }
 type BitzConfigDTO struct {
 	Enabled       bool
@@ -132,7 +133,7 @@ func (a *App) GetCommercialConfig() (CommercialConfigDTO, error) {
 		return CommercialConfigDTO{}, err
 	}
 	cfg, err := r.commercial.Configuration(a.ctx, account)
-	return CommercialConfigDTO{Mode: string(cfg.Mode), Allowlist: cfg.Allowlist, Epoch: cfg.Epoch, GroupPhone: cfg.GroupPhone, FinalMessage1: cfg.FinalMessage1, FinalMessage2: cfg.FinalMessage2}, err
+	return CommercialConfigDTO{Mode: string(cfg.Mode), Allowlist: cfg.Allowlist, Epoch: cfg.Epoch, GroupPhone: cfg.GroupPhone, FinalMessage1: cfg.FinalMessage1, FinalMessage2: cfg.FinalMessage2, FinalMessage3: cfg.FinalMessage3}, err
 }
 
 func (a *App) SaveCommercialConfig(cfg CommercialConfigDTO) error {
@@ -160,7 +161,7 @@ func (a *App) SaveCommercialConfig(cfg CommercialConfigDTO) error {
 	if len(groupPhone) < 10 || len(groupPhone) > 15 {
 		return errors.New("telefone do setor de grupos precisa ter DDI e entre 10 e 15 dígitos")
 	}
-	if err = r.commercial.Configure(a.ctx, account, commercial.Config{Mode: commercial.Mode(cfg.Mode), Allowlist: allow, GroupPhone: groupPhone, FinalMessage1: cfg.FinalMessage1, FinalMessage2: cfg.FinalMessage2}); err != nil {
+	if err = r.commercial.Configure(a.ctx, account, commercial.Config{Mode: commercial.Mode(cfg.Mode), Allowlist: allow, GroupPhone: groupPhone, FinalMessage1: cfg.FinalMessage1, FinalMessage2: cfg.FinalMessage2, FinalMessage3: cfg.FinalMessage3}); err != nil {
 		return err
 	}
 	if a.eventsReady {

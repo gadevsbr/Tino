@@ -109,7 +109,7 @@ func TestOperatorTestSessionUsesIsolatedSyntheticContact(t *testing.T) {
 	}
 }
 
-func TestBudgetSequenceAddsTwoConfiguredMessages(t *testing.T) {
+func TestBudgetSequenceAddsConfiguredMessagesAndAwaitsProof(t *testing.T) {
 	categories := []omnibees.Category{{Key: "interna", Name: "Interna"}}
 	calls := 0
 	s := fixture(t, func(_ context.Context, _, _, text string) (QuoteReply, error) {
@@ -119,7 +119,7 @@ func TestBudgetSequenceAddsTwoConfiguredMessages(t *testing.T) {
 		}
 		return QuoteReply{Messages: []string{"*Quarto 1*\nvalores"}, Categories: categories}, nil
 	})
-	configure(t, s, Config{Mode: Public, GroupPhone: "5573988240413", FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois"})
+	configure(t, s, Config{Mode: Public, GroupPhone: "5573988240413", FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois", FinalMessage3: "envie o comprovante"})
 	now := time.Now()
 	handle(t, s, "1", "oi", now)
 	r := handle(t, s, "2", "1", now.Add(time.Minute))
@@ -132,6 +132,13 @@ func TestBudgetSequenceAddsTwoConfiguredMessages(t *testing.T) {
 	}
 	if !strings.Contains(r.SelectionPrompt, "1 — Interna") || !strings.Contains(r.SelectionPrompt, "*atendente*") {
 		t.Fatal(r.SelectionPrompt)
+	}
+	if r.AfterSelection != "envie o comprovante" {
+		t.Fatal(r.AfterSelection)
+	}
+	waits, err := s.AwaitingPaymentProof(context.Background(), "a", "guest")
+	if err != nil || !waits {
+		t.Fatalf("proof state=%t err=%v", waits, err)
 	}
 	r = handle(t, s, "4", "1", now.Add(3*time.Minute))
 	if !r.Handoff || !strings.Contains(r.Text, "*Interna*, disponível para o período consultado") || !strings.Contains(r.Text, "*atendente* concluir sua reserva") || strings.Contains(r.Text, "confirmar disponibilidade") {

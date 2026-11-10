@@ -18,7 +18,7 @@ func TestPublicQuoteCollectsAllRoomsBeforeFetching(t *testing.T) {
 		calls = append(calls, s)
 		return omnibees.Result{Text: fmt.Sprintf("total para %d", s.Adults), Categories: []omnibees.Category{{Key: fmt.Sprintf("cat-%d", s.Adults), Name: "Categoria"}}}, nil
 	}
-	steps := []string{"orçamento", "2", "10/12/2099", "12/12/2099", "2", "1", "7", "3", "0"}
+	steps := []string{"orçamento", "10/12/2099", "12/12/2099", "2", "2", "1", "7", "3", "0"}
 	var lastText string
 	var messages int
 	for i, input := range steps {
@@ -52,7 +52,7 @@ func TestPublicQuoteForwardsGroupAfterGeneralInformation(t *testing.T) {
 		fetchCalls++
 		return omnibees.Result{}, nil
 	}
-	steps := []string{"orçamento", "7", "10/12/2099", "12/12/2099", "18", "2", "4, 9"}
+	steps := []string{"orçamento", "10/12/2099", "12/12/2099", "7", "18", "2", "4, 9"}
 	var resultText, request string
 	for _, input := range steps {
 		r, err := a.publicQuote(ctx, "a", "grupo", input, fetch)

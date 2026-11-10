@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.16.4
+.\scripts\build.ps1 -Version 0.17.0
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -76,7 +76,7 @@ O Worker em `workers/tino-ai` usa Llama 3.3 70B FP8 Fast com JSON estruturado em
 
 No Flow Builder ativado, regras explícitas têm prioridade, depois a IA, depois a resposta padrão se a IA falhar. No comercial, a IA interpreta e redige; o motor mantém comandos de operadores, pausas humanas, cotações, criação no Bitz e aprovação. Preços e listas de suítes permanecem literais; áudio continua com encaminhamento humano. A fila por conversa evita bloquear o processamento de eventos do WhatsApp.
 
-O aplicativo resolve dados e configurações relativamente ao executável, independentemente da pasta de abertura do atalho. Bases existentes em outras pastas não são mescladas automaticamente. A conexão do WhatsApp e o carregamento do motor de comandos aparecem separadamente na interface.
+O aplicativo mantém os dados e configurações padrão em `%APPDATA%\Tino\data`, independentemente da pasta do executável. A conexão do WhatsApp e o carregamento do motor de comandos aparecem separadamente na interface.
 
 ## Central de recursos
 
@@ -94,7 +94,9 @@ Cada quarto pode receber uma categoria física do Bitz na tela de quartos. Duran
 
 Durante **testar atendimento**, comandos administrativos como `menu`, `status` e `caixa` encerram somente a simulação daquele operador e voltam ao motor operacional. Números, datas e controles do orçamento continuam na simulação.
 
-O atendimento comercial começa com uma triagem na primeira mensagem ou após 24 horas sem interação. Outros assuntos pausam o bot e mantêm a conversa não lida. Orçamentos de até seis quartos são coletados quarto a quarto e consultados somente após todas as ocupações estarem completas; pedidos maiores são encaminhados ao setor de grupos. O telefone de grupos e as duas mensagens enviadas entre o orçamento e os produtos do catálogo são configurados em **Gestão Assistente > Comercial**.
+O atendimento comercial começa com uma triagem na primeira mensagem ou após 24 horas sem interação. Outros assuntos pausam o bot e mantêm a conversa não lida. O orçamento coleta check-in, check-out, quartos, adultos e crianças, nessa ordem; para crianças, também coleta as idades exigidas pela OmniBees. Depois envia os valores, as mensagens 1 e 2, a lista numerada de categorias e a mensagem 3 configuradas em **Gestão Assistente > Comercial**.
+
+Depois da mensagem 3, imagens e PDFs de até 15 MB são tratados como comprovantes: ficam armazenados no banco local e são encaminhados aos operadores e ao aprovador do Bitz. Ao aprovar a pré-reserva, o Tino envia ao hóspede a mensagem de confirmação e o comprovante validado. Se a automação do Bitz falhar, o hóspede recebe apenas uma resposta operacional neutra; os operadores recebem período, ocupação, categorias e motivo técnico para concluir manualmente e usar o mesmo comando de aprovação.
 
 Mensagens de áudio de hóspedes são encaminhadas diretamente para atendimento humano e deixam a conversa não lida; o bot não tenta interpretar o conteúdo enquanto a transcrição não estiver disponível. Depois de criar uma pré-reserva, o aviso ao aprovador inclui WhatsApp do hóspede, período e ocupação/categoria de cada quarto.
 

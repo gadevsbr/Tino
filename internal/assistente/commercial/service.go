@@ -32,6 +32,7 @@ type Config struct {
 	GroupPhone    string   `json:"group_phone"`
 	FinalMessage1 string   `json:"final_message_1"`
 	FinalMessage2 string   `json:"final_message_2"`
+	FinalMessage3 string   `json:"final_message_3"`
 }
 type Input struct {
 	Account, Contact, MessageID, Text string
@@ -48,6 +49,7 @@ type Reply struct {
 	Handled, Handoff bool
 	GroupRequest     string
 	SelectionPrompt  string
+	AfterSelection   string
 	Categories       []omnibees.Category
 	SelectedCategory *omnibees.Category
 	PreReservation   *PreReservation
@@ -121,6 +123,7 @@ type state struct {
 	AwaitingChoice   bool                `json:"awaiting_choice"`
 	Plan             *QuotePlan          `json:"plan,omitempty"`
 	SelectedRooms    []omnibees.Category `json:"selected_rooms,omitempty"`
+	AwaitingProof    bool                `json:"awaiting_proof"`
 }
 
 const defaultGroupPhone = "5573988240413"
@@ -250,7 +253,8 @@ func (s *Service) Configure(ctx context.Context, account string, config Config) 
 	}
 	config.FinalMessage1 = strings.TrimSpace(config.FinalMessage1)
 	config.FinalMessage2 = strings.TrimSpace(config.FinalMessage2)
-	if len([]rune(config.FinalMessage1)) > 2000 || len([]rune(config.FinalMessage2)) > 2000 {
+	config.FinalMessage3 = strings.TrimSpace(config.FinalMessage3)
+	if len([]rune(config.FinalMessage1)) > 2000 || len([]rune(config.FinalMessage2)) > 2000 || len([]rune(config.FinalMessage3)) > 2000 {
 		return errors.New("cada mensagem final deve ter no máximo 2000 caracteres")
 	}
 	previous, err := s.Configuration(ctx, account)
@@ -351,6 +355,7 @@ func (s *Service) Resume(ctx context.Context, account, contact string) error {
 	st.QuotedAt = time.Time{}
 	st.Plan = nil
 	st.SelectedRooms = nil
+	st.AwaitingProof = false
 	return s.save(ctx, Input{Account: account, Contact: contact}, st)
 }
 
@@ -367,6 +372,11 @@ func (s *Service) Pause(ctx context.Context, account, contact string) error {
 	}
 	st.Paused = true
 	return s.save(ctx, Input{Account: account, Contact: contact}, st)
+}
+
+func (s *Service) AwaitingPaymentProof(ctx context.Context, account, contact string) (bool, error) {
+	st, err := s.load(ctx, account, contact)
+	return st.AwaitingProof, err
 }
 
 // Pipeline returns the local operational state used by the optional web control panel.
@@ -436,7 +446,7 @@ func pipelineStage(st state, jobStatus string) string {
 		return "approved"
 	case "awaiting_approval":
 		return "awaiting_approval"
-	case "running", "failed":
+	case "running", "failed", "manual_review":
 		return "pre_reservation"
 	}
 	if st.Paused {
@@ -575,6 +585,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		st.SelectedCategory = nil
 		st.Plan = nil
 		st.SelectedRooms = nil
+		st.AwaitingProof = false
 		r.Handoff = true
 		r.Text = "Recebi seu áudio. Para que sua mensagem seja atendida com atenção, encaminhei a conversa diretamente para nossa equipe. Um atendente responderá por aqui assim que possível."
 		return finish()
@@ -611,6 +622,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		st.AwaitingChoice = true
 		st.Plan = nil
 		st.SelectedRooms = nil
+		st.AwaitingProof = false
 	}
 	st.ConfigEpoch = config.Epoch
 	if idle {
@@ -667,6 +679,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		}
 		st.QuoteActive = false
 		st.Categories = nil
+		st.AwaitingProof = false
 		r.Text = menu
 	} else if st.QuoteActive {
 		q, e := s.runQuote(ctx, in.Account, in.Contact, in.Text)
@@ -686,12 +699,14 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		r.Categories = q.Categories
 		if len(q.Categories) > 0 {
 			st.QuotedAt = in.Now
+			st.AwaitingProof = strings.TrimSpace(config.FinalMessage3) != ""
 			if strings.TrimSpace(config.FinalMessage1) != "" {
 				r.Messages = append(r.Messages, config.FinalMessage1)
 			}
 			if strings.TrimSpace(config.FinalMessage2) != "" {
 				r.Messages = append(r.Messages, config.FinalMessage2)
 			}
+			r.AfterSelection = config.FinalMessage3
 			if q.Plan != nil && len(q.Plan.Rooms) > 0 {
 				r.SelectionPrompt = roomCategorySelectionPrompt(1, len(q.Plan.Rooms), q.Plan.Rooms[0].Categories)
 			} else {
@@ -701,6 +716,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 	} else if st.Plan != nil && len(st.Plan.Rooms) > 0 {
 		if in.Now.Sub(st.QuotedAt) >= 24*time.Hour {
 			st.Categories, st.Plan, st.SelectedRooms = nil, nil, nil
+			st.AwaitingProof = false
 			r.Text = "Este orçamento expirou. Envie orçamento para consultar valores atualizados."
 		} else {
 			roomIndex := len(st.SelectedRooms)
@@ -731,6 +747,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 	} else if len(st.Categories) > 0 {
 		if in.Now.Sub(st.QuotedAt) >= 24*time.Hour {
 			st.Categories = nil
+			st.AwaitingProof = false
 			r.Text = "Este orçamento expirou. Envie orçamento para consultar valores atualizados."
 		} else {
 			for i, c := range st.Categories {

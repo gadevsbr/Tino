@@ -7,9 +7,9 @@ import (
 )
 
 func TestCommercialModeCommandDoesNotReplaceUIFields(t *testing.T) {
-	current := commercial.Config{Mode: commercial.Public, GroupPhone: "5573988240413", FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois"}
+	current := commercial.Config{Mode: commercial.Public, GroupPhone: "5573988240413", FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois", FinalMessage3: "mensagem três"}
 	current = commercialModeConfig(current, "comercial teste 5573999999999")
-	if current.Mode != commercial.Test || current.GroupPhone != "5573988240413" || current.FinalMessage1 != "mensagem um" || current.FinalMessage2 != "mensagem dois" {
+	if current.Mode != commercial.Test || current.GroupPhone != "5573988240413" || current.FinalMessage1 != "mensagem um" || current.FinalMessage2 != "mensagem dois" || current.FinalMessage3 != "mensagem três" {
 		t.Fatal(current)
 	}
 }

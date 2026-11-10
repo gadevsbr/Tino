@@ -537,3 +537,14 @@
 - SHA-256 local: `Tino.exe` `52A3A45E8F7A0646E9E18622A76FC9ED6F50E1B532A40D27FDBC7495D6D03333`; CLI `3CCCFE7C09059A0DB561922A30B9DD305286758EDBCACE398FA9B78563D72CE3`.
 - Limite: conversas antigas que nunca geraram estado em `commercial_contacts` não são reconstruídas por inferência; o painel passa a refletir corretamente os atendimentos processados pela base persistente a partir desta versão.
 - Evidência de release: commit `aecf11a`, tag `v0.16.4` e hashes dos dois assets conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.16.4`.
+
+## Etapa 27 — Fechamento comercial com comprovante v0.17.0
+
+- Status: implementado e validado localmente; release em preparação.
+- Fluxo: check-in, check-out, quartos, adultos, crianças/idades, orçamento, mensagens 1 e 2, categorias numeradas e mensagem 3 configurável na UI.
+- Comprovante: após a mensagem 3, imagem ou PDF válido de até 15 MB é persistido localmente e encaminhado ao aprovador Bitz e operadores autorizados. A aprovação envia a mensagem final e o arquivo validado ao hóspede e remove o BLOB local.
+- Contingência Bitz: falhas entram em `manual_review`; o hóspede recebe texto neutro e os operadores recebem contato, período, ocupação, categorias, código de aprovação e motivo técnico para conclusão manual.
+- Evidência: testes novos cobrem ordem da coleta, terceira mensagem, estado de comprovante, persistência do PDF, envio do arquivo e aprovação de trabalho manual. `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram.
+- Build: Wails 0.17.0 abriu responsivo, criou `commercial_payment_proofs` no banco real sem falha de integridade e sincronizou `0.17.0` no D1.
+- SHA-256 local: `Tino.exe` `72661026F523D5AD568136B8DA62717421EA1A8E8D3536AD19755C81E301ACB9`; CLI `785132C01C3B0AA61A217EAEA48F8648824446D8D85E627F064BA3DD48A6BB24`.
+- Limite: não foi criada pré-reserva real nem enviado comprovante real pelo WhatsApp nesta validação; esses dois efeitos externos exigem teste operacional controlado.

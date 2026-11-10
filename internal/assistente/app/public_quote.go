@@ -42,8 +42,8 @@ func (a *App) publicQuote(ctx context.Context, account, contact, text string, fe
 	normalized := strings.ToLower(strings.TrimSpace(text))
 	if normalized == "orçamento" || normalized == "orcamento" {
 		payload, _ := json.Marshal(publicQuotePayload{CurrentRoom: 1})
-		err := a.sessions.Save(ctx, conversation.Session{User: key, Type: "PUBLIC_QUOTE_ROOMS", Status: conversation.Active, Payload: string(payload)})
-		return commercial.QuoteReply{Text: "Para quantos quartos você deseja fazer o orçamento?", Active: true}, err
+		err := a.sessions.Save(ctx, conversation.Session{User: key, Type: "PUBLIC_QUOTE_CHECKIN", Status: conversation.Active, Payload: string(payload)})
+		return commercial.QuoteReply{Text: "Qual a data de check-in? Envie DD/MM/AAAA.", Active: true}, err
 	}
 	session, active, err := a.sessions.Active(ctx, key)
 	if err != nil {
@@ -92,14 +92,6 @@ func (a *App) publicQuote(ctx context.Context, account, contact, text string, fe
 		return commercial.QuoteReply{Text: prompt, Active: true}, nil
 	}
 	switch session.Type {
-	case "PUBLIC_QUOTE_ROOMS":
-		n, e := strconv.Atoi(strings.TrimSpace(text))
-		if e != nil || n < 1 || n > 50 {
-			return commercial.QuoteReply{Text: "Informe a quantidade de quartos, de 1 a 50.", Active: true}, nil
-		}
-		p.Rooms = n
-		session.Type = "PUBLIC_QUOTE_CHECKIN"
-		return save("Qual a data de check-in? Envie DD/MM/AAAA.")
 	case "PUBLIC_QUOTE_CHECKIN":
 		date, ok := parseQuoteDate(text)
 		if !ok || !publicCheckInAllowed(date, time.Now()) {
@@ -115,6 +107,14 @@ func (a *App) publicQuote(ctx context.Context, account, contact, text string, fe
 			return commercial.QuoteReply{Text: "Check-out inválido. Informe uma data posterior ao check-in em DD/MM/AAAA.", Active: true}, nil
 		}
 		p.CheckOut = date.Format("02/01/2006")
+		session.Type = "PUBLIC_QUOTE_ROOMS"
+		return save("Para quantos quartos você deseja fazer o orçamento?")
+	case "PUBLIC_QUOTE_ROOMS":
+		n, e := strconv.Atoi(strings.TrimSpace(text))
+		if e != nil || n < 1 || n > 50 {
+			return commercial.QuoteReply{Text: "Informe a quantidade de quartos, de 1 a 50.", Active: true}, nil
+		}
+		p.Rooms = n
 		if p.Rooms > 6 {
 			session.Type = "PUBLIC_QUOTE_GROUP_ADULTS"
 			return save("Quantos adultos participarão do grupo no total?")

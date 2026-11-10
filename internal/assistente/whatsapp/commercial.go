@@ -81,7 +81,7 @@ func (s *Service) bitzApprovalCommand(ctx context.Context, sender, text string) 
 		return false
 	}
 	cfg, err := s.bitzStore.Public(ctx)
-	return err == nil && cfg.ApproverPhone != "" && config.SamePhoneNumber(cfg.ApproverPhone, sender)
+	return (err == nil && cfg.ApproverPhone != "" && config.SamePhoneNumber(cfg.ApproverPhone, sender)) || s.auth.Allowed(sender)
 }
 
 func approvalCode(text string) string {
@@ -94,7 +94,8 @@ func approvalCode(text string) string {
 func (s *Service) ensureTransportSchema(ctx context.Context) error {
 	_, err := s.domainDB.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS whatsapp_transport_sent(account TEXT NOT NULL,message_id TEXT NOT NULL,PRIMARY KEY(account,message_id));
 CREATE TABLE IF NOT EXISTS whatsapp_catalog_deliveries(account TEXT NOT NULL,contact TEXT NOT NULL,quote_id TEXT NOT NULL,owner TEXT NOT NULL,product_id TEXT NOT NULL,category TEXT NOT NULL,state TEXT NOT NULL,PRIMARY KEY(account,contact,quote_id,owner,product_id));
-CREATE TABLE IF NOT EXISTS whatsapp_commercial_tests(account TEXT NOT NULL,operator TEXT NOT NULL,PRIMARY KEY(account,operator));`)
+CREATE TABLE IF NOT EXISTS whatsapp_commercial_tests(account TEXT NOT NULL,operator TEXT NOT NULL,PRIMARY KEY(account,operator));
+CREATE TABLE IF NOT EXISTS commercial_payment_proofs(id TEXT PRIMARY KEY,account TEXT NOT NULL,contact TEXT NOT NULL,chat_jid TEXT NOT NULL,media_type TEXT NOT NULL,file_name TEXT NOT NULL,data BLOB NOT NULL,created_at TEXT NOT NULL);`)
 	return err
 }
 
@@ -247,6 +248,14 @@ func (s *Service) handleCommercialOperator(ctx context.Context, account, operato
 				guest, err = types.ParseJID(job.ChatJID)
 				if err == nil {
 					s.replyText(ctx, guest, cfg.ApprovedText)
+					var proof commercialProof
+					proof, err = s.latestCommercialProof(ctx, job)
+					if err == nil && len(proof.Data) > 0 {
+						err = s.sendCommercialProof(ctx, guest, "Comprovante validado pela nossa equipe.", proof)
+						if err == nil {
+							_, err = s.domainDB.ExecContext(ctx, `DELETE FROM commercial_payment_proofs WHERE id=?`, proof.ID)
+						}
+					}
 				}
 			}
 		}
@@ -516,6 +525,11 @@ func (s *Service) handleGuestAs(ctx context.Context, account, stateContact, disp
 			slog.Error("commercial category prompt failed")
 		}
 	}
+	if strings.TrimSpace(result.AfterSelection) != "" {
+		if _, err := s.sendMessage(ctx, chat, &waE2E.Message{Conversation: proto.String(result.AfterSelection)}); err != nil {
+			slog.Error("commercial payment instruction failed")
+		}
+	}
 	if result.PreReservation != nil {
 		s.startPreReservation(account, displayContact, messageID, chat, *result.PreReservation)
 	}
@@ -571,12 +585,13 @@ func (s *Service) startPreReservation(account, contact, messageID string, chat t
 			runErr = s.bitzRunner.Create(ctx, cfg, password, bitz.ReservationRequest{ID: job.ID, CheckIn: request.CheckIn, CheckOut: request.CheckOut, Categories: categories})
 		}
 		if runErr != nil {
-			_ = s.bitzJobs.Fail(ctx, job.ID, runErr)
+			_ = s.bitzJobs.ManualReview(ctx, job.ID, runErr)
 			s.commercial.RecordFailure(ctx, "bitz", account, contact, runErr)
-			s.replyText(ctx, chat, "Não consegui concluir a pré-reserva automaticamente. Deixei a conversa para nossa equipe continuar.")
-			if publicCfg.ApproverPhone != "" {
-				notice := fmt.Sprintf("⚠️ Falha na pré-reserva %s.\nHóspede: %s\nMotivo: %s\nA conversa foi marcada para atendimento humano.", job.Code, contact, operatorSafeBitzError(runErr))
-				if err := s.sendTextToPhone(ctx, publicCfg.ApproverPhone, notice); err != nil {
+			s.replyText(ctx, chat, "Recebi sua solicitação. Nossa equipe está concluindo a pré-reserva e seguirá com você por aqui.")
+			details := strings.Replace(preReservationNotice(job.Code, contact, request), "✅ *Pré-reserva criada no Bitz*", "📋 *Dados para pré-reserva manual*", 1)
+			notice := "⚠️ *A automação do Bitz não concluiu*\n\n" + details + "\n\nMotivo técnico: " + operatorSafeBitzError(runErr)
+			for _, phone := range s.reservationOperatorPhones(publicCfg.ApproverPhone) {
+				if err := s.sendTextToPhone(ctx, phone, notice); err != nil {
 					slog.Error("Bitz failure notice delivery failed", "error", err)
 				}
 			}
@@ -591,13 +606,28 @@ func (s *Service) startPreReservation(account, contact, messageID string, chat t
 			return
 		}
 		notice := preReservationNotice(job.Code, contact, request)
-		if err := s.sendTextToPhone(ctx, cfg.ApproverPhone, notice); err != nil {
-			slog.Error("Bitz approval notice delivery failed", "error", err)
-			if s.markUnread != nil {
-				_ = s.markUnread(ctx, chat.String())
+		for _, phone := range s.reservationOperatorPhones(cfg.ApproverPhone) {
+			if err := s.sendTextToPhone(ctx, phone, notice); err != nil {
+				slog.Error("Bitz approval notice delivery failed", "error", err)
+				if s.markUnread != nil {
+					_ = s.markUnread(ctx, chat.String())
+				}
 			}
 		}
 	}()
+}
+
+func (s *Service) reservationOperatorPhones(approver string) []string {
+	seen := map[string]bool{}
+	result := []string{}
+	for _, phone := range append(s.auth.Numbers(), approver) {
+		phone, ok := phoneArgument(phone)
+		if ok && !seen[phone] {
+			seen[phone] = true
+			result = append(result, phone)
+		}
+	}
+	return result
 }
 
 func (s *Service) applyRoomAllocationPolicy(ctx context.Context, categories []bitz.RoomCategory) error {

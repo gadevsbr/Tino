@@ -16,6 +16,7 @@ const (
 	JobAwaitingApproval = "awaiting_approval"
 	JobApproved         = "approved"
 	JobFailed           = "failed"
+	JobManualReview     = "manual_review"
 )
 
 type Job struct {
@@ -88,12 +89,22 @@ func (j *Jobs) Fail(ctx context.Context, id string, cause error) error {
 	}
 	return j.set(ctx, id, JobFailed, msg)
 }
+func (j *Jobs) ManualReview(ctx context.Context, id string, cause error) error {
+	msg := ""
+	if cause != nil {
+		msg = cause.Error()
+		if len(msg) > 500 {
+			msg = msg[:500]
+		}
+	}
+	return j.set(ctx, id, JobManualReview, msg)
+}
 func (j *Jobs) Approve(ctx context.Context, code string) (Job, error) {
 	job, err := j.ByCode(ctx, strings.ToUpper(strings.TrimSpace(code)))
 	if err != nil {
 		return Job{}, err
 	}
-	if job.Status != JobAwaitingApproval {
+	if job.Status != JobAwaitingApproval && job.Status != JobManualReview {
 		return Job{}, fmt.Errorf("pré-reserva %s não aguarda aprovação", code)
 	}
 	if err = j.set(ctx, job.ID, JobApproved, ""); err != nil {
@@ -108,10 +119,16 @@ func (j *Jobs) ByID(ctx context.Context, id string) (Job, error) {
 func (j *Jobs) ByCode(ctx context.Context, code string) (Job, error) {
 	return j.query(ctx, `SELECT id,account,contact,chat_jid,code,status,error,created_at,updated_at FROM bitz_prereservations WHERE code=?`, code)
 }
+func (j *Jobs) LatestForContact(ctx context.Context, account, contact string) (Job, error) {
+	return j.queryArgs(ctx, `SELECT id,account,contact,chat_jid,code,status,error,created_at,updated_at FROM bitz_prereservations WHERE account=? AND contact=? ORDER BY created_at DESC LIMIT 1`, account, contact)
+}
 func (j *Jobs) query(ctx context.Context, q, arg string) (Job, error) {
+	return j.queryArgs(ctx, q, arg)
+}
+func (j *Jobs) queryArgs(ctx context.Context, q string, args ...any) (Job, error) {
 	var job Job
 	var created, updated string
-	err := j.db.QueryRowContext(ctx, q, arg).Scan(&job.ID, &job.Account, &job.Contact, &job.ChatJID, &job.Code, &job.Status, &job.Error, &created, &updated)
+	err := j.db.QueryRowContext(ctx, q, args...).Scan(&job.ID, &job.Account, &job.Contact, &job.ChatJID, &job.Code, &job.Status, &job.Error, &created, &updated)
 	if err != nil {
 		return Job{}, err
 	}

@@ -145,3 +145,8 @@
 - 2026-11-10 — Superseded: dados desktop padrão ancorados ao diretório do executável podiam se perder ou se dividir quando o Windows/navegador abria o binário em pasta temporária.
 - 2026-11-10 — Sessão, chats, configurações e banco operacional padrão residem em `%APPDATA%\Tino\data`, independentes do local do executável. Um `data_dir` relativo explicitamente configurado continua ancorado ao executável.
 - 2026-11-10 — O painel remoto representa o snapshot atual da instância: contatos ausentes no snapshot são removidos do D1 para não exibir atendimentos fantasmas ou dados obsoletos.
+
+- 2026-11-10 — O orçamento comercial coleta, nesta ordem: check-in, check-out, quantidade de quartos e ocupação de cada quarto. Idades infantis continuam obrigatórias porque fazem parte da consulta validada da OmniBees.
+- 2026-11-10 — O fechamento envia orçamento, mensagens configuráveis 1 e 2, categorias numeradas e mensagem 3. Somente após uma mensagem 3 não vazia imagens/PDFs passam a ser tratados como comprovante e encaminhados aos operadores responsáveis.
+- 2026-11-10 — Falha técnica na criação Bitz nunca é exposta ao hóspede. O trabalho entra em `manual_review`, os operadores recebem todos os dados e podem usar o mesmo código de aprovação depois de criar a pré-reserva manualmente.
+- 2026-11-10 — A aprovação envia ao hóspede a mensagem configurada e o comprovante validado. O comprovante fica localmente no SQLite apenas até o envio confirmado e então é removido.

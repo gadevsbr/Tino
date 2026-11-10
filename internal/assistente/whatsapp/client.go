@@ -384,6 +384,16 @@ func (s *Service) onEvent(raw any) {
 			return
 		}
 		if !operator {
+			if imageMessage != nil || document != nil {
+				handled, proofErr := s.handleCommercialProof(ctx, account, contact, string(evt.Info.ID), evt.Info.Chat, imageMessage, document)
+				if proofErr != nil {
+					s.commercial.RecordFailure(ctx, "whatsapp", account, contact, proofErr)
+					s.replyText(ctx, evt.Info.Chat, "Não consegui receber esse comprovante. Envie novamente uma imagem ou PDF de até 15 MB.")
+				}
+				if handled {
+					return
+				}
+			}
 			s.handleGuest(ctx, account, contact, string(evt.Info.ID), text, evt.Info.Chat, evt.Message.GetAudioMessage() != nil)
 			return
 		}

@@ -2,6 +2,7 @@ package bitz
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -35,5 +36,29 @@ func TestJobClaimIsIdempotentAndApprovalRequiresWaitingState(t *testing.T) {
 	approved, err := jobs.Approve(ctx, job.Code)
 	if err != nil || approved.Status != JobApproved {
 		t.Fatal(approved, err)
+	}
+}
+
+func TestManualReviewCanBeApprovedAfterOperatorFinishesBitz(t *testing.T) {
+	ctx := context.Background()
+	db, err := database.Open(ctx, filepath.Join(t.TempDir(), "hotel.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	jobs, err := NewJobs(ctx, db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, _, err := jobs.Claim(ctx, "quote-manual", "account", "contact", "5511@s.whatsapp.net")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = jobs.ManualReview(ctx, job.ID, errors.New("Bitz indisponível")); err != nil {
+		t.Fatal(err)
+	}
+	approved, err := jobs.Approve(ctx, job.Code)
+	if err != nil || approved.Status != JobApproved {
+		t.Fatalf("approved=%+v err=%v", approved, err)
 	}
 }
