@@ -38,8 +38,8 @@ type Command struct {
 }
 
 type Config struct {
-	Enabled, PasswordSet               bool
-	Endpoint, DashboardURL, InstanceID string
+	Enabled, PasswordSet, DashboardTokenSet bool
+	Endpoint, DashboardURL, InstanceID      string
 }
 
 type Client struct {
@@ -104,6 +104,10 @@ func (c Client) Sync(ctx context.Context, snapshot Snapshot) ([]Command, error) 
 		return nil, err
 	}
 	return result.Commands, nil
+}
+
+func (c Client) CheckDashboard(ctx context.Context) error {
+	return c.request(ctx, http.MethodGet, "/api/dashboard", nil, nil)
 }
 
 func (c Client) Ack(ctx context.Context, id string, runErr error) error {

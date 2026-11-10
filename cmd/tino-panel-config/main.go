@@ -21,11 +21,16 @@ func main() {
 	flag.Parse()
 	store := controlpanel.NewStore(*path)
 	if *copyFrom != "" {
-		cfg, token, err := controlpanel.NewStore(*copyFrom).Load()
+		source := controlpanel.NewStore(*copyFrom)
+		cfg, token, err := source.Load()
 		if err != nil {
 			panic(err)
 		}
-		if err := store.Save(cfg, token); err != nil {
+		dashboardToken, err := source.DashboardToken()
+		if err != nil {
+			panic(err)
+		}
+		if err := store.Save(cfg, token, dashboardToken); err != nil {
 			panic(err)
 		}
 		fmt.Println("configuração copiada; token protegido pelo Windows")
@@ -40,14 +45,25 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("ponte autenticada e sincronizada")
+		dashboardToken, err := store.DashboardToken()
+		if err != nil {
+			panic(err)
+		}
+		if err := (controlpanel.Client{Endpoint: cfg.Endpoint, Token: dashboardToken, InstanceID: cfg.InstanceID}).CheckDashboard(context.Background()); err != nil {
+			panic(err)
+		}
+		fmt.Println("ponte sincronizada e dashboard autenticado")
 		return
 	}
-	token, err := io.ReadAll(io.LimitReader(os.Stdin, 4096))
+	tokens, err := io.ReadAll(io.LimitReader(os.Stdin, 8192))
 	if err != nil {
 		panic(err)
 	}
-	err = store.Save(controlpanel.Config{Enabled: true, Endpoint: *endpoint, DashboardURL: *dashboard, InstanceID: *instance}, strings.TrimSpace(string(token)))
+	parts := strings.SplitN(strings.TrimSpace(string(tokens)), "\n", 2)
+	if len(parts) != 2 {
+		panic("informe os tokens da ponte e do painel em duas linhas")
+	}
+	err = store.Save(controlpanel.Config{Enabled: true, Endpoint: *endpoint, DashboardURL: *dashboard, InstanceID: *instance}, strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
 	if err != nil {
 		panic(err)
 	}

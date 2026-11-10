@@ -11,13 +11,13 @@ import (
 )
 
 type ControlPanelDTO struct {
-	Enabled, TokenSet                          bool
+	Enabled, TokenSet, DashboardTokenSet       bool
 	Endpoint, DashboardURL, InstanceID, Status string
 }
 
 type ControlPanelInput struct {
-	Enabled                                   bool
-	Endpoint, DashboardURL, InstanceID, Token string
+	Enabled                                                   bool
+	Endpoint, DashboardURL, InstanceID, Token, DashboardToken string
 }
 
 func (a *App) GetControlPanel() (ControlPanelDTO, error) {
@@ -32,7 +32,7 @@ func (a *App) GetControlPanel() (ControlPanelDTO, error) {
 		status = a.hotel.controlPanelState()
 	}
 	a.hotelMu.Unlock()
-	return ControlPanelDTO{Enabled: cfg.Enabled, TokenSet: cfg.PasswordSet, Endpoint: cfg.Endpoint, DashboardURL: cfg.DashboardURL, InstanceID: cfg.InstanceID, Status: status}, nil
+	return ControlPanelDTO{Enabled: cfg.Enabled, TokenSet: cfg.PasswordSet, DashboardTokenSet: cfg.DashboardTokenSet, Endpoint: cfg.Endpoint, DashboardURL: cfg.DashboardURL, InstanceID: cfg.InstanceID, Status: status}, nil
 }
 
 func (a *App) ConfigureControlPanel(input ControlPanelInput) error {
@@ -41,7 +41,7 @@ func (a *App) ConfigureControlPanel(input ControlPanelInput) error {
 		return errors.New("informe um endereço HTTPS e um identificador para ativar o painel")
 	}
 	store := controlpanel.NewStore(filepath.Join(a.cfg.DataDir, "control-panel.json"))
-	if err := store.Save(controlpanel.Config{Enabled: input.Enabled, Endpoint: input.Endpoint, DashboardURL: input.DashboardURL, InstanceID: input.InstanceID}, input.Token); err != nil {
+	if err := store.Save(controlpanel.Config{Enabled: input.Enabled, Endpoint: input.Endpoint, DashboardURL: input.DashboardURL, InstanceID: input.InstanceID}, input.Token, input.DashboardToken); err != nil {
 		return err
 	}
 	return a.restartHotelRuntime()
@@ -49,11 +49,12 @@ func (a *App) ConfigureControlPanel(input ControlPanelInput) error {
 
 func (a *App) OpenControlPanel() error {
 	store := controlpanel.NewStore(filepath.Join(a.cfg.DataDir, "control-panel.json"))
-	cfg, token, err := store.Load()
+	cfg, _, err := store.Load()
 	if err != nil {
 		return err
 	}
-	if !cfg.Enabled || cfg.DashboardURL == "" || token == "" {
+	token, tokenErr := store.DashboardToken()
+	if !cfg.Enabled || cfg.DashboardURL == "" || tokenErr != nil || token == "" {
 		return errors.New("configure e ative o painel web primeiro")
 	}
 	wailsRuntime.BrowserOpenURL(a.ctx, strings.TrimRight(cfg.DashboardURL, "/")+"/#token="+url.QueryEscape(token))
