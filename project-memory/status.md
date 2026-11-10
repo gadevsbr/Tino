@@ -528,7 +528,7 @@
 
 ## Etapa 26 — Dados persistentes e snapshot fiel do painel v0.16.4
 
-- Status: causa confirmada, correção local e Worker publicados; release Windows em preparação.
+- Status: causa confirmada, correção local, Worker, Pages e release Windows publicados.
 - Causa: o processo ativo era o `0.16.1` aberto em uma pasta temporária do navegador. A configuração antiga gravava sessão, chats e banco operacional ao lado do executável; cada download podia iniciar uma base diferente. O D1 também mantinha contatos ausentes nos snapshots seguintes.
 - Correção: dados padrão passam a residir em `%APPDATA%\Tino\data`; caminhos relativos configurados explicitamente continuam compatíveis. A ponte substitui os contatos da instância a cada snapshot, removendo registros fantasmas.
 - Migração: a sessão do processo temporário foi copiada para o diretório persistente, mantendo a origem intacta; `hotel.db`, `chats-default.db` e `sessions/default.db` passaram em `PRAGMA integrity_check`.
@@ -536,3 +536,4 @@
 - Evidência local: `go test -count=1 ./...`, `go vet ./...`, testes Node do Worker e build Vite passaram. O Wails 0.16.4 abriu responsivo usando a configuração persistente.
 - SHA-256 local: `Tino.exe` `52A3A45E8F7A0646E9E18622A76FC9ED6F50E1B532A40D27FDBC7495D6D03333`; CLI `3CCCFE7C09059A0DB561922A30B9DD305286758EDBCACE398FA9B78563D72CE3`.
 - Limite: conversas antigas que nunca geraram estado em `commercial_contacts` não são reconstruídas por inferência; o painel passa a refletir corretamente os atendimentos processados pela base persistente a partir desta versão.
+- Evidência de release: commit `aecf11a`, tag `v0.16.4` e hashes dos dois assets conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.16.4`.
