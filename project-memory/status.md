@@ -506,3 +506,11 @@
 - Evidência: `go test -count=1 ./...`, `go vet ./...`, testes Node dos três pacotes e auditorias npm passaram; build Wails 0.16.1 passou, abriu responsivo e registrou `0.16.1` no D1 remoto.
 - SHA-256 local: `Tino.exe` `D2CF32786E6E2DBB53C72C1C5AD47AB4EFCEB751D69746AB39341302B510D28D`; CLI `524B2B5002AD90598D48E70FAA84E0E0488BECC8E9121F021857013B4AC387B9`.
 - Evidência de release: commit `92c4c0e` enviado à branch `codex/native-ai-bot-recovery`; tag `v0.16.1` aponta para esse commit e os hashes dos dois assets foram conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.16.1`.
+
+## Etapa 24 — Correção do endpoint de login v0.16.2
+
+- Status: causa identificada, correção publicada no Cloudflare Pages e fluxo real validado.
+- Causa: o build de produção não recebia `VITE_API_URL` e usava caminho relativo; por isso o navegador enviava `POST /api/auth/login` ao Pages, que respondia HTTP 405.
+- Correção: o Worker oficial passa a ser o endereço padrão compilado no frontend; `.env` continua podendo sobrescrevê-lo em desenvolvimento.
+- Evidência web: o bundle canônico contém `tino-control-api.gadevs2020.workers.dev`; login real retornou usuário `proprietaria`, dashboard HTTP 200 e CORS `https://tino-control.pages.dev`.
+- Evidência local: testes direcionados Go, `go vet`, teste e build web passaram; Wails 0.16.2 abriu responsivo. SHA-256: `Tino.exe` `5CF587DC2F45FBCE42BA6624BB709FC6EB41898C75AC136640A85BE52F83100B`; CLI `8B337037D66DC6AA2F052D278538E2F9274973FDDADA89445DD8C1A8A69477AE`.

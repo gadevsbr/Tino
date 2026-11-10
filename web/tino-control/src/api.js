@@ -1,4 +1,4 @@
-const base = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+const base = (import.meta.env.VITE_API_URL || "https://tino-control-api.gadevs2020.workers.dev").replace(/\/$/, "");
 
 export function savedToken() { return sessionStorage.getItem("tino-control-token") || ""; }
 export function saveToken(token) { sessionStorage.setItem("tino-control-token", token.trim()); }
