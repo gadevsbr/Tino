@@ -582,3 +582,11 @@
 - SHA-256 final: `Tino.exe` `CEE3578E70ACF83DCDB0EBD8E19503E344433D6DC2B3A40F544C89DBA9E11654`; CLI `1B117260944A87D55BB71FF774A7D95E31DC5FD7CA5BA8C663F9996DAB4EC3D6`.
 - Evidência de release: commit `956fcdb`, tag `v0.17.3` e assets `Tino.exe`, CLI e `Tino.exe.sha256` publicados em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.3`.
 - O build passa a gerar `dist/Tino.exe.sha256` automaticamente para que releases futuras mantenham o contrato do atualizador.
+
+## Etapa 31 — Comprovante sem looping e mensagem 4 v0.17.4
+
+- Status: implementado e validado; release em preparação.
+- Correção: eventos de imagem/PDF sem texto não voltam pelo ramo que repetia a mensagem 3. Depois do comprovante aceito, o hóspede recebe somente a confirmação de recebimento e o fluxo aguarda aprovação humana.
+- Mensagem 4: novo campo na configuração comercial; somente `aprovar pre-reserva CODIGO` por operador autorizado libera o texto final e o comprovante validado ao hóspede.
+- Evidência: regressões cobrem mídia vazia antes e depois da confirmação do comprovante, preferência da mensagem 4 e preservação da configuração; `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram. Wails 0.17.4 abriu responsivo e o checksum automático conferiu.
+- SHA-256 local: `Tino.exe` `8E1A370E6AB1CA1AF4F852C93DD23A433758C059AA59A0E8E70FA5128453E715`; CLI `5206CB6EAC31761B29A6D0B6487C669EF17FCC7F36F2CF96E89EDCBB94CF874E`.

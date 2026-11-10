@@ -244,10 +244,12 @@ func (s *Service) handleCommercialOperator(ctx context.Context, account, operato
 			var cfg bitz.PublicConfig
 			cfg, err = s.bitzStore.Public(ctx)
 			if err == nil {
+				commercialCfg, _ := s.commercial.Configuration(ctx, account)
+				finalText := approvedGuestText(commercialCfg, cfg)
 				var guest types.JID
 				guest, err = types.ParseJID(job.ChatJID)
 				if err == nil {
-					s.replyText(ctx, guest, cfg.ApprovedText)
+					s.replyText(ctx, guest, finalText)
 					var proof commercialProof
 					proof, err = s.latestCommercialProof(ctx, job)
 					if err == nil && len(proof.Data) > 0 {
@@ -391,6 +393,13 @@ func (s *Service) handleCommercialOperator(ctx context.Context, account, operato
 		return true
 	}
 	return false
+}
+
+func approvedGuestText(commercialCfg commercial.Config, bitzCfg bitz.PublicConfig) string {
+	if text := strings.TrimSpace(commercialCfg.FinalMessage4); text != "" {
+		return text
+	}
+	return bitzCfg.ApprovedText
 }
 
 // Named operational commands exit the operator's guest simulation. Numeric

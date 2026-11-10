@@ -148,9 +148,20 @@ func TestBudgetSequenceWaitsForSelectionBeforePaymentInstruction(t *testing.T) {
 	if err != nil || !waits {
 		t.Fatalf("proof state after selection=%t err=%v", waits, err)
 	}
+	r = handle(t, s, "media-event", "", now.Add(4*time.Minute))
+	if r.Text != "" || r.AfterSelection != "" {
+		t.Fatalf("media event repeated message 3: %+v", r)
+	}
 	pending, err := s.PendingPreReservation(context.Background(), "a", "guest")
 	if err != nil || pending == nil || pending.Categories[0].TotalCents != 250420 {
 		t.Fatalf("pending=%+v err=%v", pending, err)
+	}
+	if err = s.PaymentProofDelivered(context.Background(), "a", "guest"); err != nil {
+		t.Fatal(err)
+	}
+	r = handle(t, s, "after-proof", "", now.Add(5*time.Minute))
+	if r.Text != "" || r.AfterSelection != "" {
+		t.Fatalf("proof confirmation returned to message 3: %+v", r)
 	}
 }
 

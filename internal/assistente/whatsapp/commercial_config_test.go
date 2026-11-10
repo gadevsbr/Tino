@@ -3,13 +3,24 @@ package whatsapp
 import (
 	"testing"
 
+	"github.com/gadevsbr/tino/internal/assistente/bitz"
 	"github.com/gadevsbr/tino/internal/assistente/commercial"
 )
 
 func TestCommercialModeCommandDoesNotReplaceUIFields(t *testing.T) {
-	current := commercial.Config{Mode: commercial.Public, GroupPhone: "5573988240413", FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois", FinalMessage3: "mensagem três"}
+	current := commercial.Config{Mode: commercial.Public, GroupPhone: "5573988240413", FinalMessage1: "mensagem um", FinalMessage2: "mensagem dois", FinalMessage3: "mensagem três", FinalMessage4: "mensagem quatro"}
 	current = commercialModeConfig(current, "comercial teste 5573999999999")
-	if current.Mode != commercial.Test || current.GroupPhone != "5573988240413" || current.FinalMessage1 != "mensagem um" || current.FinalMessage2 != "mensagem dois" || current.FinalMessage3 != "mensagem três" {
+	if current.Mode != commercial.Test || current.GroupPhone != "5573988240413" || current.FinalMessage1 != "mensagem um" || current.FinalMessage2 != "mensagem dois" || current.FinalMessage3 != "mensagem três" || current.FinalMessage4 != "mensagem quatro" {
 		t.Fatal(current)
+	}
+}
+
+func TestApprovedGuestTextPrefersCommercialMessage4(t *testing.T) {
+	got := approvedGuestText(commercial.Config{FinalMessage4: " reserva confirmada "}, bitz.PublicConfig{ApprovedText: "legada"})
+	if got != "reserva confirmada" {
+		t.Fatal(got)
+	}
+	if got = approvedGuestText(commercial.Config{}, bitz.PublicConfig{ApprovedText: "legada"}); got != "legada" {
+		t.Fatal(got)
 	}
 }

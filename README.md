@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.17.3
+.\scripts\build.ps1 -Version 0.17.4
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -99,6 +99,8 @@ Durante **testar atendimento**, comandos administrativos como `menu`, `status` e
 O atendimento comercial começa com uma triagem na primeira mensagem ou após 24 horas sem interação. Outros assuntos pausam o bot e mantêm a conversa não lida. O orçamento coleta check-in, check-out, quartos, adultos e crianças, nessa ordem; para crianças, também coleta as idades exigidas pela OmniBees. O próprio orçamento apresenta as categorias numeradas com seus valores em reais para escolha. Depois seguem as mensagens 1 e 2 configuradas em **Gestão Assistente > Comercial**.
 
 Somente depois da escolha de todas as categorias o Tino envia a mensagem 3. A criação no Bitz e o pedido ao aprovador aguardam uma imagem ou PDF válido de até 15 MB. O comprovante fica no banco local, segue anexado aos operadores com período, ocupação, valores por quarto e valor total e, após a aprovação, acompanha a confirmação enviada ao hóspede. Se a automação do Bitz falhar, o hóspede recebe apenas uma resposta operacional neutra; os operadores recebem os mesmos dados, a confirmação de comprovante recebido e o motivo técnico para concluir manualmente.
+
+Ao receber o comprovante, o Tino confirma uma única vez e aguarda a decisão humana sem repetir a mensagem 3. A mensagem 4, configurada na mesma tela comercial, é enviada somente depois que um operador autorizado aprova a pré-reserva pelo código.
 
 Mensagens de áudio de hóspedes são encaminhadas diretamente para atendimento humano e deixam a conversa não lida; o bot não tenta interpretar o conteúdo enquanto a transcrição não estiver disponível. Depois de criar uma pré-reserva, o aviso ao aprovador inclui WhatsApp do hóspede, período e ocupação/categoria de cada quarto.
 
