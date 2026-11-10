@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"path/filepath"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/gadevsbr/tino/internal/assistente/advances"
@@ -22,6 +24,7 @@ import (
 	"github.com/gadevsbr/tino/internal/assistente/rooms"
 	assistwa "github.com/gadevsbr/tino/internal/assistente/whatsapp"
 	"github.com/gadevsbr/tino/internal/capability"
+	"github.com/gadevsbr/tino/internal/controlpanel"
 	"github.com/gadevsbr/tino/internal/flow"
 	"go.mau.fi/whatsmeow"
 )
@@ -41,9 +44,13 @@ type hotelRuntime struct {
 	catalog    *catalog.Repository
 	backup     *backup.Manager
 	bitz       *bitz.Store
+	panel      *controlpanel.Store
+	panelMu    sync.RWMutex
+	panelState string
+	version    string
 }
 
-func openHotelRuntime(parent context.Context, dataDir string, settings capability.Settings, client *whatsmeow.Client, markUnread func(context.Context, string) error) (*hotelRuntime, error) {
+func openHotelRuntime(parent context.Context, dataDir, version string, settings capability.Settings, client *whatsmeow.Client, markUnread func(context.Context, string) error) (*hotelRuntime, error) {
 	location, err := time.LoadLocation("America/Sao_Paulo")
 	if err != nil {
 		location = time.Local
@@ -99,7 +106,88 @@ func openHotelRuntime(parent context.Context, dataDir string, settings capabilit
 		_ = db.Close()
 		return nil, err
 	}
-	return &hotelRuntime{db: db, service: service, cancel: cancel, dataDir: operationsDir, zone: location, rooms: roomRepo, cash: cashRepo, advances: advanceRepo, extratos: extratos.NewRepository(db), reports: reports.New(location), commercial: commercialService, catalog: catalogRepo, backup: backup.New(db, operationsDir, cfg.BackupRetentionDays, location), bitz: bitz.NewStore(filepath.Join(operationsDir, "bitz-config.json"))}, nil
+	runtime := &hotelRuntime{db: db, service: service, cancel: cancel, dataDir: operationsDir, zone: location, rooms: roomRepo, cash: cashRepo, advances: advanceRepo, extratos: extratos.NewRepository(db), reports: reports.New(location), commercial: commercialService, catalog: catalogRepo, backup: backup.New(db, operationsDir, cfg.BackupRetentionDays, location), bitz: bitz.NewStore(filepath.Join(operationsDir, "bitz-config.json")), panel: controlpanel.NewStore(filepath.Join(dataDir, "control-panel.json")), version: version}
+	go runtime.runControlPanel(ctx)
+	return runtime, nil
+}
+
+func (r *hotelRuntime) setPanelState(value string) {
+	r.panelMu.Lock()
+	r.panelState = value
+	r.panelMu.Unlock()
+}
+
+func (r *hotelRuntime) controlPanelState() string {
+	r.panelMu.RLock()
+	defer r.panelMu.RUnlock()
+	return r.panelState
+}
+
+func (r *hotelRuntime) runControlPanel(ctx context.Context) {
+	for {
+		cfg, token, err := r.panel.Load()
+		if err != nil {
+			r.setPanelState("Erro de configuração: " + err.Error())
+		} else if !cfg.Enabled {
+			r.setPanelState("Desativado")
+		} else {
+			contacts, loadErr := r.commercial.Pipeline(ctx)
+			if loadErr != nil {
+				r.setPanelState("Falha ao ler o funil: " + loadErr.Error())
+			} else {
+				snapshot := controlpanel.Snapshot{Version: r.version, Contacts: make([]controlpanel.Contact, 0, len(contacts)), Failures: r.panelFailures(ctx)}
+				for _, item := range contacts {
+					snapshot.Contacts = append(snapshot.Contacts, controlpanel.Contact{Account: item.Account, Contact: item.Contact, Stage: item.Stage, LastSeen: item.LastSeen, CheckIn: item.CheckIn, CheckOut: item.CheckOut, Paused: item.Paused, QuoteActive: item.QuoteActive, AwaitingChoice: item.AwaitingChoice, Adults: item.Adults, Children: item.Children, Rooms: item.Rooms, Categories: item.Categories, SelectedCategories: item.SelectedCategories, PreReservationCode: item.PreReservationCode, PreReservationStatus: item.PreReservationStatus})
+				}
+				client := controlpanel.Client{Endpoint: cfg.Endpoint, Token: token, InstanceID: cfg.InstanceID}
+				commands, syncErr := client.Sync(ctx, snapshot)
+				if syncErr != nil {
+					r.setPanelState("Sem conexão: " + syncErr.Error())
+				} else {
+					for _, command := range commands {
+						runErr := r.executePanelCommand(ctx, command)
+						if ackErr := client.Ack(ctx, command.ID, runErr); ackErr != nil {
+							r.setPanelState("Falha ao confirmar comando: " + ackErr.Error())
+							break
+						}
+					}
+					if len(commands) == 0 || !strings.HasPrefix(r.controlPanelState(), "Falha") {
+						r.setPanelState("Sincronizado")
+					}
+				}
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(5 * time.Second):
+		}
+	}
+}
+
+func (r *hotelRuntime) executePanelCommand(ctx context.Context, command controlpanel.Command) error {
+	switch command.Action {
+	case "pause", "takeover":
+		return r.commercial.Pause(ctx, command.Account, command.Contact)
+	case "resume":
+		return r.commercial.Resume(ctx, command.Account, command.Contact)
+	case "restart_quote":
+		return r.commercial.Reset(ctx, command.Account, command.Contact)
+	default:
+		return fmt.Errorf("comando do painel não permitido: %s", command.Action)
+	}
+}
+
+func (r *hotelRuntime) panelFailures(ctx context.Context) []controlpanel.Failure {
+	failures, err := r.commercial.Failures(ctx, 100)
+	if err != nil {
+		return nil
+	}
+	items := make([]controlpanel.Failure, 0, len(failures))
+	for _, failure := range failures {
+		items = append(items, controlpanel.Failure{ID: failure.ID, Source: failure.Source, Contact: failure.Contact, Message: failure.Message, CreatedAt: failure.At})
+	}
+	return items
 }
 
 func (r *hotelRuntime) Close() {

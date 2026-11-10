@@ -506,6 +506,7 @@ func (s *Service) handleGuestAs(ctx context.Context, account, stateContact, disp
 	}
 	if len(result.Categories) > 0 {
 		if err := s.sendQuoteProducts(ctx, account, stateContact, messageID, chat, result.Categories); err != nil {
+			s.commercial.RecordFailure(ctx, "catalog", account, stateContact, err)
 			slog.Error("commercial catalog delivery incomplete")
 			s.replyText(ctx, chat, "Não consegui enviar todos os produtos do catálogo. O orçamento acima continua disponível; a equipe pode ajudar com as fotos.")
 		}
@@ -571,6 +572,7 @@ func (s *Service) startPreReservation(account, contact, messageID string, chat t
 		}
 		if runErr != nil {
 			_ = s.bitzJobs.Fail(ctx, job.ID, runErr)
+			s.commercial.RecordFailure(ctx, "bitz", account, contact, runErr)
 			s.replyText(ctx, chat, "Não consegui concluir a pré-reserva automaticamente. Deixei a conversa para nossa equipe continuar.")
 			if publicCfg.ApproverPhone != "" {
 				notice := fmt.Sprintf("⚠️ Falha na pré-reserva %s.\nHóspede: %s\nMotivo: %s\nA conversa foi marcada para atendimento humano.", job.Code, contact, operatorSafeBitzError(runErr))

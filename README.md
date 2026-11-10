@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.15.16
+.\scripts\build.ps1 -Version 0.16.0
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -121,3 +121,11 @@ O dashboard abre no mês corrente e, após uma importação, passa automaticamen
 O comando `relatorio em pdf` envia uma mensagem com os números dos quartos sujos, desforrados, de entrada, de saída e de saída e entrada, seguida dos PDFs de quartos e caixa. Cada situação permanece separada conforme o status registrado.
 
 Build e testes locais validam apenas código/artefato. Pareamento QR, estabilidade prolongada, entrega real, políticas do provedor e comportamento em uma máquina Windows diferente exigem validação externa separada.
+
+## Painel comercial web
+
+O painel publicado em `https://tino-control.pages.dev` apresenta o funil comercial em oito etapas, os dados coletados, falhas de OmniBees, catálogo, IA e Bitz e o histórico de comandos. Pausar, retomar, assumir ou reiniciar um orçamento cria um comando auditado; a ação só aparece como executada depois da confirmação do Tino.
+
+O desktop permanece como autoridade operacional e abre apenas conexões HTTPS de saída. Em **Central de recursos > Painel web**, a instalação consulta a sincronização e abre o painel já autenticado. O token fica protegido pelo Windows em `data/control-panel.json`; sessão WhatsApp, credenciais do Bitz e arquivos não são enviados ao Cloudflare.
+
+Infraestrutura: frontend React em `web/tino-control`, API Worker e migrações D1 em `workers/tino-control-api`. Segredos são configurados com `wrangler secret put` e nunca pertencem ao repositório.

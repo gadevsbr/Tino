@@ -2,6 +2,7 @@ package commercial
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -38,6 +39,36 @@ func configure(t *testing.T, s *Service, c Config) {
 	t.Helper()
 	if err := s.Configure(context.Background(), "a", c); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPipelineAndHumanControls(t *testing.T) {
+	s := fixture(t, func(context.Context, string, string, string) (QuoteReply, error) { return QuoteReply{}, nil })
+	configure(t, s, Config{Mode: Public})
+	now := time.Now()
+	handle(t, s, "pipeline-1", "oi", now)
+	items, err := s.Pipeline(context.Background())
+	if err != nil || len(items) != 1 || items[0].Stage != "new" || items[0].Contact != "guest" {
+		t.Fatalf("pipeline inicial inválido: items=%+v err=%v", items, err)
+	}
+	if err := s.Pause(context.Background(), "a", "guest"); err != nil {
+		t.Fatal(err)
+	}
+	items, err = s.Pipeline(context.Background())
+	if err != nil || items[0].Stage != "human" || !items[0].Paused {
+		t.Fatalf("handoff não refletido: items=%+v err=%v", items, err)
+	}
+	if err := s.Resume(context.Background(), "a", "guest"); err != nil {
+		t.Fatal(err)
+	}
+	items, err = s.Pipeline(context.Background())
+	if err != nil || items[0].Paused {
+		t.Fatalf("retomada não refletida: items=%+v err=%v", items, err)
+	}
+	s.RecordFailure(context.Background(), "catalog", "a", "guest", errors.New("produto indisponível"))
+	failures, err := s.Failures(context.Background(), 10)
+	if err != nil || len(failures) != 1 || failures[0].Source != "catalog" || failures[0].Contact != "guest" {
+		t.Fatalf("falha não auditada: failures=%+v err=%v", failures, err)
 	}
 }
 

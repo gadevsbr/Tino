@@ -86,6 +86,19 @@ type Service struct {
 	locks       [64]sync.Mutex
 }
 
+type PipelineContact struct {
+	Account, Contact, Stage, LastSeen, CheckIn, CheckOut string
+	Paused, QuoteActive, AwaitingChoice                  bool
+	Adults, Children, Rooms                              int
+	Categories, SelectedCategories                       []string
+	PreReservationCode, PreReservationStatus             string
+}
+
+type IntegrationFailure struct {
+	ID                                    int64
+	Source, Account, Contact, Message, At string
+}
+
 func (s *Service) SetAssistant(fn AssistantFunc) {
 	s.assistantMu.Lock()
 	s.assistant = fn
@@ -127,11 +140,67 @@ func New(ctx context.Context, db *sql.DB, quote QuoteFunc) (*Service, error) {
 	 PRIMARY KEY(account,contact));
 	 CREATE TABLE IF NOT EXISTS commercial_messages (
 	 account TEXT NOT NULL, contact TEXT NOT NULL, message_id TEXT NOT NULL,
-	 PRIMARY KEY(account,contact,message_id));`)
+	 PRIMARY KEY(account,contact,message_id));
+	 CREATE TABLE IF NOT EXISTS integration_failures (
+	 id INTEGER PRIMARY KEY, source TEXT NOT NULL, account TEXT NOT NULL DEFAULT '',
+	 contact TEXT NOT NULL DEFAULT '', message TEXT NOT NULL, created_at TEXT NOT NULL);`)
 	if err != nil {
 		return nil, err
 	}
 	return &Service{db: db, quote: quote}, nil
+}
+
+func (s *Service) RecordFailure(ctx context.Context, source, account, contact string, cause error) {
+	if cause == nil {
+		return
+	}
+	message := cause.Error()
+	if len(message) > 1000 {
+		message = message[:1000]
+	}
+	_, _ = s.db.ExecContext(ctx, `INSERT INTO integration_failures(source,account,contact,message,created_at) VALUES(?,?,?,?,?)`, strings.ToLower(strings.TrimSpace(source)), account, contact, message, time.Now().UTC().Format(time.RFC3339Nano))
+}
+
+func (s *Service) Failures(ctx context.Context, limit int) ([]IntegrationFailure, error) {
+	if limit < 1 || limit > 500 {
+		limit = 100
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT id,source,account,contact,message,created_at FROM integration_failures ORDER BY id DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []IntegrationFailure{}
+	for rows.Next() {
+		var item IntegrationFailure
+		if err := rows.Scan(&item.ID, &item.Source, &item.Account, &item.Contact, &item.Message, &item.At); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *Service) runQuote(ctx context.Context, account, contact, text string) (QuoteReply, error) {
+	reply, err := s.quote(ctx, account, contact, text)
+	if err != nil {
+		s.RecordFailure(ctx, "omnibees", account, contact, err)
+	}
+	return reply, err
+}
+
+func (s *Service) trackedAssistant(account, contact string) AssistantFunc {
+	base := s.Assistant()
+	if base == nil {
+		return nil
+	}
+	return func(ctx context.Context, request DialogueRequest) (DialogueAnswer, error) {
+		answer, err := base(ctx, request)
+		if err != nil {
+			s.RecordFailure(ctx, "ai", account, contact, err)
+		}
+		return answer, err
+	}
 }
 
 func validIdentity(account, contact string) error {
@@ -271,7 +340,7 @@ func (s *Service) Resume(ctx context.Context, account, contact string) error {
 	}
 	st.Paused = false
 	if st.QuoteActive {
-		if _, err = s.quote(ctx, account, contact, "cancelar"); err != nil {
+		if _, err = s.runQuote(ctx, account, contact, "cancelar"); err != nil {
 			return err
 		}
 	}
@@ -283,6 +352,106 @@ func (s *Service) Resume(ctx context.Context, account, contact string) error {
 	st.Plan = nil
 	st.SelectedRooms = nil
 	return s.save(ctx, Input{Account: account, Contact: contact}, st)
+}
+
+// Pause hands this contact to a human without discarding the quote already collected.
+func (s *Service) Pause(ctx context.Context, account, contact string) error {
+	if err := validIdentity(account, contact); err != nil {
+		return err
+	}
+	unlock := s.lock(account, contact)
+	defer unlock()
+	st, err := s.load(ctx, account, contact)
+	if err != nil {
+		return err
+	}
+	st.Paused = true
+	return s.save(ctx, Input{Account: account, Contact: contact}, st)
+}
+
+// Pipeline returns the local operational state used by the optional web control panel.
+func (s *Service) Pipeline(ctx context.Context) ([]PipelineContact, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT account,contact,state FROM commercial_contacts ORDER BY contact`)
+	if err != nil {
+		return nil, err
+	}
+	items := []PipelineContact{}
+	for rows.Next() {
+		var item PipelineContact
+		var raw string
+		if err := rows.Scan(&item.Account, &item.Contact, &raw); err != nil {
+			return nil, err
+		}
+		var st state
+		if err := json.Unmarshal([]byte(raw), &st); err != nil {
+			return nil, fmt.Errorf("estado comercial de %s: %w", item.Contact, err)
+		}
+		item.Paused, item.QuoteActive, item.AwaitingChoice = st.Paused, st.QuoteActive, st.AwaitingChoice
+		if !st.LastSeen.IsZero() {
+			item.LastSeen = st.LastSeen.UTC().Format(time.RFC3339)
+		}
+		if st.Plan != nil {
+			item.CheckIn, item.CheckOut, item.Rooms = st.Plan.CheckIn, st.Plan.CheckOut, len(st.Plan.Rooms)
+			for _, room := range st.Plan.Rooms {
+				item.Adults += room.Adults
+				item.Children += len(room.Ages)
+			}
+		}
+		for _, category := range st.Categories {
+			item.Categories = append(item.Categories, category.Name)
+		}
+		if st.SelectedCategory != nil {
+			item.SelectedCategories = append(item.SelectedCategories, st.SelectedCategory.Name)
+		}
+		for _, category := range st.SelectedRooms {
+			item.SelectedCategories = append(item.SelectedCategories, category.Name)
+		}
+		item.Stage = pipelineStage(st, "")
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	for i := range items {
+		var status, code string
+		e := s.db.QueryRowContext(ctx, `SELECT status,code FROM bitz_prereservations WHERE account=? AND contact=? ORDER BY updated_at DESC LIMIT 1`, items[i].Account, items[i].Contact).Scan(&status, &code)
+		if e != nil && !errors.Is(e, sql.ErrNoRows) && !strings.Contains(e.Error(), "no such table") {
+			return nil, e
+		}
+		items[i].PreReservationStatus, items[i].PreReservationCode = status, code
+		if status != "" {
+			items[i].Stage = pipelineStage(state{}, status)
+		}
+	}
+	return items, nil
+}
+
+func pipelineStage(st state, jobStatus string) string {
+	switch jobStatus {
+	case "approved":
+		return "approved"
+	case "awaiting_approval":
+		return "awaiting_approval"
+	case "running", "failed":
+		return "pre_reservation"
+	}
+	if st.Paused {
+		return "human"
+	}
+	if st.SelectedCategory != nil || len(st.SelectedRooms) > 0 {
+		return "suite_selected"
+	}
+	if len(st.Categories) > 0 || st.Plan != nil {
+		return "quote_sent"
+	}
+	if st.QuoteActive {
+		return "collecting"
+	}
+	return "new"
 }
 
 // Reset removes an isolated conversation state so its next message starts at
@@ -298,7 +467,7 @@ func (s *Service) Reset(ctx context.Context, account, contact string) error {
 		return err
 	}
 	if st.QuoteActive {
-		if _, err = s.quote(ctx, account, contact, "cancelar"); err != nil {
+		if _, err = s.runQuote(ctx, account, contact, "cancelar"); err != nil {
 			return err
 		}
 	}
@@ -352,7 +521,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 	}
 	text := strings.ToLower(strings.TrimSpace(in.Text))
 	guestMessage := in.Text
-	assist := s.Assistant()
+	assist := s.trackedAssistant(in.Account, in.Contact)
 	if !idle && !st.Paused && !in.Audio && assist != nil {
 		if st.AwaitingChoice {
 			if text != "1" && text != "2" && text != "sair" && text != "cancelar" {
@@ -395,7 +564,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 	}
 	if in.Audio {
 		if st.QuoteActive {
-			if _, err = s.quote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
+			if _, err = s.runQuote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
 				return Reply{}, err
 			}
 		}
@@ -412,7 +581,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 	}
 	if text == "sair" {
 		if st.QuoteActive {
-			if _, err = s.quote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
+			if _, err = s.runQuote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
 				return Reply{}, err
 			}
 		}
@@ -432,7 +601,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 	}
 	if idle || st.ConfigEpoch != config.Epoch {
 		if st.QuoteActive {
-			if _, err = s.quote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
+			if _, err = s.runQuote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
 				return Reply{}, err
 			}
 		}
@@ -458,7 +627,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		r.Text = "Certo. Encaminhei sua conversa para nossa equipe. Um atendente responderá por aqui assim que possível."
 	} else if text == "atendimento humano" || text == "atendente" || text == "humano" || text == "falar com atendente" || text == "falar com um atendente" || text == "outros assuntos" || (!st.QuoteActive && len(st.Categories) == 0 && text == "2") {
 		if st.QuoteActive {
-			if _, err = s.quote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
+			if _, err = s.runQuote(ctx, in.Account, in.Contact, "cancelar"); err != nil {
 				return Reply{}, err
 			}
 		}
@@ -468,7 +637,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		r.Text = "Tudo certo. Encaminhei sua conversa para nossa equipe e pausei o atendimento automático. Um atendente responderá por aqui assim que possível."
 	} else if explicitBudget || (menuBudget && !st.QuoteActive && len(st.Categories) == 0) {
 		st.AwaitingChoice = false
-		q, e := s.quote(ctx, in.Account, in.Contact, "orçamento")
+		q, e := s.runQuote(ctx, in.Account, in.Contact, "orçamento")
 		if e != nil {
 			return Reply{}, e
 		}
@@ -492,7 +661,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		}
 	} else if text == "cancelar" || text == "menu" {
 		if st.QuoteActive {
-			if _, e := s.quote(ctx, in.Account, in.Contact, "cancelar"); e != nil {
+			if _, e := s.runQuote(ctx, in.Account, in.Contact, "cancelar"); e != nil {
 				return Reply{}, e
 			}
 		}
@@ -500,7 +669,7 @@ func (s *Service) Handle(ctx context.Context, in Input) (Reply, error) {
 		st.Categories = nil
 		r.Text = menu
 	} else if st.QuoteActive {
-		q, e := s.quote(ctx, in.Account, in.Contact, in.Text)
+		q, e := s.runQuote(ctx, in.Account, in.Contact, in.Text)
 		if e != nil {
 			return Reply{}, e
 		}

@@ -484,3 +484,14 @@
 - Evidência: testes cobrem Duplo Deluxe, Duplo Standard, Triplo Super Deluxe e Quádruplo com Vista para o Mar; consulta real continuou retornando a categoria dupla esperada com preço formatado.
 - Evidência de build: `go test -count=1 ./...`, `go vet ./...` e Wails 0.11.6 passaram; SHA-256 do `Tino.exe`: `24319FB96930AD76D018D97CC2C7DD3D5B8078DEABB72E44F907B9AB8AF049E7`.
 - Evidência de release: commit funcional `8a7279f` enviado à `main`; release `v0.11.6` publicada com a interface e a CLI auxiliar.
+
+## Etapa 22 — Painel comercial web v0.16.0
+
+- Status: implementação, infraestrutura, publicação web e build do executável concluídos; release GitHub em fechamento.
+- Painel: funil em oito etapas, busca, indicadores, detalhe dos dados coletados, suíte escolhida, pré-reserva, botões de pausar/retomar/assumir/reiniciar, falhas e histórico de comandos.
+- Ponte: sincronização HTTPS de saída a cada cinco segundos; comandos com allowlist e confirmação; token protegido pelo Windows; SQLite local permanece autoridade.
+- Observabilidade: falhas de OmniBees, IA, catálogo e Bitz entram em auditoria comum e são projetadas no D1 sem credenciais ou conteúdo integral da sessão.
+- Cloudflare: Pages `https://tino-control.pages.dev`, Worker `https://tino-control-api.gadevs2020.workers.dev` e D1 `tino-control` publicados. Migração remota aplicada; segredos Worker configurados e rotacionados; CORS limitado ao Pages.
+- Evidência: testes completos Go passaram; `go vet ./...` passou; testes e builds dos dois frontends passaram; `npm audit` retornou zero vulnerabilidades nos três pacotes; smoke autenticado sincronizou a ponte; API respondeu `ok` e Pages respondeu HTTP 200; D1 remoto recebeu dois atendimentos reais nas etapas `new` e `collecting`.
+- Executável: build Wails 0.16.0 passou, abriu responsivo e sincronizou a versão `0.16.0` no D1 remoto; SHA-256 final `A807B1D7659A14CB9BCD6DC0ABBCE099A2E61DCFA1FAECDD362F98D30712AABA`.
+- Limite: o host de inspeção visual automatizada estava indisponível. A publicação e a estrutura foram verificadas por HTTP/build, mas a revisão pixel a pixel no navegador não foi comprovada nesta etapa.

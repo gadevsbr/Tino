@@ -405,7 +405,7 @@ func (a *App) restartHotelRuntime() error {
 		a.botError = err.Error()
 		return err
 	}
-	runtime, err := openHotelRuntime(a.ctx, a.cfg.DataDir, settings, a.mgr.Client, func(ctx context.Context, jid string) error {
+	runtime, err := openHotelRuntime(a.ctx, a.cfg.DataDir, a.version, settings, a.mgr.Client, func(ctx context.Context, jid string) error {
 		if err := a.chats.MarkUnread(ctx, jid); err != nil {
 			return err
 		}

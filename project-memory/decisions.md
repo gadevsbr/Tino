@@ -1,5 +1,11 @@
 # Decisões
 
+- 2026-11-09 — O painel comercial web usa Cloudflare Pages para a interface, Worker para a API e D1 para projeção/auditoria. O SQLite local continua sendo a autoridade operacional; sessão WhatsApp, credenciais Bitz e arquivos não são enviados.
+- 2026-11-09 — Superseded no primeiro corte: Durable Objects/WebSocket para atualização instantânea. A operação inicial sincroniza por HTTPS a cada cinco segundos, suficiente para o controlador solicitado e menor em código/risco; migrar para WebSocket somente se a latência observada justificar.
+- 2026-11-09 — Comandos web são allowlist explícita (`pause`, `resume`, `takeover`, `restart_quote`), ficam pendentes no D1 e só são concluídos após confirmação do Tino. `takeover` pausa sem apagar o orçamento; reinício exige ação separada.
+- 2026-11-09 — O token da ponte é cifrado pelo DPAPI no Windows e o painel é aberto pelo Tino com credencial no fragmento da URL, removido do endereço antes das chamadas. Não gravar token em Git, logs, release ou memória.
+- 2026-11-09 — Falhas de OmniBees, IA, catálogo e Bitz passam a uma auditoria local comum, com mensagem limitada, antes da projeção para o painel.
+
 - 2026-10-13 — Por pedido explícito, a tela autenticada de Conversas apresenta mensagem de carregamento indisponível e não monta o workspace. Superseded temporariamente: exibir conversas após autenticação. Sincronização, armazenamento, bot e módulos operacionais permanecem ativos; isto não constitui autenticação ou proteção contra acesso ao banco/arquivos.
 
 - 2026-10-09 — Superseded: autorização de operadores para executar comandos gerais em grupos (decisão de 28/09). Por pedido explícito, grupos aceitam apenas pedidos autorizados de relatórios de quartos e caixa; demais mensagens são ignoradas antes do processamento. Envio comum, vales, atendimento e texto manual da UI ficam bloqueados para grupos.

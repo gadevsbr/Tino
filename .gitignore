@@ -41,3 +41,5 @@ Thumbs.db
 *.ai-secret
 .wrangler/
 workers/**/node_modules/
+web/**/node_modules/
+web/**/dist/

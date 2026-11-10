@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tino-control-api",
+  "main": "src.js",
+  "compatibility_date": "2026-11-09",
+  "observability": { "enabled": true },
+  "vars": { "DASHBOARD_ORIGIN": "https://tino-control.pages.dev" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tino-control",
+      "database_id": "285db0a0-c1b7-490e-b1d3-775b5f8cce59",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
