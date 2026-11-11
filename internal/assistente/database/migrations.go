@@ -112,6 +112,13 @@ CREATE TABLE bill_reminders (
  bill_id INTEGER NOT NULL REFERENCES payable_bills(id), day TEXT NOT NULL,
  status TEXT NOT NULL, lease_until INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(bill_id,day)
 );`,
+	`CREATE TABLE room_stays (
+ room_id INTEGER PRIMARY KEY REFERENCES rooms(id) ON DELETE CASCADE,
+ check_in TEXT NOT NULL, check_out TEXT NOT NULL, guest_count INTEGER NOT NULL CHECK(guest_count>0),
+ created_by TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+ CHECK(check_out>check_in)
+);
+CREATE INDEX idx_room_stays_dates ON room_stays(check_in,check_out);`,
 }
 
 func Migrate(ctx context.Context, db *sql.DB) error {

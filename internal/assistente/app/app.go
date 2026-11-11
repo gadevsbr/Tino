@@ -111,12 +111,46 @@ func (a *App) Handle(ctx context.Context, user, messageID, text string) (string,
 			}
 			return "Responda `confirmar` para excluir ou `cancelar` para manter o movimento.", nil
 		}
+		if strings.HasPrefix(session.Type, "AWAITING_ENTRY_CHECKOUT:") {
+			parts := strings.Split(session.Type, ":")
+			checkout, ok := parseQuoteDate(strings.TrimSpace(text))
+			guests, guestsErr := strconv.Atoi(parts[len(parts)-1])
+			if !ok || guestsErr != nil {
+				return "📅 Informe a data de saída no formato DD/MM/AAAA.", nil
+			}
+			checkoutISO := checkout.Format("2006-01-02")
+			if len(parts) > 1 && parts[1] == "GUIDED" {
+				return a.advanceEntry(ctx, session, guests, checkoutISO, user, messageID)
+			}
+			changed, _, err := a.rooms.ScheduleEntry(ctx, session.CurrentRoom, guests, checkoutISO, user, "INDIVIDUAL", messageID, time.Now())
+			if errors.Is(err, rooms.ErrInvalidCheckout) {
+				return "📅 A saída precisa ser depois da data de entrada. Informe DD/MM/AAAA.", nil
+			}
+			if err != nil {
+				return "", err
+			}
+			session.Status = "COMPLETED"
+			if err = a.sessions.Save(ctx, session); err != nil {
+				return "", err
+			}
+			if !changed {
+				return fmt.Sprintf("ℹ️ A hospedagem do quarto %d foi reagendada até %s.", session.CurrentRoom, checkout.Format("02/01/2006")), nil
+			}
+			return fmt.Sprintf("✅ Entrada do quarto %d registrada para %d pessoa(s).\n📅 Saída: %s\n\nAmanhã ficará laranja para limpeza e, na saída, ficará magenta após 12h.", session.CurrentRoom, guests, checkout.Format("02/01/2006")), nil
+		}
 		if strings.HasPrefix(session.Type, "AWAITING_GUESTS:") {
 			guests, err := strconv.Atoi(strings.TrimSpace(text))
 			if err != nil || guests < 1 {
 				return "Informe somente a quantidade de pessoas, por exemplo: 2", nil
 			}
 			status := rooms.Status(strings.TrimPrefix(session.Type, "AWAITING_GUESTS:"))
+			if status == rooms.Entry {
+				session.Type = fmt.Sprintf("AWAITING_ENTRY_CHECKOUT:GUIDED:%d", guests)
+				if err := a.sessions.Save(ctx, session); err != nil {
+					return "", err
+				}
+				return fmt.Sprintf("📅 Até que dia o hóspede do quarto %d vai ficar?\n\nInforme a data de saída em DD/MM/AAAA.", session.CurrentRoom), nil
+			}
 			session.Type = "UPDATE_ALL_ROOMS"
 			return a.advanceWithGuests(ctx, session, status, guests, user, messageID)
 		}
@@ -435,6 +469,13 @@ func (a *App) Handle(ctx context.Context, user, messageID, text string) (string,
 				color = "amarelo"
 			}
 			return fmt.Sprintf("👥 Informe a quantidade de pessoas.\n\nExemplo: %d %s 2 pessoas", cmd.Room, color), nil
+		}
+		if cmd.Status == rooms.Entry {
+			s := conversation.Session{User: user, Type: fmt.Sprintf("AWAITING_ENTRY_CHECKOUT:INDIVIDUAL:%d", cmd.Guests), Status: conversation.Active, CurrentRoom: cmd.Room}
+			if err := a.sessions.Save(ctx, s); err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("📅 Até que dia o hóspede do quarto %d vai ficar?\n\nInforme a data de saída em DD/MM/AAAA.", cmd.Room), nil
 		}
 		changed, _, err := a.rooms.UpdateStatusWithGuests(ctx, cmd.Room, cmd.Status, cmd.Guests, user, "INDIVIDUAL", messageID)
 		if errors.Is(err, rooms.ErrNotFound) {
@@ -977,4 +1018,46 @@ func (a *App) advanceWithGuests(ctx context.Context, s conversation.Session, sta
 		return "", err
 	}
 	return fmt.Sprintf("%s\n\nQuarto %d:", prefix, s.CurrentRoom), nil
+}
+
+func (a *App) advanceEntry(ctx context.Context, s conversation.Session, guests int, checkout, user, messageID string) (string, error) {
+	number := s.Selected[s.CurrentIndex]
+	changed, _, err := a.rooms.ScheduleEntry(ctx, number, guests, checkout, user, "GUIDED", messageID, time.Now())
+	if errors.Is(err, rooms.ErrInvalidCheckout) {
+		return "📅 A saída precisa ser depois da data de entrada. Informe DD/MM/AAAA.", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	s.Type = "UPDATE_ALL_ROOMS"
+	s.CurrentIndex++
+	prefix := fmt.Sprintf("%s %d — %s — 👥 %d pessoas — saída %s", rooms.Entry.Emoji(), number, rooms.Entry.Label(), guests, formatISODate(checkout))
+	if !changed {
+		prefix = fmt.Sprintf("ℹ️ Hospedagem do quarto %d reagendada — saída %s", number, formatISODate(checkout))
+	}
+	if s.CurrentIndex >= len(s.Selected) {
+		s.Status = "COMPLETED"
+		s.CurrentRoom = 0
+		if err := a.sessions.Save(ctx, s); err != nil {
+			return "", err
+		}
+		return prefix + "\n\n✅ ATUALIZAÇÃO FINALIZADA\n\n42 quartos processados.", nil
+	}
+	s.CurrentRoom = s.Selected[s.CurrentIndex]
+	if err := a.sessions.Save(ctx, s); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s\n\nQuarto %d:", prefix, s.CurrentRoom), nil
+}
+
+func formatISODate(value string) string {
+	date, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return value
+	}
+	return date.Format("02/01/2006")
+}
+
+func (a *App) RunRoomSchedule(ctx context.Context, now time.Time) (int, error) {
+	return a.rooms.ApplyScheduledStatuses(ctx, now)
 }

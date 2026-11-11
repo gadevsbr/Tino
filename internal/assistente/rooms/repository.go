@@ -12,6 +12,7 @@ import (
 var ErrNotFound = errors.New("room not found")
 var ErrNotCleaning = errors.New("room is not awaiting cleaning maintenance")
 var ErrCleaningCompletedToday = errors.New("cleaning maintenance already completed today")
+var ErrInvalidCheckout = errors.New("checkout must be after check-in")
 
 type Repository struct {
 	db       *sql.DB
@@ -87,7 +88,12 @@ func (r *Repository) UpdateStatusWithGuests(ctx context.Context, number int, sta
 			}
 			return true, old, tx.Commit()
 		}
-		return false, old, nil
+		if status != Entry && status != OccupiedClean {
+			if _, err := tx.ExecContext(ctx, `DELETE FROM room_stays WHERE room_id=?`, id); err != nil {
+				return false, "", err
+			}
+		}
+		return false, old, tx.Commit()
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE rooms SET operational_status=?,guest_count=?,cleaning_completed_date='',cleaning_completed_by='',updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, status, guests, id); err != nil {
 		return false, "", err
@@ -95,7 +101,117 @@ func (r *Repository) UpdateStatusWithGuests(ctx context.Context, number int, sta
 	if _, err := tx.ExecContext(ctx, `INSERT INTO room_history(room_id,old_status,new_status,changed_by,source,message_id,created_at) VALUES (?,?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now'))`, id, old, status, actor, source, messageID); err != nil {
 		return false, "", err
 	}
+	if status != Entry && status != OccupiedClean {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM room_stays WHERE room_id=?`, id); err != nil {
+			return false, "", err
+		}
+	}
 	return true, old, tx.Commit()
+}
+
+func (r *Repository) ScheduleEntry(ctx context.Context, number, guests int, checkout, actor, source, messageID string, now time.Time) (bool, Status, error) {
+	checkIn := now.In(r.location).Format("2006-01-02")
+	checkOutDate, dateErr := time.ParseInLocation("2006-01-02", checkout, r.location)
+	checkOut := checkOutDate.Format("2006-01-02")
+	if dateErr != nil || guests < 1 || checkOut <= checkIn {
+		return false, "", ErrInvalidCheckout
+	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return false, "", err
+	}
+	defer tx.Rollback()
+	var id int64
+	var old Status
+	var oldGuests int
+	if err = tx.QueryRowContext(ctx, `SELECT id,operational_status,guest_count FROM rooms WHERE number=?`, number).Scan(&id, &old, &oldGuests); errors.Is(err, sql.ErrNoRows) {
+		return false, "", ErrNotFound
+	} else if err != nil {
+		return false, "", err
+	}
+	changed := old != Entry || oldGuests != guests
+	if changed {
+		if _, err = tx.ExecContext(ctx, `UPDATE rooms SET operational_status=?,guest_count=?,cleaning_completed_date='',cleaning_completed_by='',updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, Entry, guests, id); err != nil {
+			return false, "", err
+		}
+		if _, err = tx.ExecContext(ctx, `INSERT INTO room_history(room_id,old_status,new_status,changed_by,source,message_id,created_at) VALUES (?,?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now'))`, id, old, Entry, actor, source, messageID); err != nil {
+			return false, "", err
+		}
+	}
+	_, err = tx.ExecContext(ctx, `INSERT INTO room_stays(room_id,check_in,check_out,guest_count,created_by,created_at,updated_at) VALUES (?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now'),strftime('%Y-%m-%dT%H:%M:%fZ','now')) ON CONFLICT(room_id) DO UPDATE SET check_in=excluded.check_in,check_out=excluded.check_out,guest_count=excluded.guest_count,created_by=excluded.created_by,updated_at=excluded.updated_at`, id, checkIn, checkOut, guests, actor)
+	if err != nil {
+		return false, "", err
+	}
+	return changed, old, tx.Commit()
+}
+
+func (r *Repository) ApplyScheduledStatuses(ctx context.Context, now time.Time) (int, error) {
+	local := now.In(r.location)
+	today := local.Format("2006-01-02")
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	type stay struct {
+		roomID, number, guests, currentGuests int
+		checkIn, checkOut, completed          string
+		status                                Status
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT s.room_id,r.number,s.guest_count,r.guest_count,s.check_in,s.check_out,r.cleaning_completed_date,r.operational_status FROM room_stays s JOIN rooms r ON r.id=s.room_id ORDER BY r.number`)
+	if err != nil {
+		return 0, err
+	}
+	var stays []stay
+	for rows.Next() {
+		var item stay
+		if err = rows.Scan(&item.roomID, &item.number, &item.guests, &item.currentGuests, &item.checkIn, &item.checkOut, &item.completed, &item.status); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		stays = append(stays, item)
+	}
+	if err = rows.Close(); err != nil {
+		return 0, err
+	}
+	changed := 0
+	for _, item := range stays {
+		checkoutDue := today > item.checkOut || today == item.checkOut && local.Hour() >= 12
+		if checkoutDue {
+			if item.status != CheckoutToday {
+				if _, err = tx.ExecContext(ctx, `UPDATE rooms SET operational_status=?,guest_count=0,cleaning_completed_date='',cleaning_completed_by='',updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, CheckoutToday, item.roomID); err != nil {
+					return 0, err
+				}
+				if _, err = tx.ExecContext(ctx, `INSERT INTO room_history(room_id,old_status,new_status,changed_by,source,message_id,created_at) VALUES (?,?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now'))`, item.roomID, item.status, CheckoutToday, "Tino", "AUTOMATIC_STAY", fmt.Sprintf("stay-checkout-%d-%s", item.number, item.checkOut)); err != nil {
+					return 0, err
+				}
+				changed++
+			}
+			if _, err = tx.ExecContext(ctx, `DELETE FROM room_stays WHERE room_id=?`, item.roomID); err != nil {
+				return 0, err
+			}
+			continue
+		}
+		if today > item.checkIn {
+			needsUpdate := item.status != OccupiedClean || item.currentGuests != item.guests || item.completed != "" && item.completed != today
+			if needsUpdate {
+				completed := item.completed
+				if completed != today {
+					completed = ""
+				}
+				if _, err = tx.ExecContext(ctx, `UPDATE rooms SET operational_status=?,guest_count=?,cleaning_completed_date=?,cleaning_completed_by=CASE WHEN ?='' THEN '' ELSE cleaning_completed_by END,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, OccupiedClean, item.guests, completed, completed, item.roomID); err != nil {
+					return 0, err
+				}
+				if item.status != OccupiedClean {
+					if _, err = tx.ExecContext(ctx, `INSERT INTO room_history(room_id,old_status,new_status,changed_by,source,message_id,created_at) VALUES (?,?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now'))`, item.roomID, item.status, OccupiedClean, "Tino", "AUTOMATIC_STAY", fmt.Sprintf("stay-cleaning-%d-%s", item.number, today)); err != nil {
+						return 0, err
+					}
+				}
+				changed++
+			}
+		}
+	}
+	return changed, tx.Commit()
 }
 
 func (r *Repository) CompleteCleaning(ctx context.Context, number int, actor, messageID string, now time.Time) error {
@@ -343,6 +459,11 @@ func (r *Repository) BatchUpdate(ctx context.Context, numbers []int, status Stat
 		}
 		if status == OccupiedClean && completedDate == time.Now().In(r.location).Format("2006-01-02") {
 			return 0, fmt.Errorf("%w: %d", ErrCleaningCompletedToday, number)
+		}
+		if status != Entry && status != OccupiedClean {
+			if _, err := tx.ExecContext(ctx, `DELETE FROM room_stays WHERE room_id=?`, id); err != nil {
+				return 0, err
+			}
 		}
 		if old == status {
 			if status == OccupiedClean && completedDate != "" {

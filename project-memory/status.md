@@ -602,3 +602,12 @@
 - Build Windows `0.17.5` abriu e permaneceu responsivo; SHA-256 `F1622C931550763F29D83E541011DC89150DD75CBF4A82DD97FFAB9F7C141002`, igual ao checksum gerado.
 - Limite da validação: não foi enviado um comprovante real pelo WhatsApp para evitar disparo operacional; a entrega externa ao aprovador ainda requer confirmação no uso real.
 - Evidência de release: tag `v0.17.5` aponta para `cdb8f52`; executável, CLI e checksum foram publicados e os hashes remotos conferem em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.5`.
+
+## Etapa 33 — Ciclo automático de hospedagem v0.17.6
+
+- Status: implementado e validado localmente; release em andamento.
+- Entrada pelo WhatsApp agora coleta hóspedes e data de saída antes de alterar o quarto; o fluxo guiado continua no próximo quarto depois da data. A tela de quartos também exige a data ao selecionar Entrada.
+- Uma agenda SQLite por quarto sobrevive a reinícios. No dia seguinte à entrada muda para manutenção de limpeza (laranja); na saída, às 12h no fuso do hotel, muda para saída (magenta).
+- Alterações manuais para outro status e atualizações em lote removem a agenda anterior, evitando que o agendador reverta uma decisão do operador.
+- Evidência: testes direcionados de repositório, comandos WhatsApp, agendador e tela/backend, `go test -count=1 ./...`, `go vet ./...`, testes e build React e `git diff --check` passaram.
+- Build Windows `0.17.6` abriu responsivo; SHA-256 `EB6C023B4528CC4DE5635F991299F30D12E26500DDF7CEDDA1A01EED9A98C5B7`, igual ao checksum gerado.

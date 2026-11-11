@@ -125,7 +125,7 @@ func TestRoomManagementUsesOperationalRepository(t *testing.T) {
 	defer db.Close()
 	roomRepo := rooms.NewRepository(db, time.UTC)
 	app := &App{ctx: ctx, capabilities: capability.NewStore(filepath.Join(dir, "capabilities.json")), hotel: &hotelRuntime{db: db, dataDir: dir, zone: time.UTC, rooms: roomRepo}}
-	if err := app.UpdateRoom(RoomUpdateRequest{Number: 101, Status: string(rooms.Entry), Guests: 2, Note: "Chegada tardia"}); err != nil {
+	if err := app.UpdateRoom(RoomUpdateRequest{Number: 101, Status: string(rooms.Entry), Guests: 2, CheckoutDate: time.Now().AddDate(0, 0, 2).Format("2006-01-02"), Note: "Chegada tardia"}); err != nil {
 		t.Fatal(err)
 	}
 	items, err := app.ListRooms()

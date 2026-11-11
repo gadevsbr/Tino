@@ -247,6 +247,9 @@ func (s *Service) scheduler(ctx context.Context) {
 	}
 }
 func (s *Service) runScheduled(ctx context.Context, now time.Time) {
+	if _, err := s.app.RunRoomSchedule(ctx, now); err != nil {
+		slog.Error("scheduled room statuses", "error", err)
+	}
 	if s.client != nil && s.client.IsConnected() && s.client.IsLoggedIn() {
 		if err := bills.New(s.domainDB).Remind(ctx, now, s.cfg.Timezone, func(ctx context.Context, target, text string) error {
 			_, err := s.sendMessage(ctx, types.NewJID(target, types.DefaultUserServer), &waE2E.Message{Conversation: proto.String(text)})

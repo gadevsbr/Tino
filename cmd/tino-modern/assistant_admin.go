@@ -21,6 +21,7 @@ type RoomDTO struct {
 type RoomUpdateRequest struct {
 	Number, Guests             int
 	Status, Note, BitzCategory string
+	CheckoutDate               string
 }
 type RoomHistoryDTO struct{ Old, OldLabel, New, NewLabel, At string }
 type CommercialConfigDTO struct {
@@ -91,7 +92,14 @@ func (a *App) UpdateRoom(req RoomUpdateRequest) error {
 	}
 	defer done()
 	id := fmt.Sprintf("ui-room-%d-%d", req.Number, time.Now().UnixNano())
-	if _, _, err = r.rooms.UpdateStatusWithGuests(a.ctx, req.Number, status, req.Guests, "Tino UI", "UI", id); err != nil {
+	if status == rooms.Entry {
+		if _, _, err = r.rooms.ScheduleEntry(a.ctx, req.Number, req.Guests, strings.TrimSpace(req.CheckoutDate), "Tino UI", "UI", id, time.Now()); err != nil {
+			if errors.Is(err, rooms.ErrInvalidCheckout) {
+				return errors.New("informe uma data de saída posterior à entrada")
+			}
+			return err
+		}
+	} else if _, _, err = r.rooms.UpdateStatusWithGuests(a.ctx, req.Number, status, req.Guests, "Tino UI", "UI", id); err != nil {
 		return err
 	}
 	if err = r.rooms.SetObservation(a.ctx, req.Number, strings.TrimSpace(req.Note)); err != nil {

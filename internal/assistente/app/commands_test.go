@@ -271,19 +271,28 @@ func TestGuestCountInDirectAndGuidedUpdates(t *testing.T) {
 	ctx := context.Background()
 	a, rr := testApp(t)
 	reply, err := a.Handle(ctx, "u", "g1", "101 amarelo 3 pessoas")
-	if err != nil || !strings.Contains(reply, "3 pessoas") {
+	if err != nil || !strings.Contains(reply, "Até que dia") {
 		t.Fatalf("reply=%q err=%v", reply, err)
+	}
+	checkout := time.Now().AddDate(0, 0, 2).Format("02/01/2006")
+	reply, err = a.Handle(ctx, "u", "g2", checkout)
+	if err != nil || !strings.Contains(reply, "Amanhã ficará laranja") {
+		t.Fatalf("checkout=%q err=%v", reply, err)
 	}
 	room, _ := rr.Get(ctx, 101)
 	if room.Status != rooms.Entry || room.GuestCount != 3 {
 		t.Fatalf("room=%#v", room)
 	}
-	a.Handle(ctx, "u", "g2", "atualizar status")
-	reply, err = a.Handle(ctx, "u", "g3", "laranja")
+	a.Handle(ctx, "u", "g3", "atualizar status")
+	reply, err = a.Handle(ctx, "u", "g4", "entrada")
 	if err != nil || !strings.Contains(reply, "Quantas pessoas") {
 		t.Fatalf("prompt=%q err=%v", reply, err)
 	}
-	reply, err = a.Handle(ctx, "u", "g4", "2")
+	reply, err = a.Handle(ctx, "u", "g5", "2")
+	if err != nil || !strings.Contains(reply, "Até que dia") {
+		t.Fatalf("date prompt=%q err=%v", reply, err)
+	}
+	reply, err = a.Handle(ctx, "u", "g6", checkout)
 	if err != nil || !strings.Contains(reply, "Quarto 102:") {
 		t.Fatalf("advance=%q err=%v", reply, err)
 	}
