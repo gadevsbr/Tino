@@ -73,6 +73,8 @@ type Service struct {
 	guestReplyDelay  time.Duration
 }
 
+func (s *Service) IsAuthorizedNumber(number string) bool { return s.auth.Allowed(number) }
+
 func (s *Service) SetMarkUnread(fn func(context.Context, string) error) { s.markUnread = fn }
 
 func New(ctx context.Context, cfg config.Config, domainDB *sql.DB, application *app.App) (*Service, error) {
@@ -251,6 +253,21 @@ func (s *Service) runScheduled(ctx context.Context, now time.Time) {
 		slog.Error("scheduled room statuses", "error", err)
 	}
 	if s.client != nil && s.client.IsConnected() && s.client.IsLoggedIn() {
+		phone, pending, err := s.app.CheckinReminder(ctx, now)
+		if err != nil {
+			slog.Error("checkin reminder", "error", err)
+		} else if len(pending) > 0 {
+			lines := make([]string, 0, len(pending))
+			for _, number := range pending {
+				lines = append(lines, fmt.Sprintf("• Quarto %d — responda `checkin sim %d` ou `checkin nao %d`", number, number, number))
+			}
+			message := "🏨 *CONFIRMAÇÃO DE CHECK-IN*\n\nConfirme se os hóspedes previstos já fizeram check-in:\n\n" + strings.Join(lines, "\n") + "\n\nSem confirmação, o quarto continua amarelo e não muda automaticamente para manutenção de limpeza."
+			if _, err = s.sendMessage(ctx, types.NewJID(phone, types.DefaultUserServer), &waE2E.Message{Conversation: proto.String(message)}); err != nil {
+				slog.Error("send checkin reminder", "error", err)
+			} else if err = s.app.MarkCheckinReminderSent(ctx, pending, now); err != nil {
+				slog.Error("mark checkin reminder", "error", err)
+			}
+		}
 		if err := bills.New(s.domainDB).Remind(ctx, now, s.cfg.Timezone, func(ctx context.Context, target, text string) error {
 			_, err := s.sendMessage(ctx, types.NewJID(target, types.DefaultUserServer), &waE2E.Message{Conversation: proto.String(text)})
 			return err

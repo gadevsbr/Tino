@@ -19,6 +19,8 @@ type Repository struct {
 	location *time.Location
 }
 
+const checkinOperatorKey = "rooms:checkin_operator"
+
 func NewRepository(db *sql.DB, locations ...*time.Location) *Repository {
 	location := time.Local
 	if len(locations) > 0 && locations[0] != nil {
@@ -138,7 +140,7 @@ func (r *Repository) ScheduleEntry(ctx context.Context, number, guests int, chec
 			return false, "", err
 		}
 	}
-	_, err = tx.ExecContext(ctx, `INSERT INTO room_stays(room_id,check_in,check_out,guest_count,created_by,created_at,updated_at) VALUES (?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now'),strftime('%Y-%m-%dT%H:%M:%fZ','now')) ON CONFLICT(room_id) DO UPDATE SET check_in=excluded.check_in,check_out=excluded.check_out,guest_count=excluded.guest_count,created_by=excluded.created_by,updated_at=excluded.updated_at`, id, checkIn, checkOut, guests, actor)
+	_, err = tx.ExecContext(ctx, `INSERT INTO room_stays(room_id,check_in,check_out,guest_count,created_by,created_at,updated_at) VALUES (?,?,?,?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now'),strftime('%Y-%m-%dT%H:%M:%fZ','now')) ON CONFLICT(room_id) DO UPDATE SET check_in=excluded.check_in,check_out=excluded.check_out,guest_count=excluded.guest_count,created_by=excluded.created_by,checkin_confirmed_at='',confirmation_sent_date='',updated_at=excluded.updated_at`, id, checkIn, checkOut, guests, actor)
 	if err != nil {
 		return false, "", err
 	}
@@ -154,18 +156,18 @@ func (r *Repository) ApplyScheduledStatuses(ctx context.Context, now time.Time) 
 	}
 	defer tx.Rollback()
 	type stay struct {
-		roomID, number, guests, currentGuests int
-		checkIn, checkOut, completed          string
-		status                                Status
+		roomID, number, guests, currentGuests   int
+		checkIn, checkOut, completed, confirmed string
+		status                                  Status
 	}
-	rows, err := tx.QueryContext(ctx, `SELECT s.room_id,r.number,s.guest_count,r.guest_count,s.check_in,s.check_out,r.cleaning_completed_date,r.operational_status FROM room_stays s JOIN rooms r ON r.id=s.room_id ORDER BY r.number`)
+	rows, err := tx.QueryContext(ctx, `SELECT s.room_id,r.number,s.guest_count,r.guest_count,s.check_in,s.check_out,r.cleaning_completed_date,s.checkin_confirmed_at,r.operational_status FROM room_stays s JOIN rooms r ON r.id=s.room_id ORDER BY r.number`)
 	if err != nil {
 		return 0, err
 	}
 	var stays []stay
 	for rows.Next() {
 		var item stay
-		if err = rows.Scan(&item.roomID, &item.number, &item.guests, &item.currentGuests, &item.checkIn, &item.checkOut, &item.completed, &item.status); err != nil {
+		if err = rows.Scan(&item.roomID, &item.number, &item.guests, &item.currentGuests, &item.checkIn, &item.checkOut, &item.completed, &item.confirmed, &item.status); err != nil {
 			rows.Close()
 			return 0, err
 		}
@@ -176,6 +178,9 @@ func (r *Repository) ApplyScheduledStatuses(ctx context.Context, now time.Time) 
 	}
 	changed := 0
 	for _, item := range stays {
+		if item.confirmed == "" {
+			continue
+		}
 		checkoutDue := today > item.checkOut || today == item.checkOut && local.Hour() >= 12
 		if checkoutDue {
 			if item.status != CheckoutToday {
@@ -212,6 +217,68 @@ func (r *Repository) ApplyScheduledStatuses(ctx context.Context, now time.Time) 
 		}
 	}
 	return changed, tx.Commit()
+}
+
+func (r *Repository) SetCheckinOperator(ctx context.Context, phone string) error {
+	_, err := r.db.ExecContext(ctx, `INSERT INTO settings(key,value,updated_at) VALUES(?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now')) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at`, checkinOperatorKey, phone)
+	return err
+}
+
+func (r *Repository) CheckinOperator(ctx context.Context) (string, error) {
+	var phone string
+	err := r.db.QueryRowContext(ctx, `SELECT value FROM settings WHERE key=?`, checkinOperatorKey).Scan(&phone)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return phone, err
+}
+
+func (r *Repository) PendingCheckinReminder(ctx context.Context, now time.Time) (string, []int, error) {
+	phone, err := r.CheckinOperator(ctx)
+	if err != nil || phone == "" || now.In(r.location).Hour() < 15 {
+		return phone, nil, err
+	}
+	today := now.In(r.location).Format("2006-01-02")
+	rows, err := r.db.QueryContext(ctx, `SELECT r.number FROM room_stays s JOIN rooms r ON r.id=s.room_id WHERE s.check_in<=? AND s.checkin_confirmed_at='' AND s.confirmation_sent_date<>? ORDER BY r.number`, today, today)
+	if err != nil {
+		return "", nil, err
+	}
+	defer rows.Close()
+	var numbers []int
+	for rows.Next() {
+		var number int
+		if err = rows.Scan(&number); err != nil {
+			return "", nil, err
+		}
+		numbers = append(numbers, number)
+	}
+	return phone, numbers, rows.Err()
+}
+
+func (r *Repository) MarkCheckinReminderSent(ctx context.Context, numbers []int, now time.Time) error {
+	date := now.In(r.location).Format("2006-01-02")
+	for _, number := range numbers {
+		if _, err := r.db.ExecContext(ctx, `UPDATE room_stays SET confirmation_sent_date=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE room_id=(SELECT id FROM rooms WHERE number=?) AND checkin_confirmed_at=''`, date, number); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *Repository) ConfirmCheckin(ctx context.Context, number int, confirmed bool, now time.Time) error {
+	value := ""
+	if confirmed {
+		value = now.UTC().Format(time.RFC3339Nano)
+	}
+	result, err := r.db.ExecContext(ctx, `UPDATE room_stays SET checkin_confirmed_at=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE room_id=(SELECT id FROM rooms WHERE number=?)`, value, number)
+	if err != nil {
+		return err
+	}
+	affected, _ := result.RowsAffected()
+	if affected == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 func (r *Repository) CompleteCleaning(ctx context.Context, number int, actor, messageID string, now time.Time) error {

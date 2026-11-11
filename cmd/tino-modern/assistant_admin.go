@@ -23,6 +23,7 @@ type RoomUpdateRequest struct {
 	Status, Note, BitzCategory string
 	CheckoutDate               string
 }
+type RoomAutomationDTO struct{ CheckinOperator string }
 type RoomHistoryDTO struct{ Old, OldLabel, New, NewLabel, At string }
 type CommercialConfigDTO struct {
 	Mode          string
@@ -112,6 +113,43 @@ func (a *App) UpdateRoom(req RoomUpdateRequest) error {
 		a.emitActivity("Quarto atualizado", fmt.Sprintf("Quarto %d alterado pela interface", req.Number), "success")
 	}
 	return nil
+}
+
+func (a *App) GetRoomAutomation() (RoomAutomationDTO, error) {
+	if err := a.requireCapability("rooms"); err != nil {
+		return RoomAutomationDTO{}, err
+	}
+	r, done, err := a.operationalRuntime()
+	if err != nil {
+		return RoomAutomationDTO{}, err
+	}
+	defer done()
+	phone, err := r.rooms.CheckinOperator(a.ctx)
+	return RoomAutomationDTO{CheckinOperator: phone}, err
+}
+
+func (a *App) SaveRoomAutomation(cfg RoomAutomationDTO) error {
+	if err := a.requireCapability("rooms"); err != nil {
+		return err
+	}
+	r, done, err := a.operationalRuntime()
+	if err != nil {
+		return err
+	}
+	defer done()
+	phone := ""
+	for _, char := range cfg.CheckinOperator {
+		if char >= '0' && char <= '9' {
+			phone += string(char)
+		}
+	}
+	if len(phone) < 10 || len(phone) > 15 {
+		return errors.New("informe o WhatsApp do operador com DDI")
+	}
+	if !r.service.IsAuthorizedNumber(phone) {
+		return errors.New("cadastre esse telefone primeiro em Central de recursos > Operadores do WhatsApp")
+	}
+	return r.rooms.SetCheckinOperator(a.ctx, phone)
 }
 
 func (a *App) RoomHistory(number int) ([]RoomHistoryDTO, error) {

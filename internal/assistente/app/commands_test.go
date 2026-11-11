@@ -301,3 +301,23 @@ func TestGuestCountInDirectAndGuidedUpdates(t *testing.T) {
 		t.Fatalf("room=%#v", room)
 	}
 }
+
+func TestOperatorConfirmsOrDefersCheckin(t *testing.T) {
+	ctx := context.Background()
+	a, _ := testApp(t)
+	checkout := time.Now().AddDate(0, 0, 2).Format("02/01/2006")
+	if _, err := a.Handle(ctx, "u", "c1", "101 entrada 2 pessoas"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.Handle(ctx, "u", "c2", checkout); err != nil {
+		t.Fatal(err)
+	}
+	reply, err := a.Handle(ctx, "u", "c3", "checkin não 101")
+	if err != nil || !strings.Contains(reply, "pendente") {
+		t.Fatalf("defer=%q err=%v", reply, err)
+	}
+	reply, err = a.Handle(ctx, "u", "c4", "checkin sim 101")
+	if err != nil || !strings.Contains(reply, "confirmado") {
+		t.Fatalf("confirm=%q err=%v", reply, err)
+	}
+}

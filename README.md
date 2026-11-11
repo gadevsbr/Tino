@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.17.6
+.\scripts\build.ps1 -Version 0.17.7
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -92,7 +92,7 @@ Em **Operação financeira**, o dashboard consulta dia, sete dias, mês ou inter
 
 Em **Gestão Assistente**, o operador administra os 42 quartos, histórico e ocupação; liga o atendimento comercial nos modos desativado, teste ou público; consulta e remove vínculos do catálogo; e executa backups verificados com diagnóstico do banco e WhatsApp.
 
-Ao registrar um quarto como **Entrada**, o WhatsApp pergunta a data de saída e a interface exige o mesmo campo. A hospedagem fica persistida: no dia seguinte à entrada o Tino muda o quarto para **Manutenção de limpeza** (laranja) e, na data de saída, muda para **Saída** (magenta) às 12h. Se um operador alterar o quarto manualmente antes disso, a agenda anterior é cancelada para não sobrescrever a decisão humana.
+Ao registrar um quarto como **Entrada**, o WhatsApp pergunta a data de saída e a interface exige o mesmo campo. Às 15h da entrada, o operador definido na tela de quartos recebe uma confirmação e responde `checkin sim 101` ou `checkin nao 101`. Somente o check-in confirmado libera a agenda: no dia seguinte à entrada o Tino muda o quarto para **Manutenção de limpeza** (laranja) e, na data de saída, muda para **Saída** (magenta) às 12h. Sem confirmação, permanece amarelo e o operador é consultado novamente no próximo dia. Uma alteração manual cancela a agenda anterior para não sobrescrever a decisão humana.
 
 Cada quarto pode receber uma categoria física do Bitz na tela de quartos. Durante a pré-reserva, o Tino cruza a categoria configurada com as UHs que o Bitz apresenta para o período, exclui quartos `INTERDITADO` e evita reutilizar a mesma UH. Categorias ainda não configuradas mantêm o comportamento anterior até o inventário ser classificado na UI.
 

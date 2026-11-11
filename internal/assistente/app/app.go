@@ -18,6 +18,7 @@ import (
 	"github.com/gadevsbr/tino/internal/assistente/conversation"
 	"github.com/gadevsbr/tino/internal/assistente/omnibees"
 	"github.com/gadevsbr/tino/internal/assistente/rooms"
+	"github.com/gadevsbr/tino/internal/assistente/utils"
 )
 
 type App struct {
@@ -68,6 +69,22 @@ func (a *App) EnableOperations(run func(context.Context) (string, error), status
 }
 
 func (a *App) Handle(ctx context.Context, user, messageID, text string) (string, error) {
+	if match := regexp.MustCompile(`^checkin\s+(sim|nao)\s+(\d{3})$`).FindStringSubmatch(utils.Normalize(text)); len(match) > 0 {
+		number, _ := strconv.Atoi(match[2])
+		confirmed := match[1] == "sim"
+		if err := a.rooms.ConfirmCheckin(ctx, number, confirmed, time.Now()); errors.Is(err, rooms.ErrNotFound) {
+			return fmt.Sprintf("❌ Não há entrada aguardando confirmação para o quarto %d.", number), nil
+		} else if err != nil {
+			return "", err
+		}
+		if !confirmed {
+			return fmt.Sprintf("⏳ Check-in do quarto %d mantido como pendente. O Tino perguntará novamente amanhã às 15h.", number), nil
+		}
+		if _, err := a.rooms.ApplyScheduledStatuses(ctx, time.Now()); err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("✅ Check-in do quarto %d confirmado. No dia seguinte à entrada ele ficará laranja para manutenção de limpeza.", number), nil
+	}
 	if session, active, err := a.sessions.Active(ctx, user); err != nil {
 		return "", err
 	} else if active {
@@ -1060,4 +1077,12 @@ func formatISODate(value string) string {
 
 func (a *App) RunRoomSchedule(ctx context.Context, now time.Time) (int, error) {
 	return a.rooms.ApplyScheduledStatuses(ctx, now)
+}
+
+func (a *App) CheckinReminder(ctx context.Context, now time.Time) (string, []int, error) {
+	return a.rooms.PendingCheckinReminder(ctx, now)
+}
+
+func (a *App) MarkCheckinReminderSent(ctx context.Context, numbers []int, now time.Time) error {
+	return a.rooms.MarkCheckinReminderSent(ctx, numbers, now)
 }

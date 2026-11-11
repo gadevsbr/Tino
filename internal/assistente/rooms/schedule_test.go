@@ -22,6 +22,9 @@ func TestScheduledEntryBecomesCleaningThenCheckout(t *testing.T) {
 	if _, _, err = repo.ScheduleEntry(ctx, 101, 3, "2026-11-12", "operator", "test", "entry-1", entry); err != nil {
 		t.Fatal(err)
 	}
+	if err = repo.ConfirmCheckin(ctx, 101, true, entry); err != nil {
+		t.Fatal(err)
+	}
 	if changed, err := repo.ApplyScheduledStatuses(ctx, entry); err != nil || changed != 0 {
 		t.Fatalf("entry day changed=%d err=%v", changed, err)
 	}
@@ -41,6 +44,46 @@ func TestScheduledEntryBecomesCleaningThenCheckout(t *testing.T) {
 	room, _ = repo.Get(ctx, 101)
 	if room.Status != rooms.CheckoutToday || room.GuestCount != 0 {
 		t.Fatalf("checkout room=%#v", room)
+	}
+}
+
+func TestCheckinReminderWaitsForOperatorConfirmation(t *testing.T) {
+	ctx := context.Background()
+	db, err := database.Open(ctx, filepath.Join(t.TempDir(), "hotel.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	repo := rooms.NewRepository(db, time.UTC)
+	entry := time.Date(2026, 11, 10, 10, 0, 0, 0, time.UTC)
+	if err = repo.SetCheckinOperator(ctx, "5573999999999"); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err = repo.ScheduleEntry(ctx, 101, 2, "2026-11-13", "operator", "test", "entry-3", entry); err != nil {
+		t.Fatal(err)
+	}
+	if _, pending, err := repo.PendingCheckinReminder(ctx, entry.Add(4*time.Hour)); err != nil || len(pending) != 0 {
+		t.Fatalf("before 15h pending=%v err=%v", pending, err)
+	}
+	at15 := entry.Add(5 * time.Hour)
+	phone, pending, err := repo.PendingCheckinReminder(ctx, at15)
+	if err != nil || phone != "5573999999999" || len(pending) != 1 || pending[0] != 101 {
+		t.Fatalf("phone=%q pending=%v err=%v", phone, pending, err)
+	}
+	if err = repo.MarkCheckinReminderSent(ctx, pending, at15); err != nil {
+		t.Fatal(err)
+	}
+	if _, pending, err = repo.PendingCheckinReminder(ctx, at15.Add(time.Minute)); err != nil || len(pending) != 0 {
+		t.Fatalf("duplicate pending=%v err=%v", pending, err)
+	}
+	if changed, err := repo.ApplyScheduledStatuses(ctx, entry.AddDate(0, 0, 1)); err != nil || changed != 0 {
+		t.Fatalf("unconfirmed changed=%d err=%v", changed, err)
+	}
+	if err = repo.ConfirmCheckin(ctx, 101, true, entry.AddDate(0, 0, 1)); err != nil {
+		t.Fatal(err)
+	}
+	if changed, err := repo.ApplyScheduledStatuses(ctx, entry.AddDate(0, 0, 1)); err != nil || changed != 1 {
+		t.Fatalf("confirmed changed=%d err=%v", changed, err)
 	}
 }
 

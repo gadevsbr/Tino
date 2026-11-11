@@ -119,6 +119,8 @@ CREATE TABLE bill_reminders (
  CHECK(check_out>check_in)
 );
 CREATE INDEX idx_room_stays_dates ON room_stays(check_in,check_out);`,
+	`ALTER TABLE room_stays ADD COLUMN checkin_confirmed_at TEXT NOT NULL DEFAULT '';
+ALTER TABLE room_stays ADD COLUMN confirmation_sent_date TEXT NOT NULL DEFAULT '';`,
 }
 
 func Migrate(ctx context.Context, db *sql.DB) error {

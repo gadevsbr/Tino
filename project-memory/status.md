@@ -612,3 +612,12 @@
 - Evidência: testes direcionados de repositório, comandos WhatsApp, agendador e tela/backend, `go test -count=1 ./...`, `go vet ./...`, testes e build React e `git diff --check` passaram.
 - Build Windows `0.17.6` abriu responsivo; SHA-256 `EB6C023B4528CC4DE5635F991299F30D12E26500DDF7CEDDA1A01EED9A98C5B7`, igual ao checksum gerado.
 - Evidência de release: tag `v0.17.6` aponta para `8c9b8d4`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.6`.
+
+## Etapa 34 — Confirmação humana de check-in às 15h v0.17.7
+
+- Status: implementado e validado localmente; release em andamento.
+- A tela de quartos define um WhatsApp responsável, obrigatoriamente já cadastrado como operador autorizado.
+- Às 15h, o Tino envia uma lista das entradas sem confirmação com os comandos `checkin sim QUARTO` e `checkin nao QUARTO`. O aviso só é marcado depois da entrega ao WhatsApp e não se repete no mesmo dia.
+- Apenas `sim` libera as transições automáticas para limpeza e saída. `não` mantém o quarto amarelo e permite uma nova consulta no próximo dia; sem resposta, nenhuma transição é aplicada.
+- Evidência: persistência, horário, deduplicação diária, bloqueio sem confirmação e comandos positivo/negativo, `go test -count=1 ./...`, `go vet ./...`, testes e build React e `git diff --check` passaram. O primeiro teste completo teve um timeout isolado do navegador Bitz; o teste afetado e a suíte inteira passaram na repetição.
+- Build Windows `0.17.7` abriu responsivo; SHA-256 `B8F9A8B71F8CAC94B5CE4E067FA979F0CE5B0306CF5FB131014E5BDEC8D26CD1`, igual ao checksum gerado.
