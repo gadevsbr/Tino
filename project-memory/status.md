@@ -625,7 +625,7 @@
 
 ## Etapa 35 — Redução de escritas D1 v0.17.8
 
-- Status: implementado, validado no D1 remoto e publicado no Cloudflare; release Windows em andamento.
+- Status: implementado, validado no D1 remoto, publicado no Cloudflare e distribuído na release Windows.
 - Causa confirmada no D1 remoto: apenas 1 instância, 3 contatos, 96 falhas, 1 comando e 106 KB, mas o sync de 5 segundos executava `DELETE` e reinserção integral dos contatos em todo ciclo.
 - Correção: SHA-256 identifica snapshots idênticos; contatos/falhas só escrevem quando mudam. O heartbeat da instância grava uma vez por minuto, enquanto comandos continuam consultados a cada cinco segundos. O painel tolera 90 segundos para indicar online.
 - Compatibilidade: o Worker calcula o hash para o desktop 0.17.7 e versões sem `snapshotHash`; o desktop 0.17.8 envia o hash pronto.
@@ -634,3 +634,4 @@
 - Prova em repouso: tanto o cliente legado `0.17.7` quanto o novo `0.17.8` mantiveram `last_seen`, SHA-256, 3 contatos e 96 falhas idênticos durante 12 segundos, cobrindo mais de dois ciclos de cinco segundos sem regravação.
 - Build Windows `0.17.8` abriu responsivo e sincronizou a versão no D1; SHA-256 `EADBA3301A3711465B5313E27205B771C2F604136464E4BE79527DC811675191`, igual ao checksum gerado. CLI SHA-256 `51856D8F2CD4467A62D8157AD9BA7355FD775952B2DB2DF025EAC4A56E25813C`.
 - Estimativa em repouso: cerca de 1.440 linhas gravadas por dia para heartbeat, mais mudanças reais, em vez de 17.280 sincronizações integrais; o contador já consumido no dia não retrocede e as métricas do provedor podem ter atraso.
+- Evidência de release: tag `v0.17.8` aponta para `690b3e6`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.8`.
