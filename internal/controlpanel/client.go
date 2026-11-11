@@ -3,6 +3,7 @@ package controlpanel
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,11 +27,12 @@ type Failure struct {
 }
 
 type Snapshot struct {
-	InstanceID string    `json:"instanceId"`
-	Version    string    `json:"version"`
-	OnlineAt   string    `json:"onlineAt"`
-	Contacts   []Contact `json:"contacts"`
-	Failures   []Failure `json:"failures"`
+	InstanceID   string    `json:"instanceId"`
+	Version      string    `json:"version"`
+	OnlineAt     string    `json:"onlineAt"`
+	SnapshotHash string    `json:"snapshotHash"`
+	Contacts     []Contact `json:"contacts"`
+	Failures     []Failure `json:"failures"`
 }
 
 type Command struct {
@@ -135,6 +137,15 @@ func (c Client) Login(ctx context.Context, username, password string) (string, e
 func (c Client) Sync(ctx context.Context, snapshot Snapshot) ([]Command, error) {
 	snapshot.InstanceID = c.InstanceID
 	snapshot.OnlineAt = time.Now().UTC().Format(time.RFC3339)
+	payload, err := json.Marshal(struct {
+		Version  string
+		Contacts []Contact
+		Failures []Failure
+	}{snapshot.Version, snapshot.Contacts, snapshot.Failures})
+	if err != nil {
+		return nil, err
+	}
+	snapshot.SnapshotHash = fmt.Sprintf("%x", sha256.Sum256(payload))
 	var result struct {
 		Commands []Command `json:"commands"`
 	}

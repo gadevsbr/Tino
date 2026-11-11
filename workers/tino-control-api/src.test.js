@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import worker, { constantTimeEqual, signSession, verifySession } from "./src.js";
+import worker, { constantTimeEqual, signSession, snapshotHash, syncPlan, verifySession } from "./src.js";
 
 test("tokens exigem igualdade integral", () => {
   assert.equal(constantTimeEqual("segredo", "segredo"), true);
@@ -23,4 +23,16 @@ test("sessão assinada respeita papel e rejeita adulteração", async () => {
   assert.equal(await verifySession("segredo-longo-de-teste", token, "bridge"), null);
   assert.equal(await verifySession("outro-segredo", token, "dashboard"), null);
   assert.equal(await verifySession("segredo-longo-de-teste", `${token}x`, "dashboard"), null);
+});
+
+test("snapshot idêntico não grava e heartbeat ocorre uma vez por minuto", () => {
+  const hash = "a".repeat(64), now = "2026-11-11T20:01:00.000Z";
+  assert.deepEqual(syncPlan({ snapshot_hash: hash, last_seen: "2026-11-11T20:00:30.000Z" }, hash, now), { changed: false, heartbeat: false });
+  assert.deepEqual(syncPlan({ snapshot_hash: hash, last_seen: "2026-11-11T20:00:00.000Z" }, hash, now), { changed: false, heartbeat: true });
+  assert.deepEqual(syncPlan({ snapshot_hash: "b".repeat(64), last_seen: now }, hash, now), { changed: true, heartbeat: true });
+});
+
+test("cliente antigo recebe hash estável sem considerar horário online", async () => {
+  const base = { version: "0.17.7", contacts: [{ Contact: "1" }], failures: [] };
+  assert.equal(await snapshotHash({ ...base, onlineAt: "2026-11-11T20:00:00Z" }), await snapshotHash({ ...base, onlineAt: "2026-11-11T20:01:00Z" }));
 });

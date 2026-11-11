@@ -622,3 +622,15 @@
 - Evidência: persistência, horário, deduplicação diária, bloqueio sem confirmação e comandos positivo/negativo, `go test -count=1 ./...`, `go vet ./...`, testes e build React e `git diff --check` passaram. O primeiro teste completo teve um timeout isolado do navegador Bitz; o teste afetado e a suíte inteira passaram na repetição.
 - Build Windows `0.17.7` abriu responsivo; SHA-256 `B8F9A8B71F8CAC94B5CE4E067FA979F0CE5B0306CF5FB131014E5BDEC8D26CD1`, igual ao checksum gerado.
 - Evidência de release: tag `v0.17.7` aponta para `4fcfc66`; executável, CLI e checksum foram publicados e os hashes remotos conferem em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.7`.
+
+## Etapa 35 — Redução de escritas D1 v0.17.8
+
+- Status: implementado, validado no D1 remoto e publicado no Cloudflare; release Windows em andamento.
+- Causa confirmada no D1 remoto: apenas 1 instância, 3 contatos, 96 falhas, 1 comando e 106 KB, mas o sync de 5 segundos executava `DELETE` e reinserção integral dos contatos em todo ciclo.
+- Correção: SHA-256 identifica snapshots idênticos; contatos/falhas só escrevem quando mudam. O heartbeat da instância grava uma vez por minuto, enquanto comandos continuam consultados a cada cinco segundos. O painel tolera 90 segundos para indicar online.
+- Compatibilidade: o Worker calcula o hash para o desktop 0.17.7 e versões sem `snapshotHash`; o desktop 0.17.8 envia o hash pronto.
+- Evidência local: testes Worker e painel, fallback legado, plano de sincronização, cliente Go, build Pages, migrações D1 locais, `go test -count=1 ./...`, `go vet ./...` e `git diff --check` passaram.
+- Evidência remota: migração `0003_snapshot_hash.sql`, Worker `e1c4affe-1a2e-4a00-9516-5af10e39e96f` e Pages foram publicados; API e painel responderam HTTP 200.
+- Prova em repouso: tanto o cliente legado `0.17.7` quanto o novo `0.17.8` mantiveram `last_seen`, SHA-256, 3 contatos e 96 falhas idênticos durante 12 segundos, cobrindo mais de dois ciclos de cinco segundos sem regravação.
+- Build Windows `0.17.8` abriu responsivo e sincronizou a versão no D1; SHA-256 `EADBA3301A3711465B5313E27205B771C2F604136464E4BE79527DC811675191`, igual ao checksum gerado. CLI SHA-256 `51856D8F2CD4467A62D8157AD9BA7355FD775952B2DB2DF025EAC4A56E25813C`.
+- Estimativa em repouso: cerca de 1.440 linhas gravadas por dia para heartbeat, mais mudanças reais, em vez de 17.280 sincronizações integrais; o contador já consumido no dia não retrocede e as métricas do provedor podem ter atraso.

@@ -10,4 +10,4 @@ export const stages = [
 ];
 
 export function stageLabel(value) { return stages.find(([id]) => id === value)?.[1] || value; }
-export function isOnline(lastSeen) { return lastSeen && Date.now() - new Date(lastSeen).getTime() < 20000; }
+export function isOnline(lastSeen, now = Date.now()) { return lastSeen && now - new Date(lastSeen).getTime() < 90000; }
