@@ -611,3 +611,4 @@
 - Alterações manuais para outro status e atualizações em lote removem a agenda anterior, evitando que o agendador reverta uma decisão do operador.
 - Evidência: testes direcionados de repositório, comandos WhatsApp, agendador e tela/backend, `go test -count=1 ./...`, `go vet ./...`, testes e build React e `git diff --check` passaram.
 - Build Windows `0.17.6` abriu responsivo; SHA-256 `EB6C023B4528CC4DE5635F991299F30D12E26500DDF7CEDDA1A01EED9A98C5B7`, igual ao checksum gerado.
+- Evidência de release: tag `v0.17.6` aponta para `8c9b8d4`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.6`.
