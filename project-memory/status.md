@@ -621,3 +621,4 @@
 - Apenas `sim` libera as transições automáticas para limpeza e saída. `não` mantém o quarto amarelo e permite uma nova consulta no próximo dia; sem resposta, nenhuma transição é aplicada.
 - Evidência: persistência, horário, deduplicação diária, bloqueio sem confirmação e comandos positivo/negativo, `go test -count=1 ./...`, `go vet ./...`, testes e build React e `git diff --check` passaram. O primeiro teste completo teve um timeout isolado do navegador Bitz; o teste afetado e a suíte inteira passaram na repetição.
 - Build Windows `0.17.7` abriu responsivo; SHA-256 `B8F9A8B71F8CAC94B5CE4E067FA979F0CE5B0306CF5FB131014E5BDEC8D26CD1`, igual ao checksum gerado.
+- Evidência de release: tag `v0.17.7` aponta para `4fcfc66`; executável, CLI e checksum foram publicados e os hashes remotos conferem em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.7`.
