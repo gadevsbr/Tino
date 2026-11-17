@@ -139,6 +139,42 @@ func TestCategoriesUsesOriginalExtensionCommercialSlots(t *testing.T) {
 	}
 }
 
+func TestCategoriesFallsBackToTriploInternalWhenDuploIsAbsent(t *testing.T) {
+	prices := map[string]int64{
+		normalize(roomNames["superluxo"]):        300000,
+		normalize(roomNames["quadruploVista"]):   280000,
+		normalize(roomNames["quadruploDeluxe"]):  240000,
+		normalize(roomNames["quadruploVaranda"]): 220000,
+		normalize(roomNames["triplo"]):           180000,
+	}
+	got := Categories(Search{Adults: 1}, prices)
+	want := []string{"superluxo", "triplo"}
+	if len(got) != len(want) {
+		t.Fatalf("categorias=%#v, esperava %v", got, want)
+	}
+	for i, source := range want {
+		if got[i].SourceKey != source {
+			t.Fatalf("categoria[%d]=%q, esperava %q; todas=%#v", i, got[i].SourceKey, source, got)
+		}
+	}
+	if got[1].Name != "Suíte interna" {
+		t.Fatalf("fallback interno perdeu nome comercial: %#v", got[1])
+	}
+}
+
+func TestCategoriesPrefersSmallerRoomWhenBothAreAvailable(t *testing.T) {
+	prices := map[string]int64{
+		normalize(roomNames["triploDeluxe"]):    250000,
+		normalize(roomNames["quadruploDeluxe"]): 200000,
+		normalize(roomNames["duplo"]):           180000,
+		normalize(roomNames["triplo"]):          170000,
+	}
+	got := Categories(Search{Adults: 2}, prices)
+	if len(got) != 2 || got[0].SourceKey != "triploDeluxe" || got[1].SourceKey != "duplo" {
+		t.Fatalf("não preferiu as menores categorias compatíveis: %#v", got)
+	}
+}
+
 func TestFormatBRLUsesBrazilianThousandsSeparator(t *testing.T) {
 	for _, tc := range []struct {
 		cents int64

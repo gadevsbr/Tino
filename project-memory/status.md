@@ -635,3 +635,13 @@
 - Build Windows `0.17.8` abriu responsivo e sincronizou a versão no D1; SHA-256 `EADBA3301A3711465B5313E27205B771C2F604136464E4BE79527DC811675191`, igual ao checksum gerado. CLI SHA-256 `51856D8F2CD4467A62D8157AD9BA7355FD775952B2DB2DF025EAC4A56E25813C`.
 - Estimativa em repouso: cerca de 1.440 linhas gravadas por dia para heartbeat, mais mudanças reais, em vez de 17.280 sincronizações integrais; o contador já consumido no dia não retrocede e as métricas do provedor podem ter atraso.
 - Evidência de release: tag `v0.17.8` aponta para `690b3e6`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.8`.
+
+## Etapa 36 — Categorias internas OmniBees v0.17.9
+
+- Status: causa reproduzida, correção validada e build Windows concluído; release em andamento.
+- Causa: em algumas ocupações solo/duplas, a OmniBees retorna o cartão físico Triplo como a opção interna e omite o Duplo. O Tino exigia Duplo e descartava uma categoria disponível.
+- Correção: a Suíte interna prefere Duplo quando existe e usa Triplo somente quando Duplo está ausente. As demais categorias preservam a capacidade comercial definida e não promovem Quádruplo desnecessariamente.
+- Evidência real: a busca de 15/01/2027 a 21/01/2027 para 1 adulto passou de 3 para 4 categorias e recuperou `Suíte interna: R$ 3.425,16`; nenhuma tarifa foi estimada localmente.
+- Evidência automatizada: testes cobrem fallback, preferência pela menor categoria e integração dos pacotes OmniBees, app, comercial e WhatsApp.
+- Evidência completa: `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram. O Tino 0.17.9 abriu responsivo.
+- SHA-256 local: `Tino.exe` `7E0E4C76142F3CCC42FC6939817A69C600593ACDFA9DF463ECBA8ED17A61B427`; CLI `72F47F62D7312797901685B3BE545A06E2BA47245376754F5227A239B2765AD6`.

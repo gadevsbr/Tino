@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.17.8
+.\scripts\build.ps1 -Version 0.17.9
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -99,6 +99,8 @@ Cada quarto pode receber uma categoria física do Bitz na tela de quartos. Duran
 Durante **testar atendimento**, comandos administrativos como `menu`, `status` e `caixa` encerram somente a simulação daquele operador e voltam ao motor operacional. Números, datas e controles do orçamento continuam na simulação.
 
 O atendimento comercial começa com uma triagem na primeira mensagem ou após 24 horas sem interação. Outros assuntos pausam o bot e mantêm a conversa não lida. O orçamento coleta check-in, check-out, quartos, adultos e crianças, nessa ordem; para crianças, também coleta as idades exigidas pela OmniBees. O próprio orçamento apresenta as categorias numeradas com seus valores em reais para escolha. Depois seguem as mensagens 1 e 2 configuradas em **Gestão Assistente > Comercial**.
+
+As categorias seguem a disponibilidade real retornada pela OmniBees. Para ocupação solo ou dupla, quando a categoria interna aparece fisicamente como Triplo porque o Duplo não está no resultado, o Tino preserva a opção comercial **Suíte interna**; quando ambos existem, prefere o Duplo. Categorias maiores não substituem uma menor equivalente disponível.
 
 Somente depois da escolha de todas as categorias o Tino envia a mensagem 3. A criação no Bitz e o pedido ao aprovador aguardam uma imagem ou PDF válido de até 15 MB. O comprovante fica no banco local, segue anexado aos operadores com período, ocupação, valores por quarto e valor total e, após a aprovação, acompanha a confirmação enviada ao hóspede. Se a automação do Bitz falhar, o hóspede recebe apenas uma resposta operacional neutra; os operadores recebem os mesmos dados, a confirmação de comprovante recebido e o motivo técnico para concluir manualmente.
 

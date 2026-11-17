@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -348,50 +347,56 @@ type Result struct {
 // semantic because OmniBees changes labels over time.
 func Categories(s Search, prices map[string]int64) []Category {
 	occupants := s.Adults + s.Children
-	allowed := commercialSlots(occupants)
-	bySource := map[string]Category{}
+	available := map[string]Category{}
 	for rawName, cents := range prices {
 		category, _, ok := classifyRoom(rawName)
-		displayName, wanted := allowed[category.SourceKey]
-		if !ok || !wanted || cents <= 0 {
+		if !ok || cents <= 0 {
 			continue
 		}
 		cents = (cents*int64(100-s.Discount) + 50) / 100
-		category.Name = displayName
 		category.TotalCents = cents
-		if current, exists := bySource[category.SourceKey]; !exists || cents < current.TotalCents {
-			bySource[category.SourceKey] = category
+		if current, exists := available[category.SourceKey]; !exists || cents < current.TotalCents {
+			available[category.SourceKey] = category
 		}
 	}
-	order := map[string]int{"superluxo": 0, "familia": 1, "quadruploVista": 1, "triploDeluxe": 2, "quadruploDeluxe": 2, "triploVaranda": 3, "quadruploVaranda": 3, "duplo": 4, "triplo": 4}
-	result := make([]Category, 0, len(bySource))
-	for _, category := range bySource {
-		result = append(result, category)
+	result := []Category{}
+	for _, slot := range commercialSlots(occupants) {
+		for _, source := range slot.sources {
+			if category, ok := available[source]; ok {
+				category.Name = slot.name
+				result = append(result, category)
+				break
+			}
+		}
 	}
-	sort.Slice(result, func(i, j int) bool { return order[result[i].SourceKey] < order[result[j].SourceKey] })
 	return result
 }
 
-func commercialSlots(occupants int) map[string]string {
+type commercialSlot struct {
+	name    string
+	sources []string
+}
+
+func commercialSlots(occupants int) []commercialSlot {
 	if occupants >= 5 {
-		return map[string]string{"familia": roomNames["familia"]}
+		return []commercialSlot{{roomNames["familia"], []string{"familia"}}}
 	}
 	if occupants == 4 {
-		return map[string]string{
-			"quadruploVista":   "Suíte Deluxe com vista para o mar",
-			"quadruploDeluxe":  "Suíte Deluxe com varanda",
-			"quadruploVaranda": "Suíte com varanda",
+		return []commercialSlot{
+			{"Suíte Deluxe com vista para o mar", []string{"quadruploVista"}},
+			{"Suíte Deluxe com varanda", []string{"quadruploDeluxe"}},
+			{"Suíte com varanda", []string{"quadruploVaranda"}},
 		}
 	}
-	internal := "duplo"
+	internal := []string{"duplo", "triplo"}
 	if occupants >= 3 {
-		internal = "triplo"
+		internal = []string{"triplo"}
 	}
-	return map[string]string{
-		"superluxo":     "Suíte Deluxe com vista para o mar",
-		"triploDeluxe":  "Suíte Deluxe com varanda",
-		"triploVaranda": "Suíte com varanda",
-		internal:        "Suíte interna",
+	return []commercialSlot{
+		{"Suíte Deluxe com vista para o mar", []string{"superluxo"}},
+		{"Suíte Deluxe com varanda", []string{"triploDeluxe"}},
+		{"Suíte com varanda", []string{"triploVaranda"}},
+		{"Suíte interna", internal},
 	}
 }
 
