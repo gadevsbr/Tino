@@ -96,7 +96,7 @@ func TestExtractAndFormatAllAvailableCategoryNameVariants(t *testing.T) {
 		t.Fatalf("duplo incorreto: %#v", categories)
 	}
 	triplo := Categories(Search{Adults: 3}, prices)
-	if len(triplo) != 2 || triplo[0].SourceKey != "superluxo" || triplo[1].SourceKey != "triploDeluxe" || triplo[1].TotalCents != 105000 {
+	if len(triplo) != 1 || triplo[0].SourceKey != "triploDeluxe" || triplo[0].TotalCents != 105000 {
 		t.Fatalf("triplo incorreto: %#v", triplo)
 	}
 	familia := Categories(Search{Adults: 5}, prices)
@@ -104,7 +104,7 @@ func TestExtractAndFormatAllAvailableCategoryNameVariants(t *testing.T) {
 		t.Fatalf("família incorreta: %#v", familia)
 	}
 	text := Format(s, prices)
-	if !strings.Contains(text, "Suíte Deluxe com vista para o mar") || strings.Contains(text, "Triplo") || strings.Contains(text, "Família") {
+	if !strings.Contains(text, "Suíte Superluxo com varanda e vista mar") || strings.Contains(text, "Triplo") || strings.Contains(text, "Família") {
 		t.Fatalf("orçamento duplo misturou capacidades: %s", text)
 	}
 }
@@ -134,7 +134,7 @@ func TestCategoriesUsesOriginalExtensionCommercialSlots(t *testing.T) {
 		normalize(roomNames["triploDeluxe"]):     152762,
 	}
 	categories := Categories(s, prices)
-	if len(categories) != 3 || categories[0].SourceKey != "superluxo" || categories[1].SourceKey != "triploDeluxe" || categories[2].SourceKey != "triploVaranda" {
+	if len(categories) != 4 || categories[0].SourceKey != "superluxo" || categories[1].SourceKey != "quadruploVista" || categories[2].SourceKey != "triploDeluxe" || categories[3].SourceKey != "triploVaranda" {
 		t.Fatalf("slots comerciais divergiram da extensão original: %#v", categories)
 	}
 }
@@ -148,7 +148,7 @@ func TestCategoriesFallsBackToTriploInternalWhenDuploIsAbsent(t *testing.T) {
 		normalize(roomNames["triplo"]):           180000,
 	}
 	got := Categories(Search{Adults: 1}, prices)
-	want := []string{"superluxo", "triplo"}
+	want := []string{"superluxo", "quadruploVista", "triplo"}
 	if len(got) != len(want) {
 		t.Fatalf("categorias=%#v, esperava %v", got, want)
 	}
@@ -157,8 +157,8 @@ func TestCategoriesFallsBackToTriploInternalWhenDuploIsAbsent(t *testing.T) {
 			t.Fatalf("categoria[%d]=%q, esperava %q; todas=%#v", i, got[i].SourceKey, source, got)
 		}
 	}
-	if got[1].Name != "Suíte interna" {
-		t.Fatalf("fallback interno perdeu nome comercial: %#v", got[1])
+	if got[2].Name != "Suíte interna" {
+		t.Fatalf("fallback interno perdeu nome comercial: %#v", got[2])
 	}
 }
 
@@ -199,11 +199,11 @@ func TestCategoriesAcceptsOmniBeesLabelVariantsWithoutMixingCapacity(t *testing.
 		normalize("Suíte Quádruplo Deluxe com Vista para o Mar"): 400000,
 	}
 	duplos := Categories(Search{Adults: 2}, prices)
-	if len(duplos) != 2 || duplos[0].SourceKey != "triploDeluxe" || duplos[0].TotalCents != 310000 || duplos[1].SourceKey != "duplo" {
+	if len(duplos) != 3 || duplos[0].SourceKey != "quadruploVista" || duplos[1].SourceKey != "triploDeluxe" || duplos[1].TotalCents != 310000 || duplos[2].SourceKey != "duplo" {
 		t.Fatalf("duplos=%#v", duplos)
 	}
 	triplos := Categories(Search{Adults: 3}, prices)
-	if len(triplos) != 1 || triplos[0].SourceKey != "triploDeluxe" {
+	if len(triplos) != 2 || triplos[0].SourceKey != "quadruploVista" || triplos[1].SourceKey != "triploDeluxe" {
 		t.Fatalf("triplos=%#v", triplos)
 	}
 	quadruplos := Categories(Search{Adults: 4}, prices)
@@ -234,8 +234,9 @@ func TestCategoriesMatchesFiveObservedOmniBeesOccupancies(t *testing.T) {
 		ages       []int
 		wantSource []string
 	}{
-		{"dois adultos", 2, 0, nil, []string{"superluxo", "triploDeluxe", "triploVaranda", "duplo"}},
-		{"tres adultos", 3, 0, nil, []string{"superluxo", "triploDeluxe", "triploVaranda", "triplo"}},
+		{"um adulto", 1, 0, nil, []string{"superluxo", "quadruploVista", "triploDeluxe", "triploVaranda", "duplo"}},
+		{"dois adultos", 2, 0, nil, []string{"superluxo", "quadruploVista", "triploDeluxe", "triploVaranda", "duplo"}},
+		{"tres adultos", 3, 0, nil, []string{"quadruploVista", "triploDeluxe", "triploVaranda", "triplo"}},
 		{"dois adultos e duas criancas", 2, 2, []int{5, 10}, []string{"quadruploVista", "quadruploDeluxe", "quadruploVaranda"}},
 		{"dois adultos, uma cortesia e uma crianca", 2, 2, []int{1, 10}, []string{"quadruploVista", "quadruploDeluxe", "quadruploVaranda"}},
 		{"tres adultos e duas criancas", 3, 2, []int{5, 10}, []string{"familia"}},

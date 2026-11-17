@@ -388,16 +388,21 @@ func commercialSlots(occupants int) []commercialSlot {
 			{"Suíte com varanda", []string{"quadruploVaranda"}},
 		}
 	}
+	front := commercialSlot{"Suíte Deluxe com vista para o mar", []string{"quadruploVista"}}
 	internal := []string{"duplo", "triplo"}
 	if occupants >= 3 {
 		internal = []string{"triplo"}
 	}
-	return []commercialSlot{
-		{"Suíte Deluxe com vista para o mar", []string{"superluxo"}},
+	result := []commercialSlot{
+		front,
 		{"Suíte Deluxe com varanda", []string{"triploDeluxe"}},
 		{"Suíte com varanda", []string{"triploVaranda"}},
 		{"Suíte interna", internal},
 	}
+	if occupants <= 2 {
+		result = append([]commercialSlot{{"Suíte Superluxo com varanda e vista mar", []string{"superluxo"}}}, result...)
+	}
+	return result
 }
 
 func classifyRoom(rawName string) (Category, int, bool) {
