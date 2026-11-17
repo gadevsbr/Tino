@@ -649,10 +649,11 @@
 
 ## Etapa 37 — Matriz de capacidade OmniBees v0.17.10
 
-- Status: regra reproduzida no link real, corrigida e validada; release em andamento.
+- Status: regra reproduzida no link real, corrigida, validada e publicada.
 - Causa: Superluxo e Deluxe frente-mar estavam colapsados no mesmo slot. Para ocupações de até 3 pessoas, o Tino procurava Superluxo e descartava o cartão físico `quadruploVista`, embora a Deluxe frente-mar comporte até 4.
 - Correção: capacidades explícitas por categoria: Superluxo 1–2; Interna Duplo 1–2 e Triplo 3; Varanda e Deluxe Varanda Triplo 1–3 e Quádruplo 4; Deluxe frente-mar 1–4; Família Deluxe 5.
 - Evidência real: no link de 21/11/2026 a 22/11/2026 para 2 adultos, a Deluxe frente-mar foi recuperada por `R$ 716,17`, junto das tarifas literais de `R$ 605,42` e `R$ 494,67`.
 - Evidência automatizada: a matriz cobre ocupações de 1 a 5 e os testes integrados de OmniBees, app, comercial e WhatsApp passaram.
 - Evidência completa: `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram. O Tino 0.17.10 abriu responsivo.
 - SHA-256 local: `Tino.exe` `16938044F0CEDA8721604314E8FD21DBD2AA09A60281851E85645CE558133B08`; CLI `68B068B8E59407B919249EB27668C2212F84ADA50A8F1D8E54AF242AD9E71CBD`.
+- Evidência de release: tag `v0.17.10` aponta para `357ac11`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.10`.
