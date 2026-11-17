@@ -638,10 +638,11 @@
 
 ## Etapa 36 — Categorias internas OmniBees v0.17.9
 
-- Status: causa reproduzida, correção validada e build Windows concluído; release em andamento.
+- Status: causa reproduzida, correção validada, build Windows e release concluídos.
 - Causa: em algumas ocupações solo/duplas, a OmniBees retorna o cartão físico Triplo como a opção interna e omite o Duplo. O Tino exigia Duplo e descartava uma categoria disponível.
 - Correção: a Suíte interna prefere Duplo quando existe e usa Triplo somente quando Duplo está ausente. As demais categorias preservam a capacidade comercial definida e não promovem Quádruplo desnecessariamente.
 - Evidência real: a busca de 15/01/2027 a 21/01/2027 para 1 adulto passou de 3 para 4 categorias e recuperou `Suíte interna: R$ 3.425,16`; nenhuma tarifa foi estimada localmente.
 - Evidência automatizada: testes cobrem fallback, preferência pela menor categoria e integração dos pacotes OmniBees, app, comercial e WhatsApp.
 - Evidência completa: `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram. O Tino 0.17.9 abriu responsivo.
 - SHA-256 local: `Tino.exe` `7E0E4C76142F3CCC42FC6939817A69C600593ACDFA9DF463ECBA8ED17A61B427`; CLI `72F47F62D7312797901685B3BE545A06E2BA47245376754F5227A239B2765AD6`.
+- Evidência de release: tag `v0.17.9` aponta para `13c87ae`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.9`.
