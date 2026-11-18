@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.17.11
+.\scripts\build.ps1 -Version 0.17.12
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -100,7 +100,7 @@ Durante **testar atendimento**, comandos administrativos como `menu`, `status` e
 
 O atendimento comercial começa com uma triagem na primeira mensagem ou após 24 horas sem interação. Outros assuntos pausam o bot e mantêm a conversa não lida. O orçamento coleta check-in, check-out, quartos, adultos e crianças, nessa ordem; para crianças, também coleta as idades exigidas pela OmniBees. O próprio orçamento apresenta as categorias numeradas com seus valores em reais para escolha. Depois seguem as mensagens 1 e 2 configuradas em **Gestão Assistente > Comercial**.
 
-As categorias seguem a disponibilidade real e escolhem o menor tamanho compatível retornado pela OmniBees: para 1–2 hóspedes, Duplo, depois Triplo e por fim Quádruplo; para 3, Triplo e depois Quádruplo; para 4, Quádruplo. A cascata vale separadamente para Interna, Varanda, Deluxe Varanda e Deluxe frente-mar. Superluxo permanece limitado a 2 e Família Deluxe a 5; somente uma opção por categoria comercial é apresentada.
+As categorias seguem a disponibilidade real e escolhem o menor tamanho compatível retornado pela OmniBees: para 1–2 hóspedes, Duplo, depois Triplo e por fim Quádruplo; para 3, Triplo e depois Quádruplo; para 4, Quádruplo. A cascata vale separadamente para Interna, Varanda, Deluxe Varanda e Deluxe frente-mar. Superluxo permanece limitado a 2. Para 4 hóspedes, Família Deluxe aparece somente quando nenhum Quádruplo estiver disponível; para 5, continua sendo a categoria própria. Somente uma opção por categoria comercial é apresentada.
 
 Somente depois da escolha de todas as categorias o Tino envia a mensagem 3. A criação no Bitz e o pedido ao aprovador aguardam uma imagem ou PDF válido de até 15 MB. O comprovante fica no banco local, segue anexado aos operadores com período, ocupação, valores por quarto e valor total e, após a aprovação, acompanha a confirmação enviada ao hóspede. Se a automação do Bitz falhar, o hóspede recebe apenas uma resposta operacional neutra; os operadores recebem os mesmos dados, a confirmação de comprovante recebido e o motivo técnico para concluir manualmente.
 

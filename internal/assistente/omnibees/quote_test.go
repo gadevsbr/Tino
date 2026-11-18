@@ -212,6 +212,21 @@ func TestCategoriesAcceptsOmniBeesLabelVariantsWithoutMixingCapacity(t *testing.
 	}
 }
 
+func TestCategoriesUsesFamilyForFourOnlyWithoutQuadruple(t *testing.T) {
+	family := normalize(roomNames["familia"])
+	quadruple := normalize(roomNames["quadruploVaranda"])
+
+	got := Categories(Search{Adults: 4}, map[string]int64{family: 300000})
+	if len(got) != 1 || got[0].SourceKey != "familia" {
+		t.Fatalf("sem quádruplo, categorias=%#v", got)
+	}
+
+	got = Categories(Search{Adults: 4}, map[string]int64{family: 300000, quadruple: 220000})
+	if len(got) != 1 || got[0].SourceKey != "quadruploVaranda" {
+		t.Fatalf("com quádruplo, categorias=%#v", got)
+	}
+}
+
 func TestCategoriesMatchesFiveObservedOmniBeesOccupancies(t *testing.T) {
 	// Snapshot of the room labels observed in the five live searches supplied by
 	// the operator. These expectations mirror getPrices() from the original

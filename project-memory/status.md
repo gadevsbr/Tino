@@ -668,3 +668,11 @@
 - Evidência completa: `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram. O Tino 0.17.11 abriu responsivo.
 - SHA-256 local: `Tino.exe` `E4E0007C4552C6E5461A50A817A21D1167E618C581FB028441F2214DCAE3B9BE`; CLI `CF3DBDEA15C16174DB0DA30DDF30E6131E66EABCDC10E3D77B04CE6AADE8A705`.
 - Evidência de release: tag `v0.17.11` aponta para `5c7b541`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.11`.
+
+## Etapa 39 — Família Deluxe como fallback v0.17.12
+
+- Status: implementado, validado e compilado; release em andamento.
+- Regra: para 4 hóspedes, Família Deluxe aparece somente quando a OmniBees não retornar nenhuma categoria Quádrupla. Com qualquer Quádruplo disponível, Família permanece oculto.
+- Evidência automatizada: regressão direcionada cobre os dois lados da regra; testes dos pacotes OmniBees, app, comercial, WhatsApp e Bitz, suíte Go serial completa, `go vet ./...`, testes e build React e `git diff --check` passaram. Em paralelo, o teste de navegador Bitz excedeu o timeout; isolado e na suíte serial, passou.
+- Build Windows `0.17.12` abriu responsivo. SHA-256: `Tino.exe` `5D67A0E585D70E009735C7F10CBDC557719C5A4FBE585798E4B578A02427F037`; CLI `EBC4226490ADBDDDBE9919309091DC5FE2FBC231E9C12609DE247AEF0B18C6B7`.
+- Limite: não foi fornecido um período real em que Família esteja disponível e todos os Quádruplos ausentes; a regra foi comprovada com respostas determinísticas do seletor.

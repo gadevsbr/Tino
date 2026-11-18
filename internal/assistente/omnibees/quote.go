@@ -371,6 +371,11 @@ func Categories(s Search, prices map[string]int64) []Category {
 			}
 		}
 	}
+	if occupants == 4 && len(result) == 0 {
+		if category, ok := available["familia"]; ok {
+			result = append(result, category)
+		}
+	}
 	return result
 }
 
