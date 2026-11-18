@@ -336,13 +336,18 @@ func physicalCategory(category RoomCategory) string {
 	bySource := map[string]string{
 		"superluxo":        "quarto duplo superluxo com varanda e vista mar",
 		"familia":          "quarto familia deluxe com vista mar",
+		"duploVista":       "quarto duplo deluxe com varanda e vista mar",
+		"triploVista":      "quarto triplo deluxe com varanda e vista mar",
 		"quadruploVista":   "quarto quadruplo deluxe com varanda e vista mar",
+		"duploDeluxe":      "quarto duplo deluxe com varanda",
 		"triploDeluxe":     "quarto triplo deluxe com varanda",
 		"quadruploDeluxe":  "quarto quadruplo deluxe com varanda",
+		"duploVaranda":     "quarto duplo com varanda",
 		"triploVaranda":    "quarto triplo com varanda",
 		"quadruploVaranda": "quarto quadruplo com varanda",
 		"duplo":            "quarto duplo",
 		"triplo":           "quarto triplo",
+		"quadruplo":        "quarto quadruplo",
 	}
 	if value := bySource[category.SourceKey]; value != "" {
 		return value

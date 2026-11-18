@@ -139,7 +139,7 @@ func TestCategoriesUsesOriginalExtensionCommercialSlots(t *testing.T) {
 	}
 }
 
-func TestCategoriesFallsBackToTriploInternalWhenDuploIsAbsent(t *testing.T) {
+func TestCategoriesFallsBackThroughLargerAvailableRooms(t *testing.T) {
 	prices := map[string]int64{
 		normalize(roomNames["superluxo"]):        300000,
 		normalize(roomNames["quadruploVista"]):   280000,
@@ -148,7 +148,7 @@ func TestCategoriesFallsBackToTriploInternalWhenDuploIsAbsent(t *testing.T) {
 		normalize(roomNames["triplo"]):           180000,
 	}
 	got := Categories(Search{Adults: 1}, prices)
-	want := []string{"superluxo", "quadruploVista", "triplo"}
+	want := []string{"superluxo", "quadruploVista", "quadruploDeluxe", "quadruploVaranda", "triplo"}
 	if len(got) != len(want) {
 		t.Fatalf("categorias=%#v, esperava %v", got, want)
 	}
@@ -157,8 +157,8 @@ func TestCategoriesFallsBackToTriploInternalWhenDuploIsAbsent(t *testing.T) {
 			t.Fatalf("categoria[%d]=%q, esperava %q; todas=%#v", i, got[i].SourceKey, source, got)
 		}
 	}
-	if got[2].Name != "Suíte interna" {
-		t.Fatalf("fallback interno perdeu nome comercial: %#v", got[2])
+	if got[4].Name != "Suíte interna" {
+		t.Fatalf("fallback interno perdeu nome comercial: %#v", got[4])
 	}
 }
 
@@ -199,7 +199,7 @@ func TestCategoriesAcceptsOmniBeesLabelVariantsWithoutMixingCapacity(t *testing.
 		normalize("Suíte Quádruplo Deluxe com Vista para o Mar"): 400000,
 	}
 	duplos := Categories(Search{Adults: 2}, prices)
-	if len(duplos) != 3 || duplos[0].SourceKey != "quadruploVista" || duplos[1].SourceKey != "triploDeluxe" || duplos[1].TotalCents != 310000 || duplos[2].SourceKey != "duplo" {
+	if len(duplos) != 3 || duplos[0].SourceKey != "quadruploVista" || duplos[1].SourceKey != "duploDeluxe" || duplos[1].TotalCents != 250420 || duplos[2].SourceKey != "duplo" {
 		t.Fatalf("duplos=%#v", duplos)
 	}
 	triplos := Categories(Search{Adults: 3}, prices)

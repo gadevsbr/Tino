@@ -20,12 +20,17 @@ var ErrNoPrices = errors.New("nenhum preço total confirmado na OmniBees")
 var roomNames = map[string]string{
 	"superluxo":        "Quarto Duplo Superluxo com Varanda e Vista Mar",
 	"familia":          "Quarto Família Deluxe com Vista Mar",
+	"duploVista":       "Quarto Duplo Deluxe com Varanda e Vista Mar",
+	"triploVista":      "Quarto Triplo Deluxe com Varanda e Vista Mar",
 	"triploDeluxe":     "Quarto Triplo Deluxe com Varanda",
+	"duploDeluxe":      "Quarto Duplo Deluxe com Varanda",
 	"quadruploDeluxe":  "Quarto Quadruplo Deluxe com Varanda",
 	"quadruploVista":   "Quarto Quadruplo Deluxe com Varanda e Vista Mar",
+	"duploVaranda":     "Quarto Duplo com Varanda",
 	"triploVaranda":    "Quarto Triplo com Varanda",
 	"triplo":           "Quarto Triplo",
 	"quadruploVaranda": "Quarto Quádruplo Com Varanda",
+	"quadruplo":        "Quarto Quádruplo",
 	"duplo":            "Quarto Duplo",
 }
 
@@ -340,11 +345,8 @@ type Result struct {
 	Categories []Category
 }
 
-// Categories mirrors the commercial slots used by the original browser
-// extension. For up to three occupants, OmniBees reuses some physically larger
-// room cards as commercial alternatives for the requested occupancy. Four and
-// five occupants have their own exclusive sets. Classification remains
-// semantic because OmniBees changes labels over time.
+// Categories selects the smallest available physical size in each commercial
+// category that can hold the requested occupancy.
 func Categories(s Search, prices map[string]int64) []Category {
 	occupants := s.Adults + s.Children
 	available := map[string]Category{}
@@ -381,23 +383,24 @@ func commercialSlots(occupants int) []commercialSlot {
 	if occupants >= 5 {
 		return []commercialSlot{{roomNames["familia"], []string{"familia"}}}
 	}
-	if occupants == 4 {
-		return []commercialSlot{
-			{"Suíte Deluxe com vista para o mar", []string{"quadruploVista"}},
-			{"Suíte Deluxe com varanda", []string{"quadruploDeluxe"}},
-			{"Suíte com varanda", []string{"quadruploVaranda"}},
-		}
+	prefixes := []string{"duplo", "triplo", "quadruplo"}
+	if occupants == 3 {
+		prefixes = prefixes[1:]
+	} else if occupants == 4 {
+		prefixes = prefixes[2:]
 	}
-	front := commercialSlot{"Suíte Deluxe com vista para o mar", []string{"quadruploVista"}}
-	internal := []string{"duplo", "triplo"}
-	if occupants >= 3 {
-		internal = []string{"triplo"}
+	sources := func(suffix string) []string {
+		result := make([]string, len(prefixes))
+		for i, prefix := range prefixes {
+			result[i] = prefix + suffix
+		}
+		return result
 	}
 	result := []commercialSlot{
-		front,
-		{"Suíte Deluxe com varanda", []string{"triploDeluxe"}},
-		{"Suíte com varanda", []string{"triploVaranda"}},
-		{"Suíte interna", internal},
+		{"Suíte Deluxe com vista para o mar", sources("Vista")},
+		{"Suíte Deluxe com varanda", sources("Deluxe")},
+		{"Suíte com varanda", sources("Varanda")},
+		{"Suíte interna", sources("")},
 	}
 	if occupants <= 2 {
 		result = append([]commercialSlot{{"Suíte Superluxo com varanda e vista mar", []string{"superluxo"}}}, result...)

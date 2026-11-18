@@ -657,3 +657,13 @@
 - Evidência completa: `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram. O Tino 0.17.10 abriu responsivo.
 - SHA-256 local: `Tino.exe` `16938044F0CEDA8721604314E8FD21DBD2AA09A60281851E85645CE558133B08`; CLI `68B068B8E59407B919249EB27668C2212F84ADA50A8F1D8E54AF242AD9E71CBD`.
 - Evidência de release: tag `v0.17.10` aponta para `357ac11`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.10`.
+
+## Etapa 38 — Fallback progressivo de categorias v0.17.11
+
+- Status: implementado, validado e compilado; release em andamento.
+- Regra: para 1–2 hóspedes, cada categoria tenta Duplo, Triplo e Quádruplo; para 3, tenta Triplo e Quádruplo; para 4, usa Quádruplo. Exibe somente o menor tamanho disponível por categoria.
+- Integração: os novos `SourceKey` de Duplo/Triplo/Quádruplo foram incluídos no inventário configurável e na tradução de categoria física do Bitz.
+- Evidência automatizada: regressões cobrem preferência do menor tamanho, fallback até Quádruplo, matriz de 1 a 5, OmniBees, quartos, Bitz, app, comercial e WhatsApp.
+- Evidência real: o link de 21/11/2026 a 22/11/2026 para 2 adultos retornou frente-mar, Deluxe varanda e varanda com os valores literais atuais da OmniBees; nenhuma tarifa foi estimada.
+- Evidência completa: `go test -count=1 ./...`, `go vet ./...`, testes e build React passaram. O Tino 0.17.11 abriu responsivo.
+- SHA-256 local: `Tino.exe` `E4E0007C4552C6E5461A50A817A21D1167E618C581FB028441F2214DCAE3B9BE`; CLI `CF3DBDEA15C16174DB0DA30DDF30E6131E66EABCDC10E3D77B04CE6AADE8A705`.

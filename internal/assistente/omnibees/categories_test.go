@@ -12,9 +12,9 @@ func TestSemanticCategoriesPreservePhysicalSources(t *testing.T) {
 		ages        []int
 		wantSources []string
 	}{
-		{2, nil, []string{"superluxo", "quadruploVista", "triploDeluxe", "triploVaranda", "duplo"}},
-		{2, []int{5}, []string{"quadruploVista", "triploDeluxe", "triploVaranda", "triplo"}},
-		{2, []int{5, 6}, []string{"quadruploVista", "quadruploDeluxe", "quadruploVaranda"}},
+		{2, nil, []string{"superluxo", "duploVista", "duploDeluxe", "duploVaranda", "duplo"}},
+		{2, []int{5}, []string{"triploVista", "triploDeluxe", "triploVaranda", "triplo"}},
+		{2, []int{5, 6}, []string{"quadruploVista", "quadruploDeluxe", "quadruploVaranda", "quadruplo"}},
 		{3, []int{5, 6}, []string{"familia"}},
 	} {
 		got := Categories(Search{Adults: tc.adults, Children: len(tc.ages), Ages: tc.ages, Discount: 5}, prices)

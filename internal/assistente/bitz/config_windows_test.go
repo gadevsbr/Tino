@@ -100,9 +100,14 @@ func TestOpenNewReservationPrefersKnownButtonID(t *testing.T) {
 func TestPhysicalCategoryUsesOmniBeesSourceSlot(t *testing.T) {
 	tests := []struct{ source, want string }{
 		{"familia", "quarto familia deluxe com vista mar"},
+		{"duploVista", "quarto duplo deluxe com varanda e vista mar"},
+		{"triploVista", "quarto triplo deluxe com varanda e vista mar"},
 		{"triploDeluxe", "quarto triplo deluxe com varanda"},
+		{"duploDeluxe", "quarto duplo deluxe com varanda"},
 		{"quadruploVista", "quarto quadruplo deluxe com varanda e vista mar"},
+		{"duploVaranda", "quarto duplo com varanda"},
 		{"duplo", "quarto duplo"},
+		{"quadruplo", "quarto quadruplo"},
 	}
 	for _, test := range tests {
 		if got := physicalCategory(RoomCategory{SourceKey: test.source}); got != test.want {

@@ -9,13 +9,18 @@ type Category struct {
 var BitzCategories = []Category{
 	{Key: "superluxo", Label: "Duplo Superluxo com varanda e vista mar"},
 	{Key: "familia", Label: "Família Deluxe com vista mar"},
+	{Key: "duploVista", Label: "Duplo Deluxe com varanda e vista mar"},
+	{Key: "triploVista", Label: "Triplo Deluxe com varanda e vista mar"},
 	{Key: "triploDeluxe", Label: "Triplo Deluxe com varanda"},
+	{Key: "duploDeluxe", Label: "Duplo Deluxe com varanda"},
 	{Key: "quadruploDeluxe", Label: "Quádruplo Deluxe com varanda"},
 	{Key: "quadruploVista", Label: "Quádruplo Deluxe com varanda e vista mar"},
+	{Key: "duploVaranda", Label: "Duplo com varanda"},
 	{Key: "triploVaranda", Label: "Triplo com varanda"},
 	{Key: "quadruploVaranda", Label: "Quádruplo com varanda"},
 	{Key: "duplo", Label: "Duplo"},
 	{Key: "triplo", Label: "Triplo"},
+	{Key: "quadruplo", Label: "Quádruplo"},
 }
 
 func ValidBitzCategory(key string) bool {
