@@ -676,3 +676,4 @@
 - Evidência automatizada: regressão direcionada cobre os dois lados da regra; testes dos pacotes OmniBees, app, comercial, WhatsApp e Bitz, suíte Go serial completa, `go vet ./...`, testes e build React e `git diff --check` passaram. Em paralelo, o teste de navegador Bitz excedeu o timeout; isolado e na suíte serial, passou.
 - Build Windows `0.17.12` abriu responsivo. SHA-256: `Tino.exe` `5D67A0E585D70E009735C7F10CBDC557719C5A4FBE585798E4B578A02427F037`; CLI `EBC4226490ADBDDDBE9919309091DC5FE2FBC231E9C12609DE247AEF0B18C6B7`.
 - Limite: não foi fornecido um período real em que Família esteja disponível e todos os Quádruplos ausentes; a regra foi comprovada com respostas determinísticas do seletor.
+- Evidência de release: tag `v0.17.12` aponta para `d7e6c09`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.12`.
