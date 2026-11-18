@@ -691,7 +691,11 @@
 
 ## Etapa 41 — Paginação e conclusão de atendimento v0.18.1
 
-- Status: implementado; validação completa e publicação em andamento.
+- Status: implementado, validado, publicado no Cloudflare e distribuído na release Windows.
 - A aba **Falhas** exibe 20 registros por página, com total, página atual e controles anterior/próxima.
 - Na etapa **Humano**, o painel troca a ação redundante de assumir por **Concluir atendimento**. O comando é auditado, executado no desktop e remove o contato do funil; uma mensagem futura inicia atendimento novo.
-- Evidência parcial: testes direcionados de paginação, comercial, desktop e oito testes do Worker passaram; builds do painel e dry-run do Worker passaram.
+- Evidência local: regressões de paginação e conclusão, `go test -count=1 -p 1 ./...`, `go vet ./...`, testes e builds dos dois frontends, oito testes do Worker, dry-run e `git diff --check` passaram.
+- Evidência remota: Worker `e015bcfe-9d9d-4112-8abc-b45d65dc5307` e Pages `5afa5670.tino-control.pages.dev` foram publicados; produção respondeu HTTP 200 e o bundle contém paginação e **Concluir atendimento**.
+- Build Windows `0.18.1` abriu responsivo. SHA-256: `Tino.exe` `F43C04DDBD17D84542E386DA58F514658A2DD113063643ED5DC1BEDE2CF17B54`; CLI `24549257CC642E52E4F4088606D16E168B4A44A7EE8616C0C2214DE66BC83671`.
+- Evidência de release: tag `v0.18.1` aponta para `2c3343b`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.18.1`.
+- Limite: a conclusão não foi disparada contra um contato real para não remover um atendimento ativo sem escolha explícita do operador.
