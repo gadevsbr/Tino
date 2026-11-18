@@ -680,7 +680,11 @@
 
 ## Etapa 40 — Observabilidade operacional v0.18.0
 
-- Status: implementação integrada no desktop, Worker e painel; validação completa e publicação em andamento.
+- Status: implementado, validado, publicado no Cloudflare e distribuído na release Windows.
 - O painel ganhou **Saúde operacional** com WhatsApp, OmniBees, Bitz, última sincronização, atendimentos travados, aprovações, comprovantes, backups e erros acionáveis.
 - Privacidade: somente estados, contagens e datas entram no snapshot; credenciais, sessão WhatsApp, comprovantes e arquivos continuam locais.
-- Evidência parcial: testes direcionados Go, sete testes do Worker, três testes do painel, builds React e dry-run do Worker passaram. A inspeção visual automatizada local ficou indisponível e não foi contabilizada como concluída.
+- Evidência local: `go test -count=1 -p 1 ./...`, `go vet ./...`, testes e builds dos dois frontends, sete testes do Worker, migração D1 local, dry-run do Worker e `git diff --check` passaram. A inspeção visual automatizada local ficou indisponível e não foi contabilizada como concluída.
+- Evidência remota: migração `0004_operational_health.sql`, Worker `007e3f01-3040-4fe1-bc71-3bfebeb649e4` e Pages foram publicados. Painel respondeu HTTP 200 e API sem sessão respondeu HTTP 401.
+- Evidência real: o desktop 0.18.0 sincronizou WhatsApp `ok`, OmniBees `ok`, Bitz `ok`, 3 aprovações, 1 comprovante pendente, 9 backups e 4 erros acionáveis no D1.
+- Build Windows `0.18.0` abriu responsivo. SHA-256: `Tino.exe` `750F4B0B59058163BCC981BA4575929CA415A2CB2D8E8CAEEB1649CFD1EA0378`; CLI `39E38719E3020C354169534E445E68F4076F19DDDA6844E0703930EE0D1017E0`.
+- Evidência de release: tag `v0.18.0` aponta para `8a35bf8`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.18.0`.
