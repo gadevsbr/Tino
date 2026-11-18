@@ -36,7 +36,7 @@ project-memory/     decisões e evidências curtas
 
 ```powershell
 go test ./...
-.\scripts\build.ps1 -Version 0.18.0
+.\scripts\build.ps1 -Version 0.18.1
 .\dist\Tino.exe
 
 # CLI auxiliar
@@ -137,6 +137,8 @@ Build e testes locais validam apenas código/artefato. Pareamento QR, estabilida
 ## Painel comercial web
 
 O painel publicado em `https://tino-control.pages.dev` apresenta o funil comercial em oito etapas, os dados coletados, falhas de OmniBees, catálogo, IA e Bitz e o histórico de comandos. Pausar, retomar, assumir ou reiniciar um orçamento cria um comando auditado; a ação só aparece como executada depois da confirmação do Tino.
+
+Atendimentos na etapa **Humano** podem ser concluídos pelo painel. A conclusão remove o contato do funil somente depois da confirmação do desktop; uma nova mensagem desse contato abre um atendimento novo. A aba **Falhas** mostra 20 registros por página.
 
 Em **Saúde operacional**, a dona acompanha sem acesso técnico: autenticação do WhatsApp, resultado mais recente da OmniBees e do Bitz, última sincronização, atendimentos sem avanço há mais de uma hora, reservas aguardando aprovação, comprovantes pendentes, backups realizados e erros das últimas 24 horas. O painel mostra o resultado da última operação real; ele não cria reservas nem consultas artificiais apenas para testar integrações.
 

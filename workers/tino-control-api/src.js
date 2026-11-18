@@ -1,5 +1,6 @@
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
-const ACTIONS = new Set(["pause", "resume", "takeover", "restart_quote"]);
+const ACTIONS = new Set(["pause", "resume", "takeover", "restart_quote", "complete"]);
+const allowedAction = (value) => ACTIONS.has(value);
 const encoder = new TextEncoder();
 
 function json(data, status = 200) {
@@ -194,7 +195,7 @@ async function createCommand(request, env) {
   const session = await authorizeDashboard(request, env);
   if (!session) return json({ error: "não autorizado" }, 401);
   const data = await body(request), action = clean(data.action, 40);
-  if (!ACTIONS.has(action)) return json({ error: "ação inválida" }, 400);
+  if (!allowedAction(action)) return json({ error: "ação inválida" }, 400);
   const instanceId = clean(data.instanceId, 100), account = clean(data.account, 150), contact = clean(data.contact, 150);
   if (!instanceId || !account || !contact) return json({ error: "atendimento incompleto" }, 400);
   const exists = await env.DB.prepare("SELECT 1 ok FROM contacts WHERE instance_id=? AND account=? AND contact=?").bind(instanceId, account, contact).first();
@@ -207,7 +208,7 @@ async function createCommand(request, env) {
   return json({ id, status: "pending" }, 202);
 }
 
-export { cleanHealth, constantTimeEqual, signSession, snapshotHash, syncPlan, verifySession };
+export { allowedAction, cleanHealth, constantTimeEqual, signSession, snapshotHash, syncPlan, verifySession };
 
 export default {
   async fetch(request, env) {

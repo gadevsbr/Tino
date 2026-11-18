@@ -175,6 +175,8 @@ func (r *hotelRuntime) executePanelCommand(ctx context.Context, command controlp
 		return r.commercial.Resume(ctx, command.Account, command.Contact)
 	case "restart_quote":
 		return r.commercial.Reset(ctx, command.Account, command.Contact)
+	case "complete":
+		return r.commercial.Reset(ctx, command.Account, command.Contact)
 	default:
 		return fmt.Errorf("comando do painel não permitido: %s", command.Action)
 	}

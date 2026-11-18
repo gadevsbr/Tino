@@ -65,6 +65,15 @@ func TestPipelineAndHumanControls(t *testing.T) {
 	if err != nil || items[0].Paused {
 		t.Fatalf("retomada não refletida: items=%+v err=%v", items, err)
 	}
+	if err = s.Pause(context.Background(), "a", "guest"); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.Reset(context.Background(), "a", "guest"); err != nil {
+		t.Fatal(err)
+	}
+	if items, err = s.Pipeline(context.Background()); err != nil || len(items) != 0 {
+		t.Fatalf("atendimento concluído permaneceu no funil: items=%+v err=%v", items, err)
+	}
 	s.RecordFailure(context.Background(), "catalog", "a", "guest", errors.New("produto indisponível"))
 	failures, err := s.Failures(context.Background(), 10)
 	if err != nil || len(failures) != 1 || failures[0].Source != "catalog" || failures[0].Contact != "guest" {

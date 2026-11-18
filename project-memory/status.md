@@ -688,3 +688,10 @@
 - Evidência real: o desktop 0.18.0 sincronizou WhatsApp `ok`, OmniBees `ok`, Bitz `ok`, 3 aprovações, 1 comprovante pendente, 9 backups e 4 erros acionáveis no D1.
 - Build Windows `0.18.0` abriu responsivo. SHA-256: `Tino.exe` `750F4B0B59058163BCC981BA4575929CA415A2CB2D8E8CAEEB1649CFD1EA0378`; CLI `39E38719E3020C354169534E445E68F4076F19DDDA6844E0703930EE0D1017E0`.
 - Evidência de release: tag `v0.18.0` aponta para `8a35bf8`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.18.0`.
+
+## Etapa 41 — Paginação e conclusão de atendimento v0.18.1
+
+- Status: implementado; validação completa e publicação em andamento.
+- A aba **Falhas** exibe 20 registros por página, com total, página atual e controles anterior/próxima.
+- Na etapa **Humano**, o painel troca a ação redundante de assumir por **Concluir atendimento**. O comando é auditado, executado no desktop e remove o contato do funil; uma mensagem futura inicia atendimento novo.
+- Evidência parcial: testes direcionados de paginação, comercial, desktop e oito testes do Worker passaram; builds do painel e dry-run do Worker passaram.

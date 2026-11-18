@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import worker, { cleanHealth, constantTimeEqual, signSession, snapshotHash, syncPlan, verifySession } from "./src.js";
+import worker, { allowedAction, cleanHealth, constantTimeEqual, signSession, snapshotHash, syncPlan, verifySession } from "./src.js";
+
+test("painel aceita concluir atendimento e rejeita ação desconhecida", () => {
+  assert.equal(allowedAction("complete"), true);
+  assert.equal(allowedAction("delete"), false);
+});
 
 test("tokens exigem igualdade integral", () => {
   assert.equal(constantTimeEqual("segredo", "segredo"), true);
