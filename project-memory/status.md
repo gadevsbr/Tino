@@ -677,3 +677,10 @@
 - Build Windows `0.17.12` abriu responsivo. SHA-256: `Tino.exe` `5D67A0E585D70E009735C7F10CBDC557719C5A4FBE585798E4B578A02427F037`; CLI `EBC4226490ADBDDDBE9919309091DC5FE2FBC231E9C12609DE247AEF0B18C6B7`.
 - Limite: não foi fornecido um período real em que Família esteja disponível e todos os Quádruplos ausentes; a regra foi comprovada com respostas determinísticas do seletor.
 - Evidência de release: tag `v0.17.12` aponta para `d7e6c09`; executável, CLI e checksum foram publicados com hashes remotos conferidos em `https://github.com/gadevsbr/Tino/releases/tag/v0.17.12`.
+
+## Etapa 40 — Observabilidade operacional v0.18.0
+
+- Status: implementação integrada no desktop, Worker e painel; validação completa e publicação em andamento.
+- O painel ganhou **Saúde operacional** com WhatsApp, OmniBees, Bitz, última sincronização, atendimentos travados, aprovações, comprovantes, backups e erros acionáveis.
+- Privacidade: somente estados, contagens e datas entram no snapshot; credenciais, sessão WhatsApp, comprovantes e arquivos continuam locais.
+- Evidência parcial: testes direcionados Go, sete testes do Worker, três testes do painel, builds React e dry-run do Worker passaram. A inspeção visual automatizada local ficou indisponível e não foi contabilizada como concluída.

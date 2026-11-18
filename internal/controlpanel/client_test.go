@@ -17,7 +17,7 @@ func TestSyncAndAckUseAuthenticatedContract(t *testing.T) {
 		calls++
 		if r.URL.Path == "/api/bridge/sync" {
 			var snapshot Snapshot
-			if err := json.NewDecoder(r.Body).Decode(&snapshot); err != nil || snapshot.InstanceID != "desk-1" || len(snapshot.Contacts) != 1 || len(snapshot.SnapshotHash) != 64 {
+			if err := json.NewDecoder(r.Body).Decode(&snapshot); err != nil || snapshot.InstanceID != "desk-1" || len(snapshot.Contacts) != 1 || snapshot.Health.WhatsApp.State != "ok" || len(snapshot.SnapshotHash) != 64 {
 				t.Fatalf("snapshot inválido: %+v err=%v", snapshot, err)
 			}
 			_, _ = w.Write([]byte(`{"commands":[{"ID":"c1","Account":"a","Contact":"b","Action":"pause"}]}`))
@@ -28,7 +28,7 @@ func TestSyncAndAckUseAuthenticatedContract(t *testing.T) {
 	defer server.Close()
 
 	client := Client{Endpoint: server.URL, Token: "secret", InstanceID: "desk-1", HTTP: server.Client()}
-	commands, err := client.Sync(context.Background(), Snapshot{Contacts: []Contact{{Account: "a", Contact: "b", Stage: "new"}}})
+	commands, err := client.Sync(context.Background(), Snapshot{Contacts: []Contact{{Account: "a", Contact: "b", Stage: "new"}}, Health: Health{WhatsApp: Signal{State: "ok"}}})
 	if err != nil || len(commands) != 1 || commands[0].Action != "pause" {
 		t.Fatalf("comandos inválidos: %+v err=%v", commands, err)
 	}

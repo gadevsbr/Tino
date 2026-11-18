@@ -40,10 +40,25 @@ function clean(value, max = 500) {
   return String(value || "").trim().slice(0, max);
 }
 
+function cleanHealth(value) {
+  const signal = (item = {}) => ({
+    state: ["ok", "warning", "error", "unknown"].includes(item.state) ? item.state : "unknown",
+    label: clean(item.label, 80), detail: clean(item.detail, 300), checkedAt: clean(item.checkedAt, 40)
+  });
+  const count = (item) => Math.max(0, Math.min(100000, Math.trunc(Number(item) || 0)));
+  value = value && typeof value === "object" ? value : {};
+  return {
+    whatsapp: signal(value.whatsapp), omnibees: signal(value.omnibees), bitz: signal(value.bitz),
+    stalledContacts: count(value.stalledContacts), awaitingApproval: count(value.awaitingApproval),
+    pendingProofs: count(value.pendingProofs), backupCount: count(value.backupCount),
+    actionErrors: count(value.actionErrors), lastBackup: clean(value.lastBackup, 40)
+  };
+}
+
 async function snapshotHash(data) {
   const supplied = clean(data.snapshotHash, 64).toLowerCase();
   if (/^[a-f0-9]{64}$/.test(supplied)) return supplied;
-  const payload = JSON.stringify([clean(data.version, 40), data.contacts, data.failures]);
+  const payload = JSON.stringify([clean(data.version, 40), data.contacts, data.failures, cleanHealth(data.health)]);
   return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(payload))), byte => byte.toString(16).padStart(2, "0")).join("");
 }
 
@@ -124,11 +139,12 @@ async function syncBridge(request, env) {
   if (!instanceId || !Array.isArray(data.contacts) || !Array.isArray(data.failures)) return json({ error: "snapshot inválido" }, 400);
   const now = new Date().toISOString();
   const hash = await snapshotHash(data);
+  const health = cleanHealth(data.health);
   const current = await env.DB.prepare("SELECT version,last_seen,snapshot_hash FROM instances WHERE id=?").bind(instanceId).first();
   const plan = syncPlan(current, hash, now);
   const statements = [];
-  if (!current) statements.push(env.DB.prepare("INSERT INTO instances(id,version,last_seen,snapshot_hash) VALUES(?,?,?,?)").bind(instanceId, clean(data.version, 40), now, hash));
-  else if (plan.heartbeat) statements.push(env.DB.prepare("UPDATE instances SET version=?,last_seen=?,snapshot_hash=? WHERE id=?").bind(clean(data.version, 40), now, hash, instanceId));
+  if (!current) statements.push(env.DB.prepare("INSERT INTO instances(id,version,last_seen,snapshot_hash,health) VALUES(?,?,?,?,?)").bind(instanceId, clean(data.version, 40), now, hash, JSON.stringify(health)));
+  else if (plan.heartbeat) statements.push(env.DB.prepare("UPDATE instances SET version=?,last_seen=?,snapshot_hash=?,health=? WHERE id=?").bind(clean(data.version, 40), now, hash, JSON.stringify(health), instanceId));
   if (plan.changed) {
     statements.push(env.DB.prepare("DELETE FROM contacts WHERE instance_id=?").bind(instanceId));
     for (const item of data.contacts.slice(0, 5000)) {
@@ -166,12 +182,12 @@ async function dashboard(request, env) {
   const selected = instance || (await env.DB.prepare("SELECT id FROM instances ORDER BY last_seen DESC LIMIT 1").first())?.id;
   if (!selected) return json({ instance: null, contacts: [], failures: [], commands: [] });
   const [machine, contacts, failures, commands] = await Promise.all([
-    env.DB.prepare("SELECT id,version,last_seen FROM instances WHERE id=?").bind(selected).first(),
+    env.DB.prepare("SELECT id,version,last_seen,health FROM instances WHERE id=?").bind(selected).first(),
     env.DB.prepare("SELECT * FROM contacts WHERE instance_id=? ORDER BY updated_at DESC LIMIT 1000").bind(selected).all(),
     env.DB.prepare("SELECT * FROM failures WHERE instance_id=? ORDER BY created_at DESC LIMIT 200").bind(selected).all(),
     env.DB.prepare("SELECT * FROM commands WHERE instance_id=? ORDER BY created_at DESC LIMIT 100").bind(selected).all()
   ]);
-  return json({ instance: machine, contacts: contacts.results.map((item) => ({ ...item, categories: JSON.parse(item.categories), selected_categories: JSON.parse(item.selected_categories) })), failures: failures.results, commands: commands.results });
+  return json({ instance: machine ? { ...machine, health: cleanHealth(JSON.parse(machine.health || "{}")) } : null, contacts: contacts.results.map((item) => ({ ...item, categories: JSON.parse(item.categories), selected_categories: JSON.parse(item.selected_categories) })), failures: failures.results, commands: commands.results });
 }
 
 async function createCommand(request, env) {
@@ -191,7 +207,7 @@ async function createCommand(request, env) {
   return json({ id, status: "pending" }, 202);
 }
 
-export { constantTimeEqual, signSession, snapshotHash, syncPlan, verifySession };
+export { cleanHealth, constantTimeEqual, signSession, snapshotHash, syncPlan, verifySession };
 
 export default {
   async fetch(request, env) {

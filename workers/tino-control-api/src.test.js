@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import worker, { constantTimeEqual, signSession, snapshotHash, syncPlan, verifySession } from "./src.js";
+import worker, { cleanHealth, constantTimeEqual, signSession, snapshotHash, syncPlan, verifySession } from "./src.js";
 
 test("tokens exigem igualdade integral", () => {
   assert.equal(constantTimeEqual("segredo", "segredo"), true);
@@ -35,4 +35,18 @@ test("snapshot idêntico não grava e heartbeat ocorre uma vez por minuto", () =
 test("cliente antigo recebe hash estável sem considerar horário online", async () => {
   const base = { version: "0.17.7", contacts: [{ Contact: "1" }], failures: [] };
   assert.equal(await snapshotHash({ ...base, onlineAt: "2026-11-11T20:00:00Z" }), await snapshotHash({ ...base, onlineAt: "2026-11-11T20:01:00Z" }));
+});
+
+test("saúde operacional limita estados, textos e contadores", () => {
+  const health = cleanHealth({ whatsapp: { state: "ok", label: "Conectado" }, bitz: { state: "inventado", detail: "x".repeat(500) }, pendingProofs: -2, actionErrors: 3.8 });
+  assert.equal(health.whatsapp.state, "ok");
+  assert.equal(health.bitz.state, "unknown");
+  assert.equal(health.bitz.detail.length, 300);
+  assert.equal(health.pendingProofs, 0);
+  assert.equal(health.actionErrors, 3);
+});
+
+test("mudança de saúde altera o hash do snapshot", async () => {
+  const base = { version: "0.18.0", contacts: [], failures: [] };
+  assert.notEqual(await snapshotHash({ ...base, health: { whatsapp: { state: "ok" } } }), await snapshotHash({ ...base, health: { whatsapp: { state: "error" } } }));
 });

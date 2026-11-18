@@ -48,6 +48,7 @@ type hotelRuntime struct {
 	panelMu    sync.RWMutex
 	panelState string
 	version    string
+	client     *whatsmeow.Client
 }
 
 func openHotelRuntime(parent context.Context, dataDir, version string, settings capability.Settings, client *whatsmeow.Client, markUnread func(context.Context, string) error) (*hotelRuntime, error) {
@@ -106,7 +107,7 @@ func openHotelRuntime(parent context.Context, dataDir, version string, settings 
 		_ = db.Close()
 		return nil, err
 	}
-	runtime := &hotelRuntime{db: db, service: service, cancel: cancel, dataDir: operationsDir, zone: location, rooms: roomRepo, cash: cashRepo, advances: advanceRepo, extratos: extratos.NewRepository(db), reports: reports.New(location), commercial: commercialService, catalog: catalogRepo, backup: backup.New(db, operationsDir, cfg.BackupRetentionDays, location), bitz: bitz.NewStore(filepath.Join(operationsDir, "bitz-config.json")), panel: controlpanel.NewStore(filepath.Join(dataDir, "control-panel.json")), version: version}
+	runtime := &hotelRuntime{db: db, service: service, cancel: cancel, dataDir: operationsDir, zone: location, rooms: roomRepo, cash: cashRepo, advances: advanceRepo, extratos: extratos.NewRepository(db), reports: reports.New(location), commercial: commercialService, catalog: catalogRepo, backup: backup.New(db, operationsDir, cfg.BackupRetentionDays, location), bitz: bitz.NewStore(filepath.Join(operationsDir, "bitz-config.json")), panel: controlpanel.NewStore(filepath.Join(dataDir, "control-panel.json")), version: version, client: client}
 	go runtime.runControlPanel(ctx)
 	return runtime, nil
 }
@@ -139,6 +140,7 @@ func (r *hotelRuntime) runControlPanel(ctx context.Context) {
 				for _, item := range contacts {
 					snapshot.Contacts = append(snapshot.Contacts, controlpanel.Contact{Account: item.Account, Contact: item.Contact, Stage: item.Stage, LastSeen: item.LastSeen, CheckIn: item.CheckIn, CheckOut: item.CheckOut, Paused: item.Paused, QuoteActive: item.QuoteActive, AwaitingChoice: item.AwaitingChoice, Adults: item.Adults, Children: item.Children, Rooms: item.Rooms, Categories: item.Categories, SelectedCategories: item.SelectedCategories, PreReservationCode: item.PreReservationCode, PreReservationStatus: item.PreReservationStatus})
 				}
+				snapshot.Health = r.panelHealth(ctx, snapshot.Contacts)
 				client := controlpanel.Client{Endpoint: cfg.Endpoint, Token: token, InstanceID: cfg.InstanceID}
 				commands, syncErr := client.Sync(ctx, snapshot)
 				if syncErr != nil {

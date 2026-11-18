@@ -26,6 +26,25 @@ type Failure struct {
 	Source, Contact, Message, CreatedAt string
 }
 
+type Signal struct {
+	State     string `json:"state"`
+	Label     string `json:"label"`
+	Detail    string `json:"detail"`
+	CheckedAt string `json:"checkedAt"`
+}
+
+type Health struct {
+	WhatsApp         Signal `json:"whatsapp"`
+	OmniBees         Signal `json:"omnibees"`
+	Bitz             Signal `json:"bitz"`
+	StalledContacts  int    `json:"stalledContacts"`
+	AwaitingApproval int    `json:"awaitingApproval"`
+	PendingProofs    int    `json:"pendingProofs"`
+	BackupCount      int    `json:"backupCount"`
+	ActionErrors     int    `json:"actionErrors"`
+	LastBackup       string `json:"lastBackup"`
+}
+
 type Snapshot struct {
 	InstanceID   string    `json:"instanceId"`
 	Version      string    `json:"version"`
@@ -33,6 +52,7 @@ type Snapshot struct {
 	SnapshotHash string    `json:"snapshotHash"`
 	Contacts     []Contact `json:"contacts"`
 	Failures     []Failure `json:"failures"`
+	Health       Health    `json:"health"`
 }
 
 type Command struct {
@@ -141,7 +161,8 @@ func (c Client) Sync(ctx context.Context, snapshot Snapshot) ([]Command, error) 
 		Version  string
 		Contacts []Contact
 		Failures []Failure
-	}{snapshot.Version, snapshot.Contacts, snapshot.Failures})
+		Health   Health
+	}{snapshot.Version, snapshot.Contacts, snapshot.Failures, snapshot.Health})
 	if err != nil {
 		return nil, err
 	}
